@@ -24,14 +24,14 @@ ifeq ($(UNAME_S), Linux) #LINUX
 	ECHO_MESSAGE = "Linux"
 	LIBS = -lGL -ldl `sdl2-config --libs`
 
-	CXXFLAGS = -Iimgui -Iimgui/examples/libs/gl3w `sdl2-config --cflags`
+	CXXFLAGS = -lGL -lGLEW -Iimgui -Iimgui/examples/libs/gl3w `sdl2-config --cflags`
 	CXXFLAGS += -Wall -Wformat
 	CFLAGS = $(CXXFLAGS)
 endif
 
 ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
    ECHO_MESSAGE = "Windows"
-   LIBS = -lgdi32 -lopengl32 -limm32 `pkg-config --static --libs sdl2`
+   LIBS = -l/usr/include -lGL -lglut -lGLEW -lgdi32 -lopengl32 -limm32 `pkg-config --static --libs sdl2`
 
    CXXFLAGS = -Iimgui -Iimgui/examples/libs/gl3w `pkg-config --cflags sdl2`
    CXXFLAGS += -Wall -Wformat
