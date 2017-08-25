@@ -59,7 +59,7 @@ void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& b
 int main()
 {
 	int nPoints = 4000;
-	unsigned int dimension = 900;
+	unsigned int dimension = windowSize;
   seed = std::clock();
 
   //the generator
@@ -158,8 +158,8 @@ int main()
         renderer.Render ();
 
         utils::WriterBMP writer;
-        writer.SetSourceImage (image);
-        writer.SetDestFilename ("height.bmp");
+        writer.SetSourceImage(image);
+        writer.SetDestFilename("height.bmp");
         writer.WriteDestFile ();
       };
 
@@ -168,7 +168,7 @@ int main()
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
 
-    sf::RenderWindow window(sf::VideoMode(640, 480), "", sf::Style::Default, settings);
+    sf::RenderWindow window(sf::VideoMode(windowSize, windowSize), "", sf::Style::Default, settings);
     window.setVerticalSyncEnabled(true);
     ImGui::SFML::Init(window);
  
@@ -179,9 +179,6 @@ int main()
     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
-
-    sf::CircleShape shape(100.f);
-    shape.setFillColor(sf::Color::Green);
  
     // let's use char array as buffer, see next part
     // for instructions on using std::string with ImGui
@@ -244,7 +241,38 @@ int main()
         ImGui::SameLine(100);
         ImGui::Text("Relax iterations: %d", relax);
 
-        ImGui::Text("Mouse coordinates: x:%d y:%d", sf::Mouse::getPosition(window).x,sf::Mouse::getPosition(window).y);
+        ImGui::Text("Mouse coordinates: x:%d y:%d",
+                    sf::Mouse::getPosition(window).x,
+                    sf::Mouse::getPosition(window).y);
+        sf::Vertex v;
+        for (auto c : diagram->cells)
+          {
+            //red point for each cell site
+            if(c->pointIntersection(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y) != -1) {
+              sf::Vector2<double>& p = c->site.p;
+              v = sf::Vertex({{static_cast<float>(p.x), static_cast<float>(p.y)}, sf::Color::Green});
+              ImGui::Text("Cell: x:%f y:%f", p.x, p.y);
+
+              ImGui::Columns(3, "cells");
+              ImGui::Separator();
+              ImGui::Text("x"); ImGui::NextColumn();
+              ImGui::Text("y"); ImGui::NextColumn();
+              ImGui::Text("z"); ImGui::NextColumn();
+              ImGui::Separator();
+              static int selected = -1;
+              for (int i = 0; i < 5; i++)
+                {
+                  if (ImGui::Selectable("", selected == i, ImGuiSelectableFlags_SpanAllColumns))
+                    selected = i;
+                  ImGui::NextColumn();
+                  ImGui::Text("%d", 0); ImGui::NextColumn();
+                  ImGui::Text("%d", 0); ImGui::NextColumn();
+                  ImGui::Text("%d", 0); ImGui::NextColumn();
+                }
+
+              break;
+            }
+          }
         ImGui::End(); // end window
         updateVisuals();
  
@@ -266,6 +294,9 @@ int main()
         //then lines, starting from the vert after the last point
         if (!no_edges)
           window.draw(vertices.data() + pointCount, vertices.size() - pointCount, sf::PrimitiveType::Lines);
+
+
+        window.draw(&v, 1, sf::PrimitiveType::Points);
 
         ImGui::SFML::Render(window);
         window.display();
