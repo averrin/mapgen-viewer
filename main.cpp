@@ -11,7 +11,7 @@
 #include <libnoise/noise.h>
 #include "noiseutils.h"
 
-constexpr int windowSize(900);
+int windowSize;
 
 int relax = 0;
 bool startOver = true;
@@ -58,8 +58,8 @@ void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& b
  
 int main()
 {
+  windowSize = 800;
 	int nPoints = 4000;
-	unsigned int dimension = windowSize;
   seed = std::clock();
 
   //the generator
@@ -113,11 +113,13 @@ int main()
 
     auto generateNewDiagram = [&]()
       {
+
+        bbox = sf::Rect<double>(0,0,windowSize,windowSize);
         startOver = false;
         relaxForever = false;
         relax = 0;
         sites = new std::vector<sf::Vector2<double>>();
-        genRandomSites(*sites, bbox, dimension, nPoints);
+        genRandomSites(*sites, bbox, windowSize, nPoints);
         timer.restart();
         diagram.reset(vdg.compute(*sites, bbox));
         auto duration = timer.getElapsedTime().asMilliseconds();
@@ -163,8 +165,7 @@ int main()
         writer.WriteDestFile ();
       };
 
-    generateNewDiagram();
-    generateHeight();
+
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
 
@@ -186,6 +187,10 @@ int main()
  
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
+    windowSize = window.getSize().x;
+
+    generateNewDiagram();
+    generateHeight();
     bool no_edges = false;
     bool no_dots = false;
     bool no_height = false;
@@ -241,10 +246,16 @@ int main()
         ImGui::SameLine(100);
         ImGui::Text("Relax iterations: %d", relax);
 
+        ImGui::Text("Window size: w:%d h:%d",
+                    window.getSize().x,
+                    window.getSize().y
+                    );
         ImGui::Text("Mouse coordinates: x:%d y:%d",
                     sf::Mouse::getPosition(window).x,
                     sf::Mouse::getPosition(window).y);
         sf::Vertex v;
+        sf::ConvexShape polygon;
+
         for (auto c : diagram->cells)
           {
             //red point for each cell site
@@ -260,15 +271,26 @@ int main()
               ImGui::Text("z"); ImGui::NextColumn();
               ImGui::Separator();
               static int selected = -1;
-              for (int i = 0; i < 5; i++)
+
+              polygon.setPointCount(int(c->getEdges().size()));
+              for (int i = 0; i < int(c->getEdges().size()); i++)
                 {
-                  if (ImGui::Selectable("", selected == i, ImGuiSelectableFlags_SpanAllColumns))
-                    selected = i;
-                  ImGui::NextColumn();
+                  sf::Vector2<double>* p0;
+                  p0 = c->getEdges()[i]->startPoint();
+                  // if (ImGui::Selectable("", selected == i, ImGuiSelectableFlags_SpanAllColumns))
+                  //   selected = i;
+                  // ImGui::NextColumn();
+                  ImGui::Text("%f", p0->x); ImGui::NextColumn();
+                  ImGui::Text("%f", p0->y); ImGui::NextColumn();
                   ImGui::Text("%d", 0); ImGui::NextColumn();
-                  ImGui::Text("%d", 0); ImGui::NextColumn();
-                  ImGui::Text("%d", 0); ImGui::NextColumn();
+
+                  polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
                 }
+
+              polygon.setOutlineColor(sf::Color::Black);
+              polygon.setOutlineThickness(1);
+              sf::Rect<double> r = c->getBoundingBox();
+              polygon.setPosition(r.left, r.top);
 
               break;
             }
@@ -297,6 +319,7 @@ int main()
 
 
         window.draw(&v, 1, sf::PrimitiveType::Points);
+        window.draw(polygon);
 
         ImGui::SFML::Render(window);
         window.display();
