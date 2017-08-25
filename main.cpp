@@ -8,11 +8,16 @@
 #include <SFML/Graphics.hpp>
 #include <VoronoiDiagramGenerator.h>
 
+#include <libnoise/noise.h>
+#include "noiseutils.h"
+
 constexpr int windowSize(900);
 
 int relax = 0;
 bool startOver = true;
 bool relaxForever = false;
+int seed;
+int octaves = 3;
 
 double normalize(double in, int dimension) 
 {
@@ -36,7 +41,7 @@ void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& b
 
   sf::Vector2<double> s;
 
-	srand(std::clock());
+	srand(seed);
 	for (unsigned int i = 0; i < numSites; ++i) {
 		s.x = 1 + (rand() / (double)RAND_MAX)*(dimension - 2);
 		s.y = 1 + (rand() / (double)RAND_MAX)*(dimension - 2);
@@ -53,15 +58,16 @@ void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& b
  
 int main()
 {
-	int nPoints = 2000;
+	int nPoints = 4000;
 	unsigned int dimension = 900;
+  seed = std::clock();
 
   //the generator
 	VoronoiDiagramGenerator vdg = VoronoiDiagramGenerator();
 
   //the generated diagram
 	std::unique_ptr<Diagram> diagram;
-	
+
   //sites used for generation
 	std::vector<sf::Vector2<double>>* sites;
 
@@ -98,11 +104,12 @@ int main()
                 sf::Vector2<double>& p2 = *e->vertB;
 
                 //white line for each edge
-                vertices.push_back({ { static_cast<float>(p1.x),static_cast<float>(p1.y) },sf::Color::White });
-                vertices.push_back({ { static_cast<float>(p2.x),static_cast<float>(p2.y) },sf::Color::White });
+                vertices.push_back({ { static_cast<float>(p1.x),static_cast<float>(p1.y) },sf::Color(150,150,150) });
+                vertices.push_back({ { static_cast<float>(p2.x),static_cast<float>(p2.y) },sf::Color(150,150,150) });
             }
         }
     };
+
 
     auto generateNewDiagram = [&]()
       {
@@ -116,17 +123,54 @@ int main()
         auto duration = timer.getElapsedTime().asMilliseconds();
         std::cout << "Computing a diagram of " << nPoints << " points took " << duration << "ms.\n";
         delete sites;
+
         updateVisuals();
       };
 
+    auto generateHeight = [&]()
+      {
+        module::Perlin myModule;
+        utils::NoiseMap heightMap;
+
+        utils::RendererImage renderer;
+        utils::Image image;
+
+        myModule.SetOctaveCount (octaves);
+        utils::NoiseMapBuilderPlane heightMapBuilder;
+        heightMapBuilder.SetSourceModule (myModule);
+        heightMapBuilder.SetDestNoiseMap (heightMap);
+        heightMapBuilder.SetDestSize (windowSize, windowSize);
+        heightMapBuilder.SetBounds (0.0, 10.0, 0.0, 10.0);
+        heightMapBuilder.Build ();
+
+        renderer.SetSourceNoiseMap (heightMap);
+        renderer.SetDestImage (image);
+        renderer.ClearGradient ();
+        renderer.AddGradientPoint (-1.0000, utils::Color (  0,   0, 128, 255)); // deeps
+        renderer.AddGradientPoint (-0.2500, utils::Color (  0,   0, 255, 255)); // shallow
+        renderer.AddGradientPoint ( 0.0000, utils::Color (  0, 128, 255, 255)); // shore
+        renderer.AddGradientPoint ( 0.0625, utils::Color (240, 240,  64, 255)); // sand
+        renderer.AddGradientPoint ( 0.1250, utils::Color ( 32, 160,   0, 255)); // grass
+        renderer.AddGradientPoint ( 0.3750, utils::Color (224, 224,   0, 255)); // dirt
+        renderer.AddGradientPoint ( 0.7500, utils::Color (128, 128, 128, 255)); // rock
+        renderer.AddGradientPoint ( 1.0000, utils::Color (255, 255, 255, 255)); // snow
+        renderer.EnableLight ();
+        renderer.Render ();
+
+        utils::WriterBMP writer;
+        writer.SetSourceImage (image);
+        writer.SetDestFilename ("height.bmp");
+        writer.WriteDestFile ();
+      };
+
     generateNewDiagram();
-
-    sf::RenderWindow window(sf::VideoMode(640, 480), "");
-    window.setVerticalSyncEnabled(true);
-    ImGui::SFML::Init(window);
-
+    generateHeight();
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
+
+    sf::RenderWindow window(sf::VideoMode(640, 480), "", sf::Style::Default, settings);
+    window.setVerticalSyncEnabled(true);
+    ImGui::SFML::Init(window);
  
     sf::Color bgColor;
  
@@ -147,6 +191,7 @@ int main()
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
     bool no_edges = false;
     bool no_dots = false;
+    bool no_height = false;
     sf::Clock deltaClock;
     while (window.isOpen()) {
         sf::Event event;
@@ -163,18 +208,33 @@ int main()
         ImGui::Begin("Mapgen"); // begin window
  
                                        // Background color edit
-        if (ImGui::ColorEdit3("Background color", color)) {
-            // this code gets called if color value changes, so
-            // the background color is upgraded automatically!
-            bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
-            bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
-            bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
-        }
+        // if (ImGui::ColorEdit3("Background color", color)) {
+        //     // this code gets called if color value changes, so
+        //     // the background color is upgraded automatically!
+        //     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
+        //     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
+        //     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
+        // }
         ImGui::Checkbox("No edges", &no_edges); ImGui::SameLine(150);
         ImGui::Checkbox("No dots", &no_dots);
+        ImGui::Checkbox("No height", &no_height);
  
-        if (ImGui::InputInt("Points", &nPoints)) {
+        if (ImGui::InputInt("Seed", &seed)) {
             generateNewDiagram();
+        }
+
+        if (ImGui::InputInt("Height octaves", &octaves)) {
+          if (octaves < 1) {
+            octaves = 1;
+          }
+          generateHeight();
+        }
+
+        if (ImGui::InputInt("Points", &nPoints)) {
+          if (nPoints < 1) {
+            nPoints = 1;
+          }
+          generateNewDiagram();
         }
 
         if (ImGui::Button("Relax")) {
@@ -182,12 +242,22 @@ int main()
           relax++;
         }
         ImGui::SameLine(100);
-        ImGui::Text("Relax iterations: %d", relax); // end window
+        ImGui::Text("Relax iterations: %d", relax);
+
+        ImGui::Text("Mouse coordinates: x:%d y:%d", sf::Mouse::getPosition(window).x,sf::Mouse::getPosition(window).y);
         ImGui::End(); // end window
         updateVisuals();
  
         window.clear(bgColor); // fill background with color
 
+
+        if (!no_height) {
+          sf::Texture texture;
+          texture.loadFromFile("height.bmp");
+          sf::Sprite sprite;
+          sprite.setTexture(texture, true);
+          window.draw(sprite);
+        }
 
         auto pointCount = diagram->cells.size();
         if (!no_dots)

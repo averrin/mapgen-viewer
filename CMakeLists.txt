@@ -9,7 +9,31 @@ endif()
 # (you can also set it on the command line: -D CMAKE_BUILD_TYPE=Release)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
+ 
 file(GLOB VLIB_SOURCE "Voronoi/src/*.cpp" "Voronoi/include/*.h")
+# Enable warnings
+IF (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUC)
+  # use -Wall for gcc
+  IF(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  ENDIF(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
+
+  IF(NOT CMAKE_C_FLAGS MATCHES "-Wall$")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+  ENDIF(NOT CMAKE_C_FLAGS MATCHES "-Wall$")
+ENDIF (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUC)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_definitions(
+	-DTW_STATIC
+	-DTW_NO_LIB_PRAGMA
+	-DTW_NO_DIRECT3D
+	-D_CRT_SECURE_NO_WARNINGS
+)
 
 project(mapgen)
 
@@ -23,6 +47,7 @@ add_executable(${EXECUTABLE_NAME}
   imgui/imgui-SFML.cpp
   imgui/imgui_draw.cpp
   main.cpp
+  noiseutils.cpp
 )
 
 # Without this, #include <imgui> won't work.
@@ -48,7 +73,7 @@ if (OPENGL_FOUND)
   target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES})
 endif()
 
-target_link_libraries(${EXECUTABLE_NAME} voronoi)
+target_link_libraries(${EXECUTABLE_NAME} voronoi noise)
 
 target_compile_features(mapgen PRIVATE cxx_delegating_constructors)
 

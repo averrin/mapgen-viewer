@@ -450,6 +450,33 @@ main.cpp.s:
 	$(MAKE) -f CMakeFiles/mapgen.dir/build.make CMakeFiles/mapgen.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+noiseutils.o: noiseutils.cpp.o
+
+.PHONY : noiseutils.o
+
+# target to build an object file
+noiseutils.cpp.o:
+	$(MAKE) -f CMakeFiles/mapgen.dir/build.make CMakeFiles/mapgen.dir/noiseutils.cpp.o
+.PHONY : noiseutils.cpp.o
+
+noiseutils.i: noiseutils.cpp.i
+
+.PHONY : noiseutils.i
+
+# target to preprocess a source file
+noiseutils.cpp.i:
+	$(MAKE) -f CMakeFiles/mapgen.dir/build.make CMakeFiles/mapgen.dir/noiseutils.cpp.i
+.PHONY : noiseutils.cpp.i
+
+noiseutils.s: noiseutils.cpp.s
+
+.PHONY : noiseutils.s
+
+# target to generate assembly for a file
+noiseutils.cpp.s:
+	$(MAKE) -f CMakeFiles/mapgen.dir/build.make CMakeFiles/mapgen.dir/noiseutils.cpp.s
+.PHONY : noiseutils.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -494,6 +521,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... noiseutils.o"
+	@echo "... noiseutils.i"
+	@echo "... noiseutils.s"
 .PHONY : help
 
 
