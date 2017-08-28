@@ -1,4 +1,5 @@
 #include <memory>
+#include <map>
 #include "imgui.h"
 #include "imgui-SFML.h"
  
@@ -18,6 +19,8 @@ bool startOver = true;
 bool relaxForever = false;
 int seed;
 int octaves = 3;
+float freq = 1.0;
+std::map<sf::Vector2<double>*,float> heights;
 
 double normalize(double in, int dimension) 
 {
@@ -80,6 +83,13 @@ int main()
   //used to draw the diagram
   std::vector<sf::Vertex> vertices;
 
+  module::Perlin myModule;
+  utils::NoiseMap heightMap;
+
+  utils::RendererImage renderer;
+  utils::Image image;
+
+
 
     auto updateVisuals = [&]()
     {
@@ -131,13 +141,9 @@ int main()
 
     auto generateHeight = [&]()
       {
-        module::Perlin myModule;
-        utils::NoiseMap heightMap;
-
-        utils::RendererImage renderer;
-        utils::Image image;
-
+        myModule.SetSeed(seed);
         myModule.SetOctaveCount (octaves);
+        myModule.SetFrequency (freq);
         utils::NoiseMapBuilderPlane heightMapBuilder;
         heightMapBuilder.SetSourceModule (myModule);
         heightMapBuilder.SetDestNoiseMap (heightMap);
@@ -169,7 +175,7 @@ int main()
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
 
-    sf::RenderWindow window(sf::VideoMode(windowSize, windowSize), "", sf::Style::Default, settings);
+    sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "", sf::Style::Default, settings);
     window.setVerticalSyncEnabled(true);
     ImGui::SFML::Init(window);
  
@@ -183,7 +189,7 @@ int main()
  
     // let's use char array as buffer, see next part
     // for instructions on using std::string with ImGui
-    char windowTitle[255] = "ImGui + SFML = <3";
+    char windowTitle[255] = "MapGen";
  
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
@@ -202,6 +208,11 @@ int main()
  
             if (event.type == sf::Event::Closed) {
                 window.close();
+            }
+
+            if (event.type == sf::Event::Resized) {
+              windowSize = window.getSize().x;
+              updateVisuals();
             }
         }
  
@@ -222,12 +233,25 @@ int main()
         ImGui::Checkbox("No height", &no_height);
  
         if (ImGui::InputInt("Seed", &seed)) {
-            generateNewDiagram();
+          generateNewDiagram();
+          generateHeight();
+        }
+        if (ImGui::Button("Random")) {
+          seed = std::clock();
+          generateNewDiagram();
+          generateHeight();
         }
 
         if (ImGui::InputInt("Height octaves", &octaves)) {
           if (octaves < 1) {
             octaves = 1;
+          }
+          generateHeight();
+        }
+
+        if (ImGui::InputFloat("Height freq", &freq)) {
+          if (freq < 0) {
+            freq = 0;
           }
           generateHeight();
         }
@@ -250,16 +274,18 @@ int main()
                     window.getSize().x,
                     window.getSize().y
                     );
-        ImGui::Text("Mouse coordinates: x:%d y:%d",
-                    sf::Mouse::getPosition(window).x,
-                    sf::Mouse::getPosition(window).y);
+
+        sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+        ImGui::Text("Mouse: x:%f y:%f",
+                    pos.x,
+                    pos.y);
         sf::Vertex v;
         sf::ConvexShape polygon;
 
         for (auto c : diagram->cells)
           {
             //red point for each cell site
-            if(c->pointIntersection(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y) != -1) {
+            if(c->pointIntersection(pos.x, pos.y) != -1) {
               sf::Vector2<double>& p = c->site.p;
               v = sf::Vertex({{static_cast<float>(p.x), static_cast<float>(p.y)}, sf::Color::Green});
               ImGui::Text("Cell: x:%f y:%f", p.x, p.y);
@@ -273,16 +299,24 @@ int main()
               static int selected = -1;
 
               polygon.setPointCount(int(c->getEdges().size()));
+
+              heights.insert(std::make_pair(&p, heightMap.GetValue(p.x, p.y)));
+              ImGui::Text("%f", p.x); ImGui::NextColumn();
+              ImGui::Text("%f", p.y); ImGui::NextColumn();
+              ImGui::Text("%f", heights[&p]); ImGui::NextColumn();
+
               for (int i = 0; i < int(c->getEdges().size()); i++)
                 {
                   sf::Vector2<double>* p0;
                   p0 = c->getEdges()[i]->startPoint();
+
+                  heights.insert(std::make_pair(p0, heightMap.GetValue(p0->x, p0->y)));
                   // if (ImGui::Selectable("", selected == i, ImGuiSelectableFlags_SpanAllColumns))
                   //   selected = i;
                   // ImGui::NextColumn();
                   ImGui::Text("%f", p0->x); ImGui::NextColumn();
                   ImGui::Text("%f", p0->y); ImGui::NextColumn();
-                  ImGui::Text("%d", 0); ImGui::NextColumn();
+                  ImGui::Text("%f", heights[p0]); ImGui::NextColumn();
 
                   polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
                 }
@@ -290,7 +324,7 @@ int main()
               polygon.setOutlineColor(sf::Color::Black);
               polygon.setOutlineThickness(1);
               sf::Rect<double> r = c->getBoundingBox();
-              polygon.setPosition(r.left, r.top);
+              polygon.setPosition(r.left-p.x+r.height/2, r.top-p.y+r.width/2);
 
               break;
             }
