@@ -141,6 +141,7 @@ int main()
 
     auto generateHeight = [&]()
       {
+        heights.clear();
         myModule.SetSeed(seed);
         myModule.SetOctaveCount (octaves);
         myModule.SetFrequency (freq);
@@ -151,24 +152,25 @@ int main()
         heightMapBuilder.SetBounds (0.0, 10.0, 0.0, 10.0);
         heightMapBuilder.Build ();
 
-        renderer.SetSourceNoiseMap (heightMap);
-        renderer.SetDestImage (image);
-        renderer.ClearGradient ();
-        renderer.AddGradientPoint (-1.0000, utils::Color (  0,   0, 128, 255)); // deeps
-        renderer.AddGradientPoint (-0.2500, utils::Color (  0,   0, 255, 255)); // shallow
-        renderer.AddGradientPoint ( 0.0000, utils::Color (  0, 128, 255, 255)); // shore
-        renderer.AddGradientPoint ( 0.0625, utils::Color (240, 240,  64, 255)); // sand
-        renderer.AddGradientPoint ( 0.1250, utils::Color ( 32, 160,   0, 255)); // grass
-        renderer.AddGradientPoint ( 0.3750, utils::Color (224, 224,   0, 255)); // dirt
-        renderer.AddGradientPoint ( 0.7500, utils::Color (128, 128, 128, 255)); // rock
-        renderer.AddGradientPoint ( 1.0000, utils::Color (255, 255, 255, 255)); // snow
-        renderer.EnableLight ();
-        renderer.Render ();
+        // renderer.SetSourceNoiseMap (heightMap);
+        // renderer.SetDestImage (image);
+        // renderer.ClearGradient ();
+        // renderer.AddGradientPoint (-1.0000, utils::Color (  0,   0, 128, 255)); // deeps
+        // renderer.AddGradientPoint (-0.2500, utils::Color (  0,   0, 255, 255)); // shallow
+        // renderer.AddGradientPoint ( 0.0000, utils::Color (  0, 128, 255, 255)); // shore
+        // renderer.AddGradientPoint ( 0.0625, utils::Color (240, 240,  64, 255)); // sand
+        // renderer.AddGradientPoint ( 0.1250, utils::Color ( 32, 160,   0, 255)); // grass
+        // renderer.AddGradientPoint ( 0.3750, utils::Color (224, 224,   0, 255)); // dirt
+        // renderer.AddGradientPoint ( 0.7500, utils::Color (128, 128, 128, 255)); // rock
+        // renderer.AddGradientPoint ( 1.0000, utils::Color (255, 255, 255, 255)); // snow
+        // renderer.EnableLight ();
+        // renderer.Render ();
 
-        utils::WriterBMP writer;
-        writer.SetSourceImage(image);
-        writer.SetDestFilename("height.bmp");
-        writer.WriteDestFile ();
+        // utils::WriterBMP writer;
+        // writer.SetSourceImage(image);
+        // writer.SetDestFilename("height.bmp");
+        // writer.WriteDestFile ();
+
       };
 
 
@@ -230,7 +232,7 @@ int main()
         // }
         ImGui::Checkbox("No edges", &no_edges); ImGui::SameLine(150);
         ImGui::Checkbox("No dots", &no_dots);
-        ImGui::Checkbox("No height", &no_height);
+        // ImGui::Checkbox("No height", &no_height);
  
         if (ImGui::InputInt("Seed", &seed)) {
           generateNewDiagram();
@@ -321,10 +323,38 @@ int main()
                   polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
                 }
 
-              polygon.setOutlineColor(sf::Color::Black);
-              polygon.setOutlineThickness(1);
-              sf::Rect<double> r = c->getBoundingBox();
-              polygon.setPosition(r.left-p.x+r.height/2, r.top-p.y+r.width/2);
+              sf::Color color;
+              std::array<float, 8> b = {
+                -1.0000,
+                -0.2500,
+                  0.0000,
+                  0.0625,
+                  0.1250,
+                  0.3750,
+                  0.7500,
+                  1.0000,
+              };
+
+              std::array<sf::Color, 8> c = {
+                sf::Color(  0,   0, 128),
+                sf::Color(  0,   0, 255),
+                sf::Color(  0, 128, 255),
+                sf::Color(240, 240,  64),
+                sf::Color( 32, 160,   0),
+                sf::Color(224, 224,   0),
+                sf::Color(128, 128, 128),
+                sf::Color(255, 255, 255),
+              };
+              for (int i = 0; i < 8; i++)
+                {
+                  if (heights[&p]>b[i]) {
+                    color = c[i];
+                  }
+                }
+
+              polygon.setFillColor(color);
+              // polygon.setOutlineColor(color);
+              // polygon.setOutlineThickness(1);
 
               break;
             }
@@ -335,13 +365,13 @@ int main()
         window.clear(bgColor); // fill background with color
 
 
-        if (!no_height) {
-          sf::Texture texture;
-          texture.loadFromFile("height.bmp");
-          sf::Sprite sprite;
-          sprite.setTexture(texture, true);
-          window.draw(sprite);
-        }
+        // if (!no_height) {
+        //   sf::Texture texture;
+        //   texture.loadFromFile("height.bmp");
+        //   sf::Sprite sprite;
+        //   sprite.setTexture(texture, true);
+        //   window.draw(sprite);
+        // }
 
         auto pointCount = diagram->cells.size();
         if (!no_dots)
