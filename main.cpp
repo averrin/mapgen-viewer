@@ -16,14 +16,34 @@ int windowSize;
 
 int relax = 0;
 bool startOver = true;
-bool relaxForever = false;
 int seed;
 int octaves = 3;
-float freq = 1.0;
+float freq = 0.3;
 std::map<sf::Vector2<double>*,float> heights;
 
-double normalize(double in, int dimension) 
-{
+const std::array<float, 8> borders = {
+  -1.0000,
+  -0.2500,
+  0.0000,
+  0.0625,
+  0.1250,
+  0.3750,
+  0.7500,
+  1.0000,
+};
+
+const std::array<sf::Color, 8> colors = {
+  sf::Color(  0,   0, 128),
+  sf::Color(  0,   0, 255),
+  sf::Color(  0, 128, 255),
+  sf::Color(240, 240,  64),
+  sf::Color( 32, 160,   0),
+  sf::Color(224, 224,   0),
+  sf::Color(128, 128, 128),
+  sf::Color(255, 255, 255),
+};
+
+double normalize(double in, int dimension) {
 	return in / (float)dimension*1.8 - 0.9;
 }
 
@@ -62,7 +82,7 @@ void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& b
 int main()
 {
   windowSize = 800;
-	int nPoints = 4000;
+	int nPoints = 10000;
   seed = std::clock();
 
   //the generator
@@ -89,44 +109,59 @@ int main()
   utils::RendererImage renderer;
   utils::Image image;
 
+  sf::ContextSettings settings;
+  settings.antialiasingLevel = 8;
+
+  sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "", sf::Style::Default, settings);
+  window.setVerticalSyncEnabled(true);
+  ImGui::SFML::Init(window);
+
+
+
+  std::vector<sf::ConvexShape> polygons;
 
 
     auto updateVisuals = [&]()
     {
-        //clear first
-        vertices.clear();
 
-        //then reserve the correct amount of verts
-        // one point for each cell, and one line (2 verts) for each edge
-        vertices.reserve(diagram->cells.size() + (diagram->edges.size() * 2));
-        for (auto c : diagram->cells)
-        {
-            //red point for each cell site
-            sf::Vector2<double>& p = c->site.p;
-            vertices.push_back({{ static_cast<float>(p.x),static_cast<float>(p.y)}, sf::Color::Red});
-        }
+      polygons.clear();
+      polygons.reserve(diagram->cells.size());
+      for (auto c : diagram->cells) {
+        sf::ConvexShape polygon;
+        polygon.setPointCount(int(c->getEdges().size()));
 
-        for (Edge* e : diagram->edges)
-        {
-            if (e->vertA && e->vertB)
-            {
-                sf::Vector2<double>& p1 = *e->vertA;
-                sf::Vector2<double>& p2 = *e->vertB;
+        float ht = 0;
+        for (int i = 0; i < int(c->getEdges().size()); i++)
+          {
+            sf::Vector2<double>* p0;
+            p0 = c->getEdges()[i]->startPoint();
 
-                //white line for each edge
-                vertices.push_back({ { static_cast<float>(p1.x),static_cast<float>(p1.y) },sf::Color(150,150,150) });
-                vertices.push_back({ { static_cast<float>(p2.x),static_cast<float>(p2.y) },sf::Color(150,150,150) });
+            heights.insert(std::make_pair(p0, heightMap.GetValue(p0->x, p0->y)));
+            polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
+            ht += heights[p0];
+          }
+        ht = ht/c->getEdges().size();
+        sf::Vector2<double>& p = c->site.p;
+        heights.insert(std::make_pair(&p, ht));
+
+        sf::Color color;
+        for (int i = 0; i < 8; i++)
+          {
+            if (ht>borders[i]) {
+              color = colors[i];
             }
-        }
+          }
+
+        polygon.setFillColor(color);
+        polygons.push_back(polygon);
+      }
     };
 
 
     auto generateNewDiagram = [&]()
       {
-
-        bbox = sf::Rect<double>(0,0,windowSize,windowSize);
+        bbox = sf::Rect<double>(0,0,window.getSize().x, window.getSize().y);
         startOver = false;
-        relaxForever = false;
         relax = 0;
         sites = new std::vector<sf::Vector2<double>>();
         genRandomSites(*sites, bbox, windowSize, nPoints);
@@ -135,8 +170,6 @@ int main()
         auto duration = timer.getElapsedTime().asMilliseconds();
         std::cout << "Computing a diagram of " << nPoints << " points took " << duration << "ms.\n";
         delete sites;
-
-        updateVisuals();
       };
 
     auto generateHeight = [&]()
@@ -151,35 +184,9 @@ int main()
         heightMapBuilder.SetDestSize (windowSize, windowSize);
         heightMapBuilder.SetBounds (0.0, 10.0, 0.0, 10.0);
         heightMapBuilder.Build ();
-
-        // renderer.SetSourceNoiseMap (heightMap);
-        // renderer.SetDestImage (image);
-        // renderer.ClearGradient ();
-        // renderer.AddGradientPoint (-1.0000, utils::Color (  0,   0, 128, 255)); // deeps
-        // renderer.AddGradientPoint (-0.2500, utils::Color (  0,   0, 255, 255)); // shallow
-        // renderer.AddGradientPoint ( 0.0000, utils::Color (  0, 128, 255, 255)); // shore
-        // renderer.AddGradientPoint ( 0.0625, utils::Color (240, 240,  64, 255)); // sand
-        // renderer.AddGradientPoint ( 0.1250, utils::Color ( 32, 160,   0, 255)); // grass
-        // renderer.AddGradientPoint ( 0.3750, utils::Color (224, 224,   0, 255)); // dirt
-        // renderer.AddGradientPoint ( 0.7500, utils::Color (128, 128, 128, 255)); // rock
-        // renderer.AddGradientPoint ( 1.0000, utils::Color (255, 255, 255, 255)); // snow
-        // renderer.EnableLight ();
-        // renderer.Render ();
-
-        // utils::WriterBMP writer;
-        // writer.SetSourceImage(image);
-        // writer.SetDestFilename("height.bmp");
-        // writer.WriteDestFile ();
-
       };
 
 
-    sf::ContextSettings settings;
-    settings.antialiasingLevel = 8;
-
-    sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "", sf::Style::Default, settings);
-    window.setVerticalSyncEnabled(true);
-    ImGui::SFML::Init(window);
  
     sf::Color bgColor;
  
@@ -221,18 +228,6 @@ int main()
         ImGui::SFML::Update(window, deltaClock.restart());
  
         ImGui::Begin("Mapgen"); // begin window
- 
-                                       // Background color edit
-        // if (ImGui::ColorEdit3("Background color", color)) {
-        //     // this code gets called if color value changes, so
-        //     // the background color is upgraded automatically!
-        //     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
-        //     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
-        //     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
-        // }
-        ImGui::Checkbox("No edges", &no_edges); ImGui::SameLine(150);
-        ImGui::Checkbox("No dots", &no_dots);
-        // ImGui::Checkbox("No height", &no_height);
  
         if (ImGui::InputInt("Seed", &seed)) {
           generateNewDiagram();
@@ -284,6 +279,9 @@ int main()
         sf::Vertex v;
         sf::ConvexShape polygon;
 
+        updateVisuals();
+
+        int n = 0;
         for (auto c : diagram->cells)
           {
             //red point for each cell site
@@ -300,89 +298,36 @@ int main()
               ImGui::Separator();
               static int selected = -1;
 
-              polygon.setPointCount(int(c->getEdges().size()));
 
-              heights.insert(std::make_pair(&p, heightMap.GetValue(p.x, p.y)));
               ImGui::Text("%f", p.x); ImGui::NextColumn();
               ImGui::Text("%f", p.y); ImGui::NextColumn();
               ImGui::Text("%f", heights[&p]); ImGui::NextColumn();
 
-              for (int i = 0; i < int(c->getEdges().size()); i++)
+
+              sf::ConvexShape poly= polygons[n];
+              polygon.setPointCount(poly.getPointCount());
+
+              for (int pi = 0; pi < int(poly.getPointCount()); pi++)
                 {
-                  sf::Vector2<double>* p0;
-                  p0 = c->getEdges()[i]->startPoint();
-
-                  heights.insert(std::make_pair(p0, heightMap.GetValue(p0->x, p0->y)));
-                  // if (ImGui::Selectable("", selected == i, ImGuiSelectableFlags_SpanAllColumns))
-                  //   selected = i;
-                  // ImGui::NextColumn();
-                  ImGui::Text("%f", p0->x); ImGui::NextColumn();
-                  ImGui::Text("%f", p0->y); ImGui::NextColumn();
-                  ImGui::Text("%f", heights[p0]); ImGui::NextColumn();
-
-                  polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
+                  polygon.setPoint(pi, poly.getPoint(pi));
                 }
-
-              sf::Color color;
-              std::array<float, 8> b = {
-                -1.0000,
-                -0.2500,
-                  0.0000,
-                  0.0625,
-                  0.1250,
-                  0.3750,
-                  0.7500,
-                  1.0000,
-              };
-
-              std::array<sf::Color, 8> c = {
-                sf::Color(  0,   0, 128),
-                sf::Color(  0,   0, 255),
-                sf::Color(  0, 128, 255),
-                sf::Color(240, 240,  64),
-                sf::Color( 32, 160,   0),
-                sf::Color(224, 224,   0),
-                sf::Color(128, 128, 128),
-                sf::Color(255, 255, 255),
-              };
-              for (int i = 0; i < 8; i++)
-                {
-                  if (heights[&p]>b[i]) {
-                    color = c[i];
-                  }
-                }
-
-              polygon.setFillColor(color);
-              // polygon.setOutlineColor(color);
-              // polygon.setOutlineThickness(1);
+              polygon.setFillColor(sf::Color::Transparent);
+              polygon.setOutlineColor(sf::Color::Blue);
+              polygon.setOutlineThickness(1);
 
               break;
             }
+            n++;
           }
         ImGui::End(); // end window
-        updateVisuals();
  
         window.clear(bgColor); // fill background with color
 
+        int i = 0;
+        for(std::vector<sf::ConvexShape>::iterator it=polygons.begin() ; it < polygons.end(); it++, i++) {
+          window.draw(polygons[i]);
+        }
 
-        // if (!no_height) {
-        //   sf::Texture texture;
-        //   texture.loadFromFile("height.bmp");
-        //   sf::Sprite sprite;
-        //   sprite.setTexture(texture, true);
-        //   window.draw(sprite);
-        // }
-
-        auto pointCount = diagram->cells.size();
-        if (!no_dots)
-          window.draw(vertices.data(), pointCount,sf::PrimitiveType::Points);
-
-        //then lines, starting from the vert after the last point
-        if (!no_edges)
-          window.draw(vertices.data() + pointCount, vertices.size() - pointCount, sf::PrimitiveType::Lines);
-
-
-        window.draw(&v, 1, sf::PrimitiveType::Points);
         window.draw(polygon);
 
         ImGui::SFML::Render(window);
