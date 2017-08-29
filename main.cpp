@@ -12,10 +12,7 @@
 #include <libnoise/noise.h>
 #include "noiseutils.h"
 
-int windowSize;
-
 int relax = 0;
-bool startOver = true;
 int seed;
 int octaves = 3;
 float freq = 0.3;
@@ -56,7 +53,7 @@ bool sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2) 
 	return false;
 }
 
-void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& bbox, unsigned int dimension, unsigned int numSites) {
+void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites) {
 	std::vector<sf::Vector2<double>> tmpSites;
 
 	tmpSites.reserve(numSites);
@@ -66,8 +63,8 @@ void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& b
 
 	srand(seed);
 	for (unsigned int i = 0; i < numSites; ++i) {
-		s.x = 1 + (rand() / (double)RAND_MAX)*(dimension - 2);
-		s.y = 1 + (rand() / (double)RAND_MAX)*(dimension - 2);
+		s.x = 1 + (rand() / (double)RAND_MAX)*(dx - 2);
+		s.y = 1 + (rand() / (double)RAND_MAX)*(dy - 2);
 		tmpSites.push_back(s);
 	}
 
@@ -81,9 +78,12 @@ void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& b
  
 int main()
 {
-  windowSize = 800;
 	int nPoints = 10000;
   seed = std::clock();
+  sf::ContextSettings settings;
+  settings.antialiasingLevel = 8;
+
+  sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "", sf::Style::Default, settings);
 
   //the generator
 	VoronoiDiagramGenerator vdg = VoronoiDiagramGenerator();
@@ -95,7 +95,7 @@ int main()
 	std::vector<sf::Vector2<double>>* sites;
 
   //maximum bounds for the diagram
-	sf::Rect<double> bbox(0,0,windowSize,windowSize);
+	sf::Rect<double> bbox(0,0,window.getSize().x, window.getSize().y);
 
   //used to measure generation time
   sf::Clock timer;
@@ -109,21 +109,13 @@ int main()
   utils::RendererImage renderer;
   utils::Image image;
 
-  sf::ContextSettings settings;
-  settings.antialiasingLevel = 8;
-
-  sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "", sf::Style::Default, settings);
   window.setVerticalSyncEnabled(true);
   ImGui::SFML::Init(window);
 
-
-
   std::vector<sf::ConvexShape> polygons;
 
-
-    auto updateVisuals = [&]()
+  auto updateVisuals = [&]()
     {
-
       polygons.clear();
       polygons.reserve(diagram->cells.size());
       for (auto c : diagram->cells) {
@@ -157,19 +149,19 @@ int main()
       }
     };
 
-
     auto generateNewDiagram = [&]()
       {
         bbox = sf::Rect<double>(0,0,window.getSize().x, window.getSize().y);
-        startOver = false;
-        relax = 0;
+        relax = 1;
         sites = new std::vector<sf::Vector2<double>>();
-        genRandomSites(*sites, bbox, windowSize, nPoints);
+        genRandomSites(*sites, bbox, window.getSize().x, window.getSize().y, nPoints);
         timer.restart();
         diagram.reset(vdg.compute(*sites, bbox));
+        // diagram.reset(vdg.relax());
         auto duration = timer.getElapsedTime().asMilliseconds();
         std::cout << "Computing a diagram of " << nPoints << " points took " << duration << "ms.\n";
         delete sites;
+        updateVisuals();
       };
 
     auto generateHeight = [&]()
@@ -181,15 +173,12 @@ int main()
         utils::NoiseMapBuilderPlane heightMapBuilder;
         heightMapBuilder.SetSourceModule (myModule);
         heightMapBuilder.SetDestNoiseMap (heightMap);
-        heightMapBuilder.SetDestSize (windowSize, windowSize);
+        heightMapBuilder.SetDestSize (window.getSize().x, window.getSize().y);
         heightMapBuilder.SetBounds (0.0, 10.0, 0.0, 10.0);
         heightMapBuilder.Build ();
       };
 
-
- 
     sf::Color bgColor;
- 
     float color[3] = { 0.1, 0.1, 0.1 };
 
     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
@@ -202,13 +191,10 @@ int main()
  
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
-    windowSize = window.getSize().x;
 
-    generateNewDiagram();
     generateHeight();
-    bool no_edges = false;
-    bool no_dots = false;
-    bool no_height = false;
+    generateNewDiagram();
+
     sf::Clock deltaClock;
     while (window.isOpen()) {
         sf::Event event;
@@ -220,7 +206,6 @@ int main()
             }
 
             if (event.type == sf::Event::Resized) {
-              windowSize = window.getSize().x;
               updateVisuals();
             }
         }
@@ -279,7 +264,6 @@ int main()
         sf::Vertex v;
         sf::ConvexShape polygon;
 
-        updateVisuals();
 
         int n = 0;
         for (auto c : diagram->cells)
@@ -298,7 +282,6 @@ int main()
               ImGui::Separator();
               static int selected = -1;
 
-
               ImGui::Text("%f", p.x); ImGui::NextColumn();
               ImGui::Text("%f", p.y); ImGui::NextColumn();
               ImGui::Text("%f", heights[&p]); ImGui::NextColumn();
@@ -312,7 +295,7 @@ int main()
                   polygon.setPoint(pi, poly.getPoint(pi));
                 }
               polygon.setFillColor(sf::Color::Transparent);
-              polygon.setOutlineColor(sf::Color::Blue);
+              polygon.setOutlineColor(sf::Color::Red);
               polygon.setOutlineThickness(1);
 
               break;
