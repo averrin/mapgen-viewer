@@ -48,6 +48,8 @@ add_executable(${EXECUTABLE_NAME}
   imgui/imgui_draw.cpp
   main.cpp
   noiseutils.cpp
+  MapGenerator.cpp
+  Region.cpp
 )
 
 # Without this, #include <imgui> won't work.

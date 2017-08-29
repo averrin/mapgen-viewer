@@ -30,12 +30,12 @@ const std::array<float, 8> borders = {
 };
 
 const std::array<sf::Color, 8> colors = {
-  sf::Color(  0,   0, 128),
-  sf::Color(  0,   0, 255),
-  sf::Color(  0, 128, 255),
-  sf::Color(240, 240,  64),
-  sf::Color( 32, 160,   0),
-  sf::Color(224, 224,   0),
+  sf::Color( 39,  39,  70),
+  sf::Color( 51,  51,  91),
+  sf::Color( 91, 132, 173),
+  sf::Color(210, 185, 139),
+  sf::Color(136, 170,  85),
+  sf::Color( 51, 119,  85),
   sf::Color(128, 128, 128),
   sf::Color(255, 255, 255),
 };
@@ -136,7 +136,7 @@ int main()
         sf::Vector2<double>& p = c->site.p;
         heights.insert(std::make_pair(&p, ht));
 
-        sf::Color color;
+        sf::Color color = sf::Color( 23,  23,  40);
         for (int i = 0; i < 8; i++)
           {
             if (ht>borders[i]) {
@@ -157,7 +157,6 @@ int main()
         genRandomSites(*sites, bbox, window.getSize().x, window.getSize().y, nPoints);
         timer.restart();
         diagram.reset(vdg.compute(*sites, bbox));
-        // diagram.reset(vdg.relax());
         auto duration = timer.getElapsedTime().asMilliseconds();
         std::cout << "Computing a diagram of " << nPoints << " points took " << duration << "ms.\n";
         delete sites;
@@ -248,6 +247,7 @@ int main()
         if (ImGui::Button("Relax")) {
           diagram.reset(vdg.relax());
           relax++;
+          updateVisuals();
         }
         ImGui::SameLine(100);
         ImGui::Text("Relax iterations: %d", relax);
@@ -256,6 +256,10 @@ int main()
                     window.getSize().x,
                     window.getSize().y
                     );
+        if (ImGui::Button("+1000")) {
+          nPoints+=1000;
+          generateNewDiagram();
+        }
 
         sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
         ImGui::Text("Mouse: x:%f y:%f",
