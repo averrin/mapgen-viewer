@@ -1,64 +1,59 @@
-#Change this if you need to target a specific CMake version
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
-# Enable debug symbols by default
-# must be done before project() statement
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
 endif()
 # (you can also set it on the command line: -D CMAKE_BUILD_TYPE=Release)
 
+project(mapgen)
+set (mapgen_VERSION_MAJOR 0)
+set (mapgen_VERSION_MINOR 1)
+
+file(GLOB SOURCE "src/*.cpp" "include/mapgen/*.h")
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/MapgenConfig.h.in"
+  "${PROJECT_BINARY_DIR}/MapgenConfig.h"
+  )
+
+include_directories(
+  ${PROJECT_BINARY_DIR}
+  "${PROJECT_BINARY_DIR}/include"
+  "${PROJECT_BINARY_DIR}/include/imgui"
+  "${PROJECT_BINARY_DIR}/include/Voronoi/include")
+
+file(GLOB VLIB_SOURCE "${PROJECT_BINARY_DIR}/include/Voronoi/src/*.cpp" "${PROJECT_BINARY_DIR}/include/Voronoi/include/*.h")
+add_library(voronoi ${VLIB_SOURCE})
+file(GLOB IMLIB_SOURCE "${PROJECT_BINARY_DIR}/include/imgui/*.cpp" "${PROJECT_BINARY_DIR}/include/imgui/*.h")
+add_library(imgui ${VLIB_SOURCE})
+
+set(EXECUTABLE_NAME "mapgen")
+add_executable(${EXECUTABLE_NAME}
+  include/imgui/imgui.cpp
+  include/imgui/imgui_draw.cpp
+  include/imgui/imgui-SFML.cpp
+  src/main.cpp
+  src/noiseutils.cpp
+  # src/MapGenerator.cpp
+  # src/Region.cpp
+)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
- 
-file(GLOB VLIB_SOURCE "Voronoi/src/*.cpp" "Voronoi/include/*.h")
-# Enable warnings
-IF (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUC)
-  # use -Wall for gcc
-  IF(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-  ENDIF(NOT CMAKE_CXX_FLAGS MATCHES "-Wall$")
-
-  IF(NOT CMAKE_C_FLAGS MATCHES "-Wall$")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
-  ENDIF(NOT CMAKE_C_FLAGS MATCHES "-Wall$")
-ENDIF (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUC)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_definitions(
-	-DTW_STATIC
-	-DTW_NO_LIB_PRAGMA
-	-DTW_NO_DIRECT3D
-	-D_CRT_SECURE_NO_WARNINGS
-)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
-project(mapgen)
 
 add_definitions("-Wall")
 add_definitions("-Werror")
 
-# Define sources and executable
-set(EXECUTABLE_NAME "mapgen")
-add_executable(${EXECUTABLE_NAME} 
-  imgui/imgui.cpp
-  imgui/imgui-SFML.cpp
-  imgui/imgui_draw.cpp
-  main.cpp
-  noiseutils.cpp
-  MapGenerator.cpp
-  Region.cpp
-)
-
-# Without this, #include <imgui> won't work.
-include_directories("imgui" "Voronoi/include")
-
-add_library(voronoi ${VLIB_SOURCE})
-
-
 # Detect and add SFML
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules" ${CMAKE_MODULE_PATH})
 #Find any version 2.X of SFML
 #See the FindSFML.cmake file for additional details and instructions
@@ -75,7 +70,7 @@ if (OPENGL_FOUND)
   target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES})
 endif()
 
-target_link_libraries(${EXECUTABLE_NAME} voronoi noise)
+target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui)
 
 target_compile_features(mapgen PRIVATE cxx_delegating_constructors)
 

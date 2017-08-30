@@ -25,7 +25,7 @@
 #include <libnoise/interp.h>
 #include <libnoise/mathconsts.h>
 
-#include "noiseutils.h"
+#include "noise/noiseutils.h"
 
 using namespace noise;
 using namespace noise::model;

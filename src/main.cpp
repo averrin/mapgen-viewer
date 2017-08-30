@@ -1,7 +1,7 @@
 #include <memory>
 #include <map>
-#include "imgui.h"
-#include "imgui-SFML.h"
+#include <imgui.h>
+#include <imgui-SFML.h>
  
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
@@ -10,7 +10,7 @@
 #include <VoronoiDiagramGenerator.h>
 
 #include <libnoise/noise.h>
-#include "noiseutils.h"
+#include "noise/noiseutils.h"
 
 int relax = 0;
 int seed;
@@ -37,7 +37,7 @@ const std::array<sf::Color, 8> colors = {
   sf::Color(136, 170,  85),
   sf::Color( 51, 119,  85),
   sf::Color(128, 128, 128),
-  sf::Color(255, 255, 255),
+  sf::Color(240, 240, 240),
 };
 
 double normalize(double in, int dimension) {
