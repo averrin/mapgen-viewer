@@ -10,6 +10,7 @@
 
 #include "MapGenerator.cpp"
 
+int relax = 0;
 int seed;
 int octaves;
 float freq;
@@ -25,6 +26,10 @@ int main()
 
   //the generator
   MapGenerator mapgen = MapGenerator(window.getSize().x, window.getSize().y);
+  seed = mapgen.getSeed();
+  octaves = mapgen.getOctaves();
+  freq = mapgen.getFrequency();
+  nPoints = mapgen.getPointCount();
 
   //used to measure generation time
   sf::Clock timer;
@@ -37,8 +42,8 @@ int main()
   auto updateVisuals = [&]()
     {
       polygons.clear();
-      polygons.reserve(diagram->cells.size());
-      for (auto c : diagram->cells) {
+      polygons.reserve(mapgen.diagram->cells.size());
+      for (auto c : mapgen.diagram->cells) {
         sf::ConvexShape polygon;
         polygon.setPointCount(int(c->getEdges().size()));
 
@@ -165,7 +170,7 @@ int main()
 
 
         int n = 0;
-        for (auto c : diagram->cells)
+        for (auto c : mapgen.diagram->cells)
           {
             //red point for each cell site
             if(c->pointIntersection(pos.x, pos.y) != -1) {

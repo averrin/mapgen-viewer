@@ -18,10 +18,16 @@ public:
   void setFrequency(int freq);
   void setPointCount(int count);
   int  getPointCount();
+  int  getOctaves();
+  float  getFrequency();
+  int getSeed();
   Region* getRegion(sf::Vector2f pos);
+  void seed();
+
+
+	std::unique_ptr<Diagram> diagram;
 
 private:
-  void seed();
   void regenHeight();
   void regenDiagram();
   int _seed;
@@ -33,7 +39,6 @@ private:
   int _octaves;
   float _freq;
   sf::Rect<double> _bbox;
-	std::unique_ptr<Diagram> _diagram;
 	std::vector<sf::Vector2<double>>* _sites;
   std::map<sf::Vector2<double>*,float> _heights;
 
@@ -41,6 +46,4 @@ private:
   utils::NoiseMap _heightMap;
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
-  double normalize(double in, int dimension);
-  bool sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2);
 };

@@ -1,6 +1,19 @@
 #include "mapgen/MapGenerator.hpp"
 #include <VoronoiDiagramGenerator.h>
 
+double normalize(double in, int dimension) {
+	return in / (float)dimension*1.8 - 0.9;
+}
+
+bool sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2) {
+	if (s1.y < s2.y)
+		return true;
+	if (s1.y == s2.y && s1.x < s2.x)
+		return true;
+
+	return false;
+}
+
 MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
 	_vdg = VoronoiDiagramGenerator();
   _pointsCount = 10000;
@@ -15,7 +28,7 @@ void MapGenerator::build() {
 }
 
 void MapGenerator::relax() {
-  _diagram.reset(_vdg.relax());
+  diagram.reset(_vdg.relax());
 }
 
 void MapGenerator::seed() {
@@ -41,7 +54,7 @@ void MapGenerator::regenDiagram() {
   _relax = 0;
   _sites = new std::vector<sf::Vector2<double>>();
   genRandomSites(*_sites, _bbox, _w, _h, _pointsCount);
-  _diagram.reset(_vdg.compute(*_sites, _bbox));
+  diagram.reset(_vdg.compute(*_sites, _bbox));
   delete _sites;
 }
 
@@ -66,19 +79,6 @@ void MapGenerator::genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::R
 	for (sf::Vector2<double>& s : tmpSites) {
 		if (s != sites.back()) sites.push_back(s);
 	}
-}
-
-double MapGenerator::normalize(double in, int dimension) {
-	return in / (float)dimension*1.8 - 0.9;
-}
-
-bool MapGenerator::sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2) {
-	if (s1.y < s2.y)
-		return true;
-	if (s1.y == s2.y && s1.x < s2.x)
-		return true;
-
-	return false;
 }
 
 
