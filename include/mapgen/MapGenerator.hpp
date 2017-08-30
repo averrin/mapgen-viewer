@@ -24,7 +24,7 @@ public:
   Region* getRegion(sf::Vector2f pos);
   std::vector<sf::ConvexShape> getPolygons();
   void seed();
-
+  std::vector<Region*> getRegions();
 
 private:
   void regenHeight();
@@ -46,6 +46,7 @@ private:
 
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;
+  std::vector<Region*> _regions;
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
 };

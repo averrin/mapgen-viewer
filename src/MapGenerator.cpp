@@ -28,6 +28,7 @@ void MapGenerator::build() {
 
 void MapGenerator::relax() {
   _diagram.reset(_vdg.relax());
+  regenRegions();
 }
 
 void MapGenerator::seed() {
@@ -91,10 +92,11 @@ void MapGenerator::regenRegions() {
   _polygons.reserve(_diagram->cells.size());
   for (auto c : _diagram->cells) {
     sf::ConvexShape polygon;
-    polygon.setPointCount(int(c->getEdges().size()));
+    int count = int(c->getEdges().size());
+    polygon.setPointCount(count);
 
     float ht = 0;
-    for (int i = 0; i < int(c->getEdges().size()); i++)
+    for (int i = 0; i < count; i++)
       {
         sf::Vector2<double>* p0;
         p0 = c->getEdges()[i]->startPoint();
@@ -103,7 +105,7 @@ void MapGenerator::regenRegions() {
         polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
         ht += _heights[p0];
       }
-    ht = ht/c->getEdges().size();
+    ht = ht/count;
     sf::Vector2<double>& p = c->site.p;
     _heights.insert(std::make_pair(&p, ht));
 
@@ -116,9 +118,20 @@ void MapGenerator::regenRegions() {
     //   }
 
     // polygon.setFillColor(color);
+          polygon.setOutlineColor(sf::Color::Red);
+          polygon.setOutlineThickness(1);
     _polygons.push_back(polygon);
   }
 
+}
+
+std::vector<Region*> MapGenerator::getRegions() {
+  return _regions;
+}
+
+void MapGenerator::setSize(int w, int h) {
+  _w = w;
+  _h = h;
 }
 
 void MapGenerator::regenDiagram() {

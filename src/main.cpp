@@ -65,6 +65,8 @@ int main()
             }
 
             if (event.type == sf::Event::Resized) {
+              mapgen.setSize(window.getSize().x, window.getSize().y);
+              mapgen.update();
             }
         }
  
@@ -101,7 +103,7 @@ int main()
           if (nPoints < 1) {
             nPoints = 1;
           }
-          mapgen.setPointCount(freq);
+          mapgen.setPointCount(nPoints);
           mapgen.update();
         }
 
@@ -118,7 +120,7 @@ int main()
                     );
         if (ImGui::Button("+1000")) {
           nPoints+=1000;
-          mapgen.setPointCount(freq);
+          mapgen.setPointCount(nPoints);
           mapgen.update();
         }
 
