@@ -23,16 +23,54 @@ MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
 
 void MapGenerator::build() {
   seed();
-  regenHeight();
-  regenDiagram();
+  update();
 }
 
 void MapGenerator::relax() {
-  diagram.reset(_vdg.relax());
+  _diagram.reset(_vdg.relax());
 }
 
 void MapGenerator::seed() {
   _seed = std::clock();
+}
+
+void MapGenerator::setSeed(int s) {
+  _seed = s;
+}
+
+int MapGenerator::getSeed() {
+  return _seed;
+}
+
+int MapGenerator::getOctaveCount() {
+  return _octaves;
+}
+
+void MapGenerator::setOctaveCount(int o) {
+  _octaves = o;
+}
+
+int MapGenerator::getPointCount() {
+  return _pointsCount;
+}
+
+float MapGenerator::getFrequency() {
+  return _freq;
+}
+
+void MapGenerator::setFrequency(float f) {
+  _freq = f;
+}
+
+void MapGenerator::setPointCount(int c) {
+  _pointsCount = c;
+}
+
+
+void MapGenerator::update() {
+  regenHeight();
+  regenDiagram();
+  regenRegions();
 }
 
 void MapGenerator::regenHeight() {
@@ -46,6 +84,40 @@ void MapGenerator::regenHeight() {
   heightMapBuilder.SetDestSize(_w, _h);
   heightMapBuilder.SetBounds(0.0, 10.0, 0.0, 10.0);
   heightMapBuilder.Build();
+}
+
+void MapGenerator::regenRegions() {
+  _polygons.clear();
+  _polygons.reserve(_diagram->cells.size());
+  for (auto c : _diagram->cells) {
+    sf::ConvexShape polygon;
+    polygon.setPointCount(int(c->getEdges().size()));
+
+    float ht = 0;
+    for (int i = 0; i < int(c->getEdges().size()); i++)
+      {
+        sf::Vector2<double>* p0;
+        p0 = c->getEdges()[i]->startPoint();
+
+        _heights.insert(std::make_pair(p0, _heightMap.GetValue(p0->x, p0->y)));
+        polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
+        ht += _heights[p0];
+      }
+    ht = ht/c->getEdges().size();
+    sf::Vector2<double>& p = c->site.p;
+    _heights.insert(std::make_pair(&p, ht));
+
+    // sf::Color color = sf::Color( 23,  23,  40);
+    // for (int i = 0; i < 8; i++)
+    //   {
+    //     if (ht>borders[i]) {
+    //       color = colors[i];
+    //     }
+    //   }
+
+    // polygon.setFillColor(color);
+    _polygons.push_back(polygon);
+  }
 
 }
 
@@ -54,7 +126,7 @@ void MapGenerator::regenDiagram() {
   _relax = 0;
   _sites = new std::vector<sf::Vector2<double>>();
   genRandomSites(*_sites, _bbox, _w, _h, _pointsCount);
-  diagram.reset(_vdg.compute(*_sites, _bbox));
+  _diagram.reset(_vdg.compute(*_sites, _bbox));
   delete _sites;
 }
 
@@ -81,6 +153,9 @@ void MapGenerator::genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::R
 	}
 }
 
+std::vector<sf::ConvexShape> MapGenerator::getPolygons() {
+  return _polygons;
+}
 
 const std::array<float, 8> borders = {
   -1.0000,

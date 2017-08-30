@@ -15,21 +15,21 @@ public:
   void setSeed(int seed);
   void setOctaveCount(int octaveCount);
   void setSize(int w, int h);
-  void setFrequency(int freq);
+  void setFrequency(float freq);
   void setPointCount(int count);
   int  getPointCount();
-  int  getOctaves();
+  int  getOctaveCount();
   float  getFrequency();
   int getSeed();
   Region* getRegion(sf::Vector2f pos);
+  std::vector<sf::ConvexShape> getPolygons();
   void seed();
 
-
-	std::unique_ptr<Diagram> diagram;
 
 private:
   void regenHeight();
   void regenDiagram();
+  void regenRegions();
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;
@@ -41,6 +41,8 @@ private:
   sf::Rect<double> _bbox;
 	std::vector<sf::Vector2<double>>* _sites;
   std::map<sf::Vector2<double>*,float> _heights;
+	std::unique_ptr<Diagram> _diagram;
+  std::vector<sf::ConvexShape> _polygons;
 
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;

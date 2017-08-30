@@ -8,7 +8,7 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics.hpp>
 
-#include "MapGenerator.cpp"
+#include "mapgen/MapGenerator.hpp"
 
 int relax = 0;
 int seed;
@@ -27,7 +27,7 @@ int main()
   //the generator
   MapGenerator mapgen = MapGenerator(window.getSize().x, window.getSize().y);
   seed = mapgen.getSeed();
-  octaves = mapgen.getOctaves();
+  octaves = mapgen.getOctaveCount();
   freq = mapgen.getFrequency();
   nPoints = mapgen.getPointCount();
 
@@ -37,42 +37,6 @@ int main()
   window.setVerticalSyncEnabled(true);
   ImGui::SFML::Init(window);
 
-  std::vector<sf::ConvexShape> polygons;
-
-  auto updateVisuals = [&]()
-    {
-      polygons.clear();
-      polygons.reserve(mapgen.diagram->cells.size());
-      for (auto c : mapgen.diagram->cells) {
-        sf::ConvexShape polygon;
-        polygon.setPointCount(int(c->getEdges().size()));
-
-        float ht = 0;
-        for (int i = 0; i < int(c->getEdges().size()); i++)
-          {
-            sf::Vector2<double>* p0;
-            p0 = c->getEdges()[i]->startPoint();
-
-            heights.insert(std::make_pair(p0, heightMap.GetValue(p0->x, p0->y)));
-            polygon.setPoint(i, sf::Vector2f(p0->x, p0->y));
-            ht += heights[p0];
-          }
-        ht = ht/c->getEdges().size();
-        sf::Vector2<double>& p = c->site.p;
-        heights.insert(std::make_pair(&p, ht));
-
-        sf::Color color = sf::Color( 23,  23,  40);
-        for (int i = 0; i < 8; i++)
-          {
-            if (ht>borders[i]) {
-              color = colors[i];
-            }
-          }
-
-        polygon.setFillColor(color);
-        polygons.push_back(polygon);
-      }
-    };
 
     sf::Color bgColor;
     float color[3] = { 0.1, 0.1, 0.1 };
@@ -89,7 +53,6 @@ int main()
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
     mapgen.build();
-    updateVisuals();
 
     sf::Clock deltaClock;
     while (window.isOpen()) {
@@ -102,7 +65,6 @@ int main()
             }
 
             if (event.type == sf::Event::Resized) {
-              updateVisuals();
             }
         }
  
@@ -125,7 +87,6 @@ int main()
           }
           mapgen.setOctaveCount(octaves);
           mapgen.update();
-
         }
 
         if (ImGui::InputFloat("Height freq", &freq)) {
@@ -170,47 +131,48 @@ int main()
 
 
         int n = 0;
-        for (auto c : mapgen.diagram->cells)
-          {
-            //red point for each cell site
-            if(c->pointIntersection(pos.x, pos.y) != -1) {
-              sf::Vector2<double>& p = c->site.p;
-              v = sf::Vertex({{static_cast<float>(p.x), static_cast<float>(p.y)}, sf::Color::Green});
-              ImGui::Text("Cell: x:%f y:%f", p.x, p.y);
+        // for (auto c : mapgen.diagram->cells)
+        //   {
+        //     //red point for each cell site
+        //     if(c->pointIntersection(pos.x, pos.y) != -1) {
+        //       sf::Vector2<double>& p = c->site.p;
+        //       v = sf::Vertex({{static_cast<float>(p.x), static_cast<float>(p.y)}, sf::Color::Green});
+        //       ImGui::Text("Cell: x:%f y:%f", p.x, p.y);
 
-              ImGui::Columns(3, "cells");
-              ImGui::Separator();
-              ImGui::Text("x"); ImGui::NextColumn();
-              ImGui::Text("y"); ImGui::NextColumn();
-              ImGui::Text("z"); ImGui::NextColumn();
-              ImGui::Separator();
-              static int selected = -1;
+        //       ImGui::Columns(3, "cells");
+        //       ImGui::Separator();
+        //       ImGui::Text("x"); ImGui::NextColumn();
+        //       ImGui::Text("y"); ImGui::NextColumn();
+        //       ImGui::Text("z"); ImGui::NextColumn();
+        //       ImGui::Separator();
+        //       static int selected = -1;
 
-              ImGui::Text("%f", p.x); ImGui::NextColumn();
-              ImGui::Text("%f", p.y); ImGui::NextColumn();
-              ImGui::Text("%f", heights[&p]); ImGui::NextColumn();
+        //       ImGui::Text("%f", p.x); ImGui::NextColumn();
+        //       ImGui::Text("%f", p.y); ImGui::NextColumn();
+        //       ImGui::Text("%f", heights[&p]); ImGui::NextColumn();
 
 
-              sf::ConvexShape poly= polygons[n];
-              polygon.setPointCount(poly.getPointCount());
+        //       sf::ConvexShape poly= polygons[n];
+        //       polygon.setPointCount(poly.getPointCount());
 
-              for (int pi = 0; pi < int(poly.getPointCount()); pi++)
-                {
-                  polygon.setPoint(pi, poly.getPoint(pi));
-                }
-              polygon.setFillColor(sf::Color::Transparent);
-              polygon.setOutlineColor(sf::Color::Red);
-              polygon.setOutlineThickness(1);
+        //       for (int pi = 0; pi < int(poly.getPointCount()); pi++)
+        //         {
+        //           polygon.setPoint(pi, poly.getPoint(pi));
+        //         }
+        //       polygon.setFillColor(sf::Color::Transparent);
+        //       polygon.setOutlineColor(sf::Color::Red);
+        //       polygon.setOutlineThickness(1);
 
-              break;
-            }
-            n++;
-          }
+        //       break;
+        //     }
+        //     n++;
+        //   }
         ImGui::End(); // end window
  
         window.clear(bgColor); // fill background with color
 
         int i = 0;
+        std::vector<sf::ConvexShape> polygons = mapgen.getPolygons();
         for(std::vector<sf::ConvexShape>::iterator it=polygons.begin() ; it < polygons.end(); it++, i++) {
           window.draw(polygons[i]);
         }
