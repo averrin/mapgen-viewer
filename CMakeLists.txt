@@ -34,8 +34,8 @@ add_executable(${EXECUTABLE_NAME}
   include/imgui/imgui-SFML.cpp
   src/main.cpp
   src/noiseutils.cpp
-  # src/MapGenerator.cpp
-  # src/Region.cpp
+  src/MapGenerator.cpp
+  src/Region.cpp
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -47,7 +47,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-
 
 add_definitions("-Wall")
 add_definitions("-Werror")

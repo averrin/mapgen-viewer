@@ -7,78 +7,16 @@
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics.hpp>
-#include <VoronoiDiagramGenerator.h>
 
-#include <libnoise/noise.h>
-#include "noise/noiseutils.h"
+#include "MapGenerator.cpp"
 
-int relax = 0;
 int seed;
-int octaves = 3;
-float freq = 0.3;
-std::map<sf::Vector2<double>*,float> heights;
+int octaves;
+float freq;
+int nPoints;
 
-const std::array<float, 8> borders = {
-  -1.0000,
-  -0.2500,
-  0.0000,
-  0.0625,
-  0.1250,
-  0.3750,
-  0.7500,
-  1.0000,
-};
-
-const std::array<sf::Color, 8> colors = {
-  sf::Color( 39,  39,  70),
-  sf::Color( 51,  51,  91),
-  sf::Color( 91, 132, 173),
-  sf::Color(210, 185, 139),
-  sf::Color(136, 170,  85),
-  sf::Color( 51, 119,  85),
-  sf::Color(128, 128, 128),
-  sf::Color(240, 240, 240),
-};
-
-double normalize(double in, int dimension) {
-	return in / (float)dimension*1.8 - 0.9;
-}
-
-bool sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2) {
-	if (s1.y < s2.y)
-		return true;
-	if (s1.y == s2.y && s1.x < s2.x)
-		return true;
-
-	return false;
-}
-
-void genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites) {
-	std::vector<sf::Vector2<double>> tmpSites;
-
-	tmpSites.reserve(numSites);
-	sites.reserve(numSites);
-
-  sf::Vector2<double> s;
-
-	srand(seed);
-	for (unsigned int i = 0; i < numSites; ++i) {
-		s.x = 1 + (rand() / (double)RAND_MAX)*(dx - 2);
-		s.y = 1 + (rand() / (double)RAND_MAX)*(dy - 2);
-		tmpSites.push_back(s);
-	}
-
-	//remove any duplicates that exist
-	std::sort(tmpSites.begin(), tmpSites.end(), sitesOrdered);
-	sites.push_back(tmpSites[0]);
-	for (sf::Vector2<double>& s : tmpSites) {
-		if (s != sites.back()) sites.push_back(s);
-	}
-}
- 
 int main()
 {
-	int nPoints = 10000;
   seed = std::clock();
   sf::ContextSettings settings;
   settings.antialiasingLevel = 8;
@@ -86,28 +24,10 @@ int main()
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "", sf::Style::Default, settings);
 
   //the generator
-	VoronoiDiagramGenerator vdg = VoronoiDiagramGenerator();
-
-  //the generated diagram
-	std::unique_ptr<Diagram> diagram;
-
-  //sites used for generation
-	std::vector<sf::Vector2<double>>* sites;
-
-  //maximum bounds for the diagram
-	sf::Rect<double> bbox(0,0,window.getSize().x, window.getSize().y);
+  MapGenerator mapgen = MapGenerator(window.getSize().x, window.getSize().y);
 
   //used to measure generation time
   sf::Clock timer;
-
-  //used to draw the diagram
-  std::vector<sf::Vertex> vertices;
-
-  module::Perlin myModule;
-  utils::NoiseMap heightMap;
-
-  utils::RendererImage renderer;
-  utils::Image image;
 
   window.setVerticalSyncEnabled(true);
   ImGui::SFML::Init(window);
@@ -149,34 +69,6 @@ int main()
       }
     };
 
-    auto generateNewDiagram = [&]()
-      {
-        bbox = sf::Rect<double>(0,0,window.getSize().x, window.getSize().y);
-        relax = 1;
-        sites = new std::vector<sf::Vector2<double>>();
-        genRandomSites(*sites, bbox, window.getSize().x, window.getSize().y, nPoints);
-        timer.restart();
-        diagram.reset(vdg.compute(*sites, bbox));
-        auto duration = timer.getElapsedTime().asMilliseconds();
-        std::cout << "Computing a diagram of " << nPoints << " points took " << duration << "ms.\n";
-        delete sites;
-        updateVisuals();
-      };
-
-    auto generateHeight = [&]()
-      {
-        heights.clear();
-        myModule.SetSeed(seed);
-        myModule.SetOctaveCount (octaves);
-        myModule.SetFrequency (freq);
-        utils::NoiseMapBuilderPlane heightMapBuilder;
-        heightMapBuilder.SetSourceModule (myModule);
-        heightMapBuilder.SetDestNoiseMap (heightMap);
-        heightMapBuilder.SetDestSize (window.getSize().x, window.getSize().y);
-        heightMapBuilder.SetBounds (0.0, 10.0, 0.0, 10.0);
-        heightMapBuilder.Build ();
-      };
-
     sf::Color bgColor;
     float color[3] = { 0.1, 0.1, 0.1 };
 
@@ -191,8 +83,8 @@ int main()
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
-    generateHeight();
-    generateNewDiagram();
+    mapgen.build();
+    updateVisuals();
 
     sf::Clock deltaClock;
     while (window.isOpen()) {
@@ -214,40 +106,42 @@ int main()
         ImGui::Begin("Mapgen"); // begin window
  
         if (ImGui::InputInt("Seed", &seed)) {
-          generateNewDiagram();
-          generateHeight();
+          mapgen.setSeed(seed);
+          mapgen.update();
         }
         if (ImGui::Button("Random")) {
-          seed = std::clock();
-          generateNewDiagram();
-          generateHeight();
+          mapgen.seed();
+          mapgen.update();
         }
 
         if (ImGui::InputInt("Height octaves", &octaves)) {
           if (octaves < 1) {
             octaves = 1;
           }
-          generateHeight();
+          mapgen.setOctaveCount(octaves);
+          mapgen.update();
+
         }
 
         if (ImGui::InputFloat("Height freq", &freq)) {
           if (freq < 0) {
             freq = 0;
           }
-          generateHeight();
+          mapgen.setFrequency(freq);
+          mapgen.update();
         }
 
         if (ImGui::InputInt("Points", &nPoints)) {
           if (nPoints < 1) {
             nPoints = 1;
           }
-          generateNewDiagram();
+          mapgen.setPointCount(freq);
+          mapgen.update();
         }
 
         if (ImGui::Button("Relax")) {
-          diagram.reset(vdg.relax());
+          mapgen.relax();
           relax++;
-          updateVisuals();
         }
         ImGui::SameLine(100);
         ImGui::Text("Relax iterations: %d", relax);
@@ -258,7 +152,8 @@ int main()
                     );
         if (ImGui::Button("+1000")) {
           nPoints+=1000;
-          generateNewDiagram();
+          mapgen.setPointCount(freq);
+          mapgen.update();
         }
 
         sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));

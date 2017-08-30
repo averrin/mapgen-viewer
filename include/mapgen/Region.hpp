@@ -1,3 +1,1 @@
-namespace map {
-  class Region {};
-}
+class Region {};
