@@ -80,6 +80,7 @@ int main()
         }
         if (ImGui::Button("Random")) {
           mapgen.seed();
+          seed = mapgen.getSeed();
           mapgen.update();
         }
 
@@ -169,6 +170,8 @@ int main()
         //     }
         //     n++;
         //   }
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
         ImGui::End(); // end window
  
         window.clear(bgColor); // fill background with color
