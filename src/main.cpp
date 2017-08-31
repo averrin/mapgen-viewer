@@ -129,7 +129,7 @@ int main()
                     pos.x,
                     pos.y);
         sf::Vertex v;
-        sf::ConvexShape polygon;
+        sf::ConvexShape selectedPolygon;
 
 
         int n = 0;
@@ -174,12 +174,27 @@ int main()
         window.clear(bgColor); // fill background with color
 
         int i = 0;
-        std::vector<sf::ConvexShape> polygons = mapgen.getPolygons();
-        for(std::vector<sf::ConvexShape>::iterator it=polygons.begin() ; it < polygons.end(); it++, i++) {
-          window.draw(polygons[i]);
+        // std::vector<sf::ConvexShape> polygons = mapgen.getPolygons();
+        std::vector<Region> regions = mapgen.getRegions();
+        for(std::vector<Region>::iterator it=regions.begin() ; it < regions.end(); it++, i++) {
+
+          Region region = regions[i];
+          sf::ConvexShape polygon;
+          PointList points = region.getPoints();
+          polygon.setPointCount(points.size());
+          int n = 0;
+          for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
+            sf::Vector2<double>* p = points[n];
+            polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+          }
+
+          polygon.setFillColor(region.biom.color);
+          polygon.setOutlineColor(sf::Color(100,100,100));
+          polygon.setOutlineThickness(1);
+          window.draw(polygon);
         }
 
-        window.draw(polygon);
+        window.draw(selectedPolygon);
 
         ImGui::SFML::Render(window);
         window.display();

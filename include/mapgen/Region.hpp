@@ -1,13 +1,14 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include "Biom.hpp"
 
-enum Biom {
-};
+typedef std::vector<sf::Vector2<double> *> PointList ;
 
 class Region {
 public:
-  Region(std::vector<sf::Vector2<double> >* v, Biom biom);
+  Region(Biom b, PointList v);
+  PointList getPoints();
   Biom biom;
 private:
-	std::vector<sf::Vector2<double> >* _verticies;
+	PointList _verticies;
 };
