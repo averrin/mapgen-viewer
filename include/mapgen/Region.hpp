@@ -10,9 +10,10 @@ class Region {
 public:
   Region(Biom b, PointList v, HeightMap h, Point s);
   PointList getPoints();
+  float getHeight(Point p);
   Biom biom;
+  Point site;
 private:
 	PointList _verticies;
   HeightMap _heights;
-  Point _site;
 };

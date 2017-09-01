@@ -101,6 +101,7 @@ int main()
         ImGui::SFML::Update(window, deltaClock.restart());
  
         ImGui::Begin("Mapgen"); // begin window
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
  
         if (ImGui::InputInt("Seed", &seed)) {
           mapgen.setSeed(seed);
@@ -164,60 +165,47 @@ int main()
         ImGui::Text("Mouse: x:%f y:%f",
                     pos.x,
                     pos.y);
-        sf::Vertex v;
         sf::ConvexShape selectedPolygon;
 
 
         int n = 0;
         Region* currentRegion =  mapgen.getRegion(pos);
 
-        ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
         PointList points = currentRegion->getPoints();
         selectedPolygon.setPointCount(int(points.size()));
+
+        ImGui::Text("Site: x:%f y:%f z:%f", currentRegion->site->x, currentRegion->site->y, currentRegion->getHeight(currentRegion->site));
+        ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
+
+        ImGui::Columns(3, "cells");
+        ImGui::Separator();
+        ImGui::Text("x"); ImGui::NextColumn();
+        ImGui::Text("y"); ImGui::NextColumn();
+        ImGui::Text("z"); ImGui::NextColumn();
+        ImGui::Separator();
+        static int selected = -1;
 
         for (int pi = 0; pi < int(points.size()); pi++)
           {
             Point p = points[pi];
             selectedPolygon.setPoint(pi, sf::Vector2f(static_cast<float>(p->x), static_cast<float>(p->y)));
+
+                  ImGui::Text("%f", p->x); ImGui::NextColumn();
+                  ImGui::Text("%f", p->y); ImGui::NextColumn();
+                  ImGui::Text("%f", currentRegion->getHeight(p)); ImGui::NextColumn();
           }
 
         selectedPolygon.setFillColor(sf::Color::Transparent);
         selectedPolygon.setOutlineColor(sf::Color::Red);
         selectedPolygon.setOutlineThickness(2);
-        // for (auto c : mapgen.diagram->cells)
-        //   {
-        //     //red point for each cell site
-        //     if(c->pointIntersection(pos.x, pos.y) != -1) {
+        // sf::Vertex site;
+        // site = sf::Vertex({{static_cast<float>(currentRegion->site->x),
+        //         static_cast<float>(currentRegion->site->y)}, sf::Color::Green});
+        sf::CircleShape site(2.f);
+        site.setFillColor(sf::Color::Red);
+        site.setPosition(static_cast<float>(currentRegion->site->x),static_cast<float>(currentRegion->site->y));
         //       sf::Vector2<double>& p = c->site.p;
-        //       v = sf::Vertex({{static_cast<float>(p.x), static_cast<float>(p.y)}, sf::Color::Green});
-        //       ImGui::Text("Cell: x:%f y:%f", p.x, p.y);
 
-        //       ImGui::Columns(3, "cells");
-        //       ImGui::Separator();
-        //       ImGui::Text("x"); ImGui::NextColumn();
-        //       ImGui::Text("y"); ImGui::NextColumn();
-        //       ImGui::Text("z"); ImGui::NextColumn();
-        //       ImGui::Separator();
-        //       static int selected = -1;
-
-        //       ImGui::Text("%f", p.x); ImGui::NextColumn();
-        //       ImGui::Text("%f", p.y); ImGui::NextColumn();
-        //       ImGui::Text("%f", heights[&p]); ImGui::NextColumn();
-
-
-        //       sf::ConvexShape poly= polygons[n];
-        //       polygon.setPointCount(poly.getPointCount());
-
-        //       for (int pi = 0; pi < int(poly.getPointCount()); pi++)
-        //         {
-        //           polygon.setPoint(pi, poly.getPoint(pi));
-        //         }
-
-        //       break;
-        //     }
-        //     n++;
-        //   }
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
         ImGui::End(); // end window
 
@@ -228,6 +216,9 @@ int main()
           window.draw(polygons[i]);
         }
         window.draw(selectedPolygon);
+        // window.draw(&site, 1, sf::PrimitiveType::Points);
+        window.draw(site);
+
 
         ImGui::SFML::Render(window);
         window.display();
