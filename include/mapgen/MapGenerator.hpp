@@ -40,7 +40,7 @@ private:
   float _freq;
   sf::Rect<double> _bbox;
 	std::vector<sf::Vector2<double>>* _sites;
-  std::map<sf::Vector2<double>*,float> _heights;
+  std::map<Cell*,Region> _cells;
 	std::unique_ptr<Diagram> _diagram;
   std::vector<sf::ConvexShape> _polygons;
 

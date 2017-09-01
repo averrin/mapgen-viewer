@@ -143,6 +143,7 @@ int main()
 
         if (ImGui::Button("Relax")) {
           mapgen.relax();
+          updateVisuals();
           relax++;
         }
         ImGui::SameLine(100);
@@ -168,6 +169,21 @@ int main()
 
 
         int n = 0;
+        Region* currentRegion =  mapgen.getRegion(pos);
+
+        ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
+        PointList points = currentRegion->getPoints();
+        selectedPolygon.setPointCount(int(points.size()));
+
+        for (int pi = 0; pi < int(points.size()); pi++)
+          {
+            Point p = points[pi];
+            selectedPolygon.setPoint(pi, sf::Vector2f(static_cast<float>(p->x), static_cast<float>(p->y)));
+          }
+
+        selectedPolygon.setFillColor(sf::Color::Transparent);
+        selectedPolygon.setOutlineColor(sf::Color::Red);
+        selectedPolygon.setOutlineThickness(2);
         // for (auto c : mapgen.diagram->cells)
         //   {
         //     //red point for each cell site
@@ -196,9 +212,6 @@ int main()
         //         {
         //           polygon.setPoint(pi, poly.getPoint(pi));
         //         }
-        //       polygon.setFillColor(sf::Color::Transparent);
-        //       polygon.setOutlineColor(sf::Color::Red);
-        //       polygon.setOutlineThickness(1);
 
         //       break;
         //     }

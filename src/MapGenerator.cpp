@@ -35,7 +35,7 @@ const std::vector<Biom> BIOMS = {{
     {
       0.3750,
       sf::Color( 51, 119,  85),
-      "Dirt"
+      "Forrest"
     },
     {
       0.7500,
@@ -124,7 +124,6 @@ void MapGenerator::update() {
 }
 
 void MapGenerator::regenHeight() {
-  _heights.clear();
   _perlin.SetSeed(_seed);
   _perlin.SetOctaveCount(_octaves);
   _perlin.SetFrequency(_freq);
@@ -138,6 +137,7 @@ void MapGenerator::regenHeight() {
 }
 
 void MapGenerator::regenRegions() {
+  _cells.clear();
   _regions.clear();
   _regions.reserve(_diagram->cells.size());
   for (auto c : _diagram->cells) {
@@ -146,18 +146,19 @@ void MapGenerator::regenRegions() {
     verts.reserve(count);
 
     float ht = 0;
+    std::map<sf::Vector2<double>*,float> h;
     for (int i = 0; i < count; i++)
       {
         sf::Vector2<double>* p0;
         p0 = c->getEdges()[i]->startPoint();
         verts.push_back(p0);
 
-        _heights.insert(std::make_pair(p0, _heightMap.GetValue(p0->x, p0->y)));
-        ht += _heights[p0];
+        h.insert(std::make_pair(p0, _heightMap.GetValue(p0->x, p0->y)));
+        ht += h[p0];
       }
     ht = ht/count;
     sf::Vector2<double>& p = c->site.p;
-    _heights.insert(std::make_pair(&p, ht));
+    h.insert(std::make_pair(&p, ht));
     Biom b = BIOMS[0];
     for (int i = 0; i < int(BIOMS.size()); i++)
       {
@@ -165,11 +166,23 @@ void MapGenerator::regenRegions() {
           b = BIOMS[i];
         }
       }
-    Region region = Region(b, verts);
+    Region region = Region(b, verts, h, &p);
     _regions.push_back(region);
+    _cells.insert(std::make_pair(c, region));
 
   }
   std::cout << "Regions generation: " << _diagram->cells.size() << " finished\n" << std::flush;
+}
+
+Region* MapGenerator::getRegion(sf::Vector2f pos) {
+  for (auto &pair : _cells)
+  {
+    Cell* c = pair.first;
+    if(c->pointIntersection(pos.x, pos.y) != -1) {
+      return &(pair.second);
+    }
+  }
+  return nullptr;
 }
 
 std::vector<Region> MapGenerator::getRegions() {
