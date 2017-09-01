@@ -37,6 +37,32 @@ int main()
   window.setVerticalSyncEnabled(true);
   ImGui::SFML::Init(window);
 
+  std::vector<sf::ConvexShape> polygons;
+  auto  updateVisuals = [&](){
+    polygons.clear();
+    int i = 0;
+    std::vector<Region> regions = mapgen.getRegions();
+    polygons.reserve(regions.size());
+    for(std::vector<Region>::iterator it=regions.begin() ; it < regions.end(); it++, i++) {
+
+      Region region = regions[i];
+      sf::ConvexShape polygon;
+      PointList points = region.getPoints();
+      polygon.setPointCount(points.size());
+      int n = 0;
+      for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
+        sf::Vector2<double>* p = points[n];
+        polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+      }
+
+      polygon.setFillColor(region.biom.color);
+      polygon.setOutlineColor(sf::Color(100,100,100));
+      polygon.setOutlineThickness(1);
+      polygons.push_back(polygon);
+    }
+  };
+
+
 
     sf::Color bgColor;
     float color[3] = { 0.1, 0.1, 0.1 };
@@ -53,6 +79,7 @@ int main()
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
     mapgen.build();
+    updateVisuals();
 
     sf::Clock deltaClock;
     while (window.isOpen()) {
@@ -67,6 +94,7 @@ int main()
             if (event.type == sf::Event::Resized) {
               mapgen.setSize(window.getSize().x, window.getSize().y);
               mapgen.update();
+              updateVisuals();
             }
         }
  
@@ -77,11 +105,13 @@ int main()
         if (ImGui::InputInt("Seed", &seed)) {
           mapgen.setSeed(seed);
           mapgen.update();
+          updateVisuals();
         }
         if (ImGui::Button("Random")) {
           mapgen.seed();
           seed = mapgen.getSeed();
           mapgen.update();
+          updateVisuals();
         }
 
         if (ImGui::InputInt("Height octaves", &octaves)) {
@@ -90,6 +120,7 @@ int main()
           }
           mapgen.setOctaveCount(octaves);
           mapgen.update();
+          updateVisuals();
         }
 
         if (ImGui::InputFloat("Height freq", &freq)) {
@@ -98,6 +129,7 @@ int main()
           }
           mapgen.setFrequency(freq);
           mapgen.update();
+          updateVisuals();
         }
 
         if (ImGui::InputInt("Points", &nPoints)) {
@@ -106,6 +138,7 @@ int main()
           }
           mapgen.setPointCount(nPoints);
           mapgen.update();
+          updateVisuals();
         }
 
         if (ImGui::Button("Relax")) {
@@ -123,6 +156,7 @@ int main()
           nPoints+=1000;
           mapgen.setPointCount(nPoints);
           mapgen.update();
+          updateVisuals();
         }
 
         sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
@@ -173,30 +207,13 @@ int main()
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
         ImGui::End(); // end window
- 
+
         window.clear(bgColor); // fill background with color
 
         int i = 0;
-        // std::vector<sf::ConvexShape> polygons = mapgen.getPolygons();
-        std::vector<Region> regions = mapgen.getRegions();
-        for(std::vector<Region>::iterator it=regions.begin() ; it < regions.end(); it++, i++) {
-
-          Region region = regions[i];
-          sf::ConvexShape polygon;
-          PointList points = region.getPoints();
-          polygon.setPointCount(points.size());
-          int n = 0;
-          for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
-            sf::Vector2<double>* p = points[n];
-            polygon.setPoint(n, sf::Vector2f(p->x, p->y));
-          }
-
-          polygon.setFillColor(region.biom.color);
-          polygon.setOutlineColor(sf::Color(100,100,100));
-          polygon.setOutlineThickness(1);
-          window.draw(polygon);
+        for(std::vector<sf::ConvexShape>::iterator it=polygons.begin() ; it < polygons.end(); it++, i++) {
+          window.draw(polygons[i]);
         }
-
         window.draw(selectedPolygon);
 
         ImGui::SFML::Render(window);
