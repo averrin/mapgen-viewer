@@ -339,7 +339,12 @@ void MapGenerator::regenClusters() {
     }
     if(cu) {
       Cluster* cluster = new Cluster();
+      cluster->hasRiver = false;
       r->cluster = cluster;
+      cluster->biom = r->biom;
+      if (r->hasRiver) {
+        cluster->hasRiver = true;
+      }
       cluster->regions.push_back(r);
       clusters[c] = cluster;
       cells[r] = c;

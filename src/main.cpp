@@ -237,80 +237,76 @@ int main()
           relax = mapgen.getRelax();
         }
 
-        sf::ConvexShape selectedPolygon;
-        sf::CircleShape site(2.f);
-        if (info) {
-        sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-        ImGui::Text("Mouse: x:%f y:%f",
-                    pos.x,
-                    pos.y);
-
-        Region* currentRegion =  mapgen.getRegion(pos);
-
-        PointList points = currentRegion->getPoints();
-        selectedPolygon.setPointCount(int(points.size()));
-
-        Cluster* cluster = currentRegion->cluster;
-        int i = 0;
-        infoPolygons.clear();
-        if (cluster != nullptr) {
-        for(std::vector<Region*>::iterator it=cluster->regions.begin() ; it < cluster->regions.end(); it++, i++) {
-
-          Region* region = cluster->regions[i];
-          sf::ConvexShape polygon;
-          PointList points = region->getPoints();
-          polygon.setPointCount(points.size());
-          int n = 0;
-          for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
-            sf::Vector2<double>* p = points[n];
-            polygon.setPoint(n, sf::Vector2f(p->x, p->y));
-          }
-          sf::Color col = sf::Color::Red;
-          col.a = 50;
-          polygon.setFillColor(col);
-          polygon.setOutlineColor(col);
-          polygon.setOutlineThickness(1);
-          infoPolygons.push_back(polygon);
-        }
-        }
-
-        ImGui::Text("Region: %p", currentRegion);
-        if (currentRegion->cluster != nullptr) {
-        ImGui::Text("Cluster: %p", currentRegion->cluster);
-}
-        ImGui::Text("Site: x:%f y:%f z:%f", currentRegion->site->x, currentRegion->site->y, currentRegion->getHeight(currentRegion->site));
-        ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
-        ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
-        ImGui::Text("Is border: %s", currentRegion->border ? "true" : "false");
-
-        ImGui::Columns(3, "cells");
-        ImGui::Separator();
-        ImGui::Text("x"); ImGui::NextColumn();
-        ImGui::Text("y"); ImGui::NextColumn();
-        ImGui::Text("z"); ImGui::NextColumn();
-        ImGui::Separator();
-
-        for (int pi = 0; pi < int(points.size()); pi++)
-          {
-            Point p = points[pi];
-            selectedPolygon.setPoint(pi, sf::Vector2f(static_cast<float>(p->x), static_cast<float>(p->y)));
-
-                  ImGui::Text("%f", p->x); ImGui::NextColumn();
-                  ImGui::Text("%f", p->y); ImGui::NextColumn();
-                  ImGui::Text("%f", currentRegion->getHeight(p)); ImGui::NextColumn();
-          }
-
-        selectedPolygon.setFillColor(sf::Color::Transparent);
-        selectedPolygon.setOutlineColor(sf::Color::Red);
-        selectedPolygon.setOutlineThickness(2);
-        site.setFillColor(sf::Color::Red);
-        site.setPosition(static_cast<float>(currentRegion->site->x-1),static_cast<float>(currentRegion->site->y-1));
-}
-
         ImGui::End(); // end window
 
-        bool b(true);
-        log.Draw("Mapgen: Log", &b);
+        sf::ConvexShape selectedPolygon;
+        sf::CircleShape site(2.f);
+
+
+        if(info) {
+          ImGui::Begin("Region info"); // begin window
+          sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+          ImGui::Text("Mouse: x:%f y:%f", pos.x, pos.y);
+
+          Region* currentRegion =  mapgen.getRegion(pos);
+
+          PointList points = currentRegion->getPoints();
+          selectedPolygon.setPointCount(int(points.size()));
+
+          Cluster* cluster = currentRegion->cluster;
+          int i = 0;
+          infoPolygons.clear();
+          for(std::vector<Region*>::iterator it=cluster->regions.begin() ; it < cluster->regions.end(); it++, i++) {
+
+            Region* region = cluster->regions[i];
+            sf::ConvexShape polygon;
+            PointList points = region->getPoints();
+            polygon.setPointCount(points.size());
+            int n = 0;
+            for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
+              sf::Vector2<double>* p = points[n];
+              polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+            }
+            sf::Color col = sf::Color::Red;
+            col.a = 50;
+            polygon.setFillColor(col);
+            polygon.setOutlineColor(col);
+            polygon.setOutlineThickness(1);
+            infoPolygons.push_back(polygon);
+          }
+
+          ImGui::Text("Region: %p", currentRegion);
+          ImGui::Text("Cluster: %p", currentRegion->cluster);
+          ImGui::Text("Site: x:%f y:%f z:%f", currentRegion->site->x, currentRegion->site->y, currentRegion->getHeight(currentRegion->site));
+          ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
+          ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
+          ImGui::Text("Is border: %s", currentRegion->border ? "true" : "false");
+
+          ImGui::Columns(3, "cells");
+          ImGui::Separator();
+          ImGui::Text("x"); ImGui::NextColumn();
+          ImGui::Text("y"); ImGui::NextColumn();
+          ImGui::Text("z"); ImGui::NextColumn();
+          ImGui::Separator();
+
+          for (int pi = 0; pi < int(points.size()); pi++) {
+            Point p = points[pi];
+            selectedPolygon.setPoint(pi, sf::Vector2f(static_cast<float>(p->x), static_cast<float>(p->y)));
+            ImGui::Text("%f", p->x); ImGui::NextColumn();
+            ImGui::Text("%f", p->y); ImGui::NextColumn();
+            ImGui::Text("%f", currentRegion->getHeight(p)); ImGui::NextColumn();
+          }
+
+          selectedPolygon.setFillColor(sf::Color::Transparent);
+          selectedPolygon.setOutlineColor(sf::Color::Red);
+          selectedPolygon.setOutlineThickness(2);
+          site.setFillColor(sf::Color::Red);
+          site.setPosition(static_cast<float>(currentRegion->site->x-1),static_cast<float>(currentRegion->site->y-1));
+
+          ImGui::End(); // end window
+        }
+
+        log.Draw("Mapgen: Log", &info);
 
         window.clear(bgColor); // fill background with color
 

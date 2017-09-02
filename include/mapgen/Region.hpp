@@ -26,4 +26,6 @@ private:
 struct Cluster {
   std::string name;
   std::vector<Region*> regions;
+  Biom biom;
+  bool hasRiver;
 };
