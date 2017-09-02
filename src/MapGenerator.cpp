@@ -10,6 +10,7 @@ Iter select_randomly(Iter start, Iter end, RandomGenerator& g) {
   return start;
 }
 
+//TODO: fix seed
 template<typename Iter>
 Iter select_randomly(Iter start, Iter end) {
   static std::random_device rd;
@@ -229,6 +230,7 @@ void MapGenerator::makeRiver(Cell* c) {
       }
       visited.push_back(c2);
       r = _cells[c2];
+      r->cluster->hasRiver = true;
       bool f = false;
       for (auto e : c2->getEdges()) {
         // printf("Next candidate: %f < %f\n", r->getHeight(e->startPoint()), z);
@@ -390,9 +392,6 @@ void MapGenerator::regenClusters() {
       cluster->discarded = false;
       r->cluster = cluster;
       cluster->biom = r->biom;
-      if (r->hasRiver) {
-        cluster->hasRiver = true;
-      }
       cluster->regions.push_back(r);
       _clusters[c] = cluster;
       cellsMap[r] = c;

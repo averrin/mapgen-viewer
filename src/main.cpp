@@ -120,7 +120,7 @@ int main()
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
-    mapgen.setSeed(140731122 /*37946940*/);
+    mapgen.setSeed(37946940);
     mapgen.update();
     seed = mapgen.getSeed();
     updateVisuals();
