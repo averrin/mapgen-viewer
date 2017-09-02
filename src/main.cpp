@@ -139,6 +139,18 @@ int main()
                   case sf::Keyboard::Escape:
                     window.close();
                     break;
+                  case sf::Keyboard::S:
+                    sf::Vector2u windowSize = window.getSize();
+                    sf::Texture texture;
+                    texture.create(windowSize.x, windowSize.y);
+                    texture.update(window);
+                    sf::Image screenshot = texture.copyToImage();
+                    char s[100];
+                    sprintf(s, "%d.png", seed);
+                    screenshot.saveToFile(s);
+                    char l[255];
+                    sprintf(l, "Screenshot created: %s\n", s);
+                    log.AddLog(l);
                   }
                 break;
               }
@@ -256,6 +268,8 @@ int main()
           updateVisuals();
           relax = mapgen.getRelax();
         }
+
+        ImGui::Text("\n[ESC] for exit\n[S] for save screensot");
 
         ImGui::End(); // end window
 
