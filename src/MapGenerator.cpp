@@ -67,12 +67,22 @@ const std::vector<Biom> BIOMS = {{
       "Snow"
     },
     {
+      1.2000,
+      sf::Color(220, 220, 255),
+      "Ice"
+    },
+    {
+      999.000,
+      sf::Color(201, 201, 120),
+      "Prairie"
+    },
+    {
       999.000,
       sf::Color::Red,
       "Mark"
     }
   }};
-const Biom MARK = BIOMS[9];
+const Biom MARK = BIOMS.back();
 
 double normalize(double in, int dimension) {
 	return in / (float)dimension*1.8 - 0.9;

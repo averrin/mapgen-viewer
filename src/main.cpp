@@ -136,6 +136,13 @@ int main()
               case sf::Event::KeyPressed:
                 switch (event.key.code)
                   {
+                  case sf::Keyboard::R:
+                    mapgen.seed();
+                    seed = mapgen.getSeed();
+                    mapgen.update();
+                    updateVisuals();
+                    relax = mapgen.getRelax();
+                    break;
                   case sf::Keyboard::Escape:
                     window.close();
                     break;
@@ -151,6 +158,7 @@ int main()
                     char l[255];
                     sprintf(l, "Screenshot created: %s\n", s);
                     log.AddLog(l);
+                    break;
                   }
                 break;
               }
@@ -269,7 +277,7 @@ int main()
           relax = mapgen.getRelax();
         }
 
-        ImGui::Text("\n[ESC] for exit\n[S] for save screensot");
+        ImGui::Text("\n[ESC] for exit\n[S] for save screensot\n[R] for random map");
 
         ImGui::End(); // end window
 
@@ -343,9 +351,12 @@ int main()
           river.setColor(sf::Color( 51,  51,  91));
           river.setThickness(3);
           i = 0;
+          int c = rvr->size();
           for(PointList::iterator it=rvr->begin() ; it < rvr->end(); it++, i++) {
             Point p = (*rvr)[i];
             river.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
+            float t = float(i)/c * 2.f;
+            river.setThickness(i, t);
           }
           river.setBezierInterpolation(); // enable Bezier spline
           river.setInterpolationSteps(10); // curvature resolution

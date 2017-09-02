@@ -33,8 +33,8 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
             sf::Vector2<double>* p = points[n];
             polygon.setPoint(n, sf::Vector2f(p->x, p->y));
           }
-          sf::Color col = sf::Color(200, 50, 200);
-          col.a = 50;
+          sf::Color col = sf::Color(255, 70, 0);
+          col.a = 100;
           polygon.setFillColor(col);
           polygon.setOutlineColor(col);
           polygon.setOutlineThickness(1);
