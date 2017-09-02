@@ -288,8 +288,14 @@ void MapGenerator::regenRegions() {
   std::cout << "Regions generation: " << _diagram->cells.size() << " finished\n" << std::flush;
 }
 
+bool isDiscard(const Cluster* c)
+{
+  return c->discarded;
+}
+
 void MapGenerator::regenClusters() {
-  std::map<Cell*,Cluster*> clusters;
+  clusters.clear();
+  std::map<Cell*,Cluster*> _clusters;
   std::map<Region*,Cell*> cells;
   for (auto c : _diagram->cells) {
     Region* r = _cells[c];
@@ -300,56 +306,69 @@ void MapGenerator::regenClusters() {
       Region* rn = _cells[n];
       if (r->biom.name != rn->biom.name){
         r->border = true;
-      } else if (clusters.count(n) != 0) {
+      } else if (_clusters.count(n) != 0) {
         cu = false;
         if (knownCluster == nullptr) {
-          r->cluster = clusters[n];
-          clusters[n]->regions.push_back(r);
-          clusters[c] = clusters[n];
-          knownCluster = clusters[n];
+          r->cluster = _clusters[n];
+          _clusters[n]->regions.push_back(r);
+          _clusters[c] = _clusters[n];
+          knownCluster = _clusters[n];
         } else {
-          Cluster *oldCluster = clusters[n];
+          Cluster *oldCluster = _clusters[n];
           if (oldCluster != knownCluster) {
-          // if (oldCluster->regions.size() > knownCluster->regions.size()) {
-          //   Cluster* tmp = knownCluster;
-          //   knownCluster = oldCluster;
-          //   oldCluster = tmp;
-          // }
-          // printf("Replace cluster %p with %p\n", oldCluster, knownCluster);
-          rn->cluster = knownCluster;
-          clusters[n] = knownCluster;
-          for (Region* orn : oldCluster->regions) {
-            orn->cluster = knownCluster;
-            auto kcrn = knownCluster->regions;
-            if(std::find(kcrn.begin(), kcrn.end(), orn) == kcrn.end()) {
-              knownCluster->regions.push_back(orn);
+            // if (oldCluster->regions.size() > knownCluster->regions.size()) {
+            //   Cluster* tmp = knownCluster;
+            //   knownCluster = oldCluster;
+            //   oldCluster = tmp;
+            // }
+            // printf("Replace cluster %p with %p\n", oldCluster, knownCluster);
+            rn->cluster = knownCluster;
+            _clusters[n] = knownCluster;
+            for (Region* orn : oldCluster->regions) {
+              orn->cluster = knownCluster;
+              auto kcrn = knownCluster->regions;
+              if(std::find(kcrn.begin(), kcrn.end(), orn) == kcrn.end()) {
+                knownCluster->regions.push_back(orn);
+              }
+              _clusters[cells[orn]] = knownCluster;
+              oldCluster->discarded = true;
+              // clusters.erase(std::find(clusters.begin(), clusters.end(), oldCluster));
             }
-            clusters[cells[orn]] = knownCluster;
-          }}
+          }
 
           r->cluster = knownCluster;
-          clusters[n]->regions.push_back(r);
-          clusters[c] = knownCluster;
+          // _clusters[n]->regions.push_back(r);
+          _clusters[c] = knownCluster;
           cells[r] = c;
         }
-      } else {
-        cu = true;
+        continue;
       }
         // break;
     }
     if(cu) {
       Cluster* cluster = new Cluster();
+      char buff[100];
+      snprintf(buff, sizeof(buff), "%p", (void*)cluster);
+      std::string buffAsStdStr = buff;
+      cluster->name = buffAsStdStr;
       cluster->hasRiver = false;
+      cluster->discarded = false;
       r->cluster = cluster;
       cluster->biom = r->biom;
       if (r->hasRiver) {
         cluster->hasRiver = true;
       }
       cluster->regions.push_back(r);
-      clusters[c] = cluster;
+      _clusters[c] = cluster;
       cells[r] = c;
+      clusters.push_back(cluster);
     }
   }
+  printf("Clusters: %zu\n", clusters.size());
+  clusters.erase(
+    std::remove_if(clusters.begin(), clusters.end(), isDiscard),
+    clusters.end());
+  printf("Clusters: %zu\n", clusters.size());
 }
 
 Region* MapGenerator::getRegion(sf::Vector2f pos) {

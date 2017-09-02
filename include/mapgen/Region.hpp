@@ -28,4 +28,5 @@ struct Cluster {
   std::vector<Region*> regions;
   Biom biom;
   bool hasRiver;
+  bool discarded;
 };

@@ -1,3 +1,6 @@
+#ifndef MAPGEN_H_
+#define MAPGEN_H_
+
 #include <SFML/Graphics.hpp>
 #include <VoronoiDiagramGenerator.h>
 #include <libnoise/noise.h>
@@ -28,6 +31,7 @@ public:
   void seed();
   std::vector<Region*>* getRegions();
   std::vector<PointList*> rivers;
+  std::vector<Cluster*> clusters;
 
 private:
   void regenHeight();
@@ -57,3 +61,5 @@ private:
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
 };
+
+#endif
