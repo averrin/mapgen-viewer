@@ -2,6 +2,8 @@
 #include "mapgen/Region.hpp"
 #include <vector>
 
+Region::Region() {};
+
 Region::Region(Biom b, PointList v, HeightMap h, Point s)
   : biom(b), _verticies(v), _heights(h), site(s) {}
 

@@ -1,6 +1,8 @@
 #include "mapgen/MapGenerator.hpp"
 #include <VoronoiDiagramGenerator.h>
 
+const int DEFAULT_RELAX = 10;
+
 const std::vector<Biom> BIOMS = {{
     {
       -2.0000,
@@ -19,7 +21,7 @@ const std::vector<Biom> BIOMS = {{
     },
     {
       0.0000,
-      sf::Color( 91, 132, 173),
+      sf::Color( 68, 99, 130),
       "Shore"
     },
     {
@@ -39,15 +41,21 @@ const std::vector<Biom> BIOMS = {{
     },
     {
       0.7500,
-      sf::Color(128, 128, 128),
+      sf::Color(148, 148, 148),
       "Rock"
     },
     {
       1.0000,
       sf::Color(240, 240, 240),
       "Snow"
+    },
+    {
+      999.000,
+      sf::Color::Red,
+      "Mark"
     }
   }};
+const Biom MARK = BIOMS[9];
 
 double normalize(double in, int dimension) {
 	return in / (float)dimension*1.8 - 0.9;
@@ -67,6 +75,8 @@ MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
   _pointsCount = 10000;
   _octaves = 3;
   _freq = 0.3;
+  _relax = DEFAULT_RELAX;
+  _regions = new std::vector<Region*>();
 }
 
 void MapGenerator::build() {
@@ -75,16 +85,24 @@ void MapGenerator::build() {
 }
 
 void MapGenerator::relax() {
-  _diagram.reset(_vdg.relax());
+  _relax++;
+  makeRelax();
   regenRegions();
+  regenRivers();
+}
+
+void MapGenerator::makeRelax() {
+  _diagram.reset(_vdg.relax());
 }
 
 void MapGenerator::seed() {
   _seed = std::clock();
+  _relax = DEFAULT_RELAX;
   printf("New seed: %d\n", _seed);
 }
 
 void MapGenerator::setSeed(int s) {
+  _relax = DEFAULT_RELAX;
   _seed = s;
 }
 
@@ -121,6 +139,16 @@ void MapGenerator::update() {
   regenHeight();
   regenDiagram();
   regenRegions();
+  regenClusters();
+  regenRivers();
+}
+
+void MapGenerator::forceUpdate() {
+  // regenHeight();
+  regenDiagram();
+  regenRegions();
+  regenClusters();
+  regenRivers();
 }
 
 void MapGenerator::regenHeight() {
@@ -136,10 +164,77 @@ void MapGenerator::regenHeight() {
   std::cout << "Height generation finished\n" << std::flush;
 }
 
+void MapGenerator::regenRivers() {
+  std::vector<Cell*> visited;
+  Cell* c = _highestCell;
+  printf("First cell: %p\n", c);
+  Region* r = _cells[c];
+  printf("First biom: %s\n", r->biom.name.c_str());
+  // r->biom = MARK;
+  float z = r->getHeight(r->site);
+  printf("First vert: %f\n", z);
+  river.clear();
+  river.push_back(r->site);
+  visited.push_back(c);
+
+  Point next = r->site;
+  for (auto e : c->getEdges()) {
+    if (r->getHeight(e->startPoint()) < z) {
+      next = e->startPoint();
+      z = r->getHeight(next);
+    }
+  }
+
+  int count = 0;
+  while (z > 0.f && count < 100) {
+    std::vector<Cell*> n = c->getNeighbors();
+    Cell* end;
+    for (Cell* c2 : n) {
+      if (std::find(visited.begin(), visited.end(),c2)!=visited.end()) {
+        continue;
+      }
+      visited.push_back(c2);
+      r = _cells[c2];
+      bool f = false;
+      for (auto e : c2->getEdges()) {
+        // printf("Next candidate: %f < %f\n", r->getHeight(e->startPoint()), z);
+        if (r->getHeight(e->startPoint()) < z) {
+          next = e->startPoint();
+          z = r->getHeight(next);
+          c = c2;
+          f = true;
+        }
+      }
+      if (f) {
+        // river.push_back(r->site);
+        river.push_back(r->site);
+        r->hasRiver = true;
+        // river.push_back(next);
+        // river.push_back(next);
+      }
+      end = c2;
+    }
+    count++;
+    if (count == 100) {
+      r->biom = BIOMS[2];
+      river.push_back(r->site);
+
+      for (auto n : end->getNeighbors()) {
+        r = _cells[n];
+        r->biom = BIOMS[3];
+      }
+      // std::cout << "Cannot create river!\n";
+      // river.clear();
+    }
+  }
+}
+
 void MapGenerator::regenRegions() {
   _cells.clear();
-  _regions.clear();
-  _regions.reserve(_diagram->cells.size());
+  _regions->clear();
+  _regions->reserve(_diagram->cells.size());
+  float ch = 0.f;
+  Biom lastBiom = BIOMS[0];
   for (auto c : _diagram->cells) {
     PointList verts;
     int count = int(c->getEdges().size());
@@ -157,6 +252,10 @@ void MapGenerator::regenRegions() {
         ht += h[p0];
       }
     ht = ht/count;
+    if (ht > ch) {
+      _highestCell = c;
+      ch = ht;
+    }
     sf::Vector2<double>& p = c->site.p;
     h.insert(std::make_pair(&p, ht));
     Biom b = BIOMS[0];
@@ -166,12 +265,27 @@ void MapGenerator::regenRegions() {
           b = BIOMS[i];
         }
       }
-    Region region = Region(b, verts, h, &p);
-    _regions.push_back(region);
+    Region *region = new Region(b, verts, h, &p);
+    region->border = false;
+    region->hasRiver = false;
+    _regions->push_back(region);
     _cells.insert(std::make_pair(c, region));
 
   }
   std::cout << "Regions generation: " << _diagram->cells.size() << " finished\n" << std::flush;
+}
+
+void MapGenerator::regenClusters() {
+  std::map<Cell*,Cluster*> clusters;
+  for (auto c : _diagram->cells) {
+    Region* r = _cells[c];
+    for (auto n : c->getNeighbors()) {
+      Region* rn = _cells[n];
+      if (r->biom.name != rn->biom.name){
+        r->border = true;
+      }
+    }
+  }
 }
 
 Region* MapGenerator::getRegion(sf::Vector2f pos) {
@@ -179,14 +293,20 @@ Region* MapGenerator::getRegion(sf::Vector2f pos) {
   {
     Cell* c = pair.first;
     if(c->pointIntersection(pos.x, pos.y) != -1) {
-      return &(pair.second);
+      return pair.second;
     }
   }
   return nullptr;
 }
 
-std::vector<Region> MapGenerator::getRegions() {
+std::vector<Region*>* MapGenerator::getRegions() {
   return _regions;
+  // std::vector<Region*>* r = new std::vector<Region*>();
+  // for (auto &pair : _cells)
+  //   {
+  //     r->push_back(pair.second);
+  //   }
+  // return r;
 }
 
 void MapGenerator::setSize(int w, int h) {
@@ -194,12 +314,18 @@ void MapGenerator::setSize(int w, int h) {
   _h = h;
 }
 
+int MapGenerator::getRelax() {
+  return _relax;
+}
+
 void MapGenerator::regenDiagram() {
   _bbox = sf::Rect<double>(0,0,_w, _h);
-  _relax = 0;
   _sites = new std::vector<sf::Vector2<double>>();
   genRandomSites(*_sites, _bbox, _w, _h, _pointsCount);
   _diagram.reset(_vdg.compute(*_sites, _bbox));
+  for (int n = 0; n < _relax; n++) {
+    makeRelax();
+  }
   delete _sites;
   std::cout << "Diagram generation finished: " << _pointsCount << "\n" << std::flush;
 }
@@ -227,6 +353,6 @@ void MapGenerator::genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::R
 	}
 }
 
-std::vector<sf::ConvexShape> MapGenerator::getPolygons() {
+std::vector<sf::ConvexShape>* MapGenerator::getPolygons() {
   return _polygons;
 }

@@ -11,10 +11,10 @@ std::vector<Cell*> Cell::getNeighbors() {
 	while (edgeCount--) {
 		e = halfEdges[edgeCount]->edge;
 		if (e->lSite && e->lSite != &site) {
-			neighbors.push_back(this);
+			neighbors.push_back(e->lSite->cell);
 		}
 		else if (e->rSite && e->rSite != &site) {
-			neighbors.push_back(this);
+			neighbors.push_back(e->rSite->cell);
 		}
 	}
 

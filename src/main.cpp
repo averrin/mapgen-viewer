@@ -2,19 +2,27 @@
 #include <map>
 #include <imgui.h>
 #include <imgui-SFML.h>
- 
+
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics.hpp>
 
 #include "mapgen/MapGenerator.hpp"
+#include "logger.cpp"
+#include "../MapgenConfig.h"
+#include "SelbaWard/SelbaWard.hpp"
 
 int relax = 0;
 int seed;
 int octaves;
 float freq;
 int nPoints;
+bool borders;
+bool sites;
+bool edges;
+bool info;
+bool heights;
 
 int main()
 {
@@ -26,10 +34,10 @@ int main()
 
   //the generator
   MapGenerator mapgen = MapGenerator(window.getSize().x, window.getSize().y);
-  seed = mapgen.getSeed();
   octaves = mapgen.getOctaveCount();
   freq = mapgen.getFrequency();
   nPoints = mapgen.getPointCount();
+  relax = mapgen.getRelax();
 
   //used to measure generation time
   sf::Clock timer;
@@ -37,17 +45,28 @@ int main()
   window.setVerticalSyncEnabled(true);
   ImGui::SFML::Init(window);
 
-  std::vector<sf::ConvexShape> polygons;
-  auto  updateVisuals = [&](){
-    polygons.clear();
-    int i = 0;
-    std::vector<Region> regions = mapgen.getRegions();
-    polygons.reserve(regions.size());
-    for(std::vector<Region>::iterator it=regions.begin() ; it < regions.end(); it++, i++) {
+  static AppLog log;
 
-      Region region = regions[i];
+  // Demo: add random items (unless Ctrl is held)
+  log.AddLog("Welcome to Mapgen\n");
+
+  std::vector<sf::ConvexShape> polygons;
+  std::vector<sf::Vertex> verticies;
+  sf::Color bgColor;
+  float color[3] = { 0.12, 0.12, 0.12 };
+  auto updateVisuals = [&](){
+    log.AddLog("Update geometry\n");
+    polygons.clear();
+    verticies.clear();
+    int i = 0;
+    std::vector<Region*>* regions = mapgen.getRegions();
+    polygons.reserve(regions->size());
+    verticies.reserve(regions->size());
+    for(std::vector<Region*>::iterator it=regions->begin() ; it < regions->end(); it++, i++) {
+
+      Region* region = (*regions)[i];
       sf::ConvexShape polygon;
-      PointList points = region.getPoints();
+      PointList points = region->getPoints();
       polygon.setPointCount(points.size());
       int n = 0;
       for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
@@ -55,31 +74,52 @@ int main()
         polygon.setPoint(n, sf::Vector2f(p->x, p->y));
       }
 
-      polygon.setFillColor(region.biom.color);
-      polygon.setOutlineColor(sf::Color(100,100,100));
-      polygon.setOutlineThickness(1);
+      sf::Color col(region->biom.color);
+      int a = 255 * (region->getHeight(region->site)+1.6)/3;
+      if (a > 255) {
+        a = 255;
+      }
+      col.a = a;
+      polygon.setFillColor(col);
+      if(edges) {
+        polygon.setOutlineColor(sf::Color(100,100,100));
+        polygon.setOutlineThickness(1);
+      }
+      if(borders) {
+        if(region->border) {
+          polygon.setOutlineColor(sf::Color(100,50,50));
+          polygon.setOutlineThickness(1);
+        }
+      }
+      if(heights) {
+        sf::Color col(region->biom.color);
+        col.r = 255 * (region->getHeight(region->site)+1.6)/3.2;
+        col.a = 20 + 255 * (region->getHeight(region->site)+1.6)/3.2;
+        col.b = col.b/3;
+        col.g = col.g/3;
+        polygon.setFillColor(col);
+        color[2] = 1.f;
+      }
       polygons.push_back(polygon);
+      verticies.push_back(sf::Vertex(sf::Vector2f(region->site->x, region->site->y), sf::Color(100,100,100)));
     }
   };
 
-
-
-    sf::Color bgColor;
-    float color[3] = { 0.1, 0.1, 0.1 };
 
     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
  
-    // let's use char array as buffer, see next part
-    // for instructions on using std::string with ImGui
     char windowTitle[255] = "MapGen";
  
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
-    mapgen.build();
+    mapgen.setSeed(140731122 /*37946940*/);
+    mapgen.update();
+    seed = mapgen.getSeed();
     updateVisuals();
+
 
     sf::Clock deltaClock;
     while (window.isOpen()) {
@@ -103,15 +143,37 @@ int main()
         ImGui::Begin("Mapgen"); // begin window
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
  
+        if (ImGui::Checkbox("Borders",&borders)) {
+          updateVisuals();
+        }
+        ImGui::SameLine(100);
+        ImGui::Checkbox("Sites",&sites);
+        ImGui::SameLine(200);
+        if(ImGui::Checkbox("Edges",&edges)){
+            updateVisuals();
+        }
+        if(ImGui::Checkbox("Heights",&heights)){
+          updateVisuals();
+        }
+        ImGui::SameLine(100);
+        ImGui::Checkbox("Info",&info);
+
         if (ImGui::InputInt("Seed", &seed)) {
           mapgen.setSeed(seed);
           mapgen.update();
           updateVisuals();
+          relax = mapgen.getRelax();
         }
         if (ImGui::Button("Random")) {
           mapgen.seed();
           seed = mapgen.getSeed();
           mapgen.update();
+          updateVisuals();
+          relax = mapgen.getRelax();
+        }
+        ImGui::SameLine(100);
+        if (ImGui::Button("Update")) {
+          mapgen.forceUpdate();
           updateVisuals();
         }
 
@@ -122,6 +184,7 @@ int main()
           mapgen.setOctaveCount(octaves);
           mapgen.update();
           updateVisuals();
+          relax = mapgen.getRelax();
         }
 
         if (ImGui::InputFloat("Height freq", &freq)) {
@@ -134,21 +197,23 @@ int main()
         }
 
         if (ImGui::InputInt("Points", &nPoints)) {
-          if (nPoints < 1) {
-            nPoints = 1;
+          if (nPoints < 5) {
+            nPoints = 5;
           }
           mapgen.setPointCount(nPoints);
           mapgen.update();
           updateVisuals();
+          relax = mapgen.getRelax();
         }
 
         if (ImGui::Button("Relax")) {
           mapgen.relax();
           updateVisuals();
-          relax++;
+          relax = mapgen.getRelax();
         }
         ImGui::SameLine(100);
         ImGui::Text("Relax iterations: %d", relax);
+        ImGui::Text("Polygons: %zu", polygons.size());
 
         ImGui::Text("Window size: w:%d h:%d",
                     window.getSize().x,
@@ -159,23 +224,27 @@ int main()
           mapgen.setPointCount(nPoints);
           mapgen.update();
           updateVisuals();
+          relax = mapgen.getRelax();
         }
 
+        sf::ConvexShape selectedPolygon;
+        sf::CircleShape site(2.f);
+        if (info) {
         sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
         ImGui::Text("Mouse: x:%f y:%f",
                     pos.x,
                     pos.y);
-        sf::ConvexShape selectedPolygon;
 
-
-        int n = 0;
         Region* currentRegion =  mapgen.getRegion(pos);
 
         PointList points = currentRegion->getPoints();
         selectedPolygon.setPointCount(int(points.size()));
 
+        ImGui::Text("Region: %p", currentRegion);
         ImGui::Text("Site: x:%f y:%f z:%f", currentRegion->site->x, currentRegion->site->y, currentRegion->getHeight(currentRegion->site));
         ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
+        ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
+        ImGui::Text("Is border: %s", currentRegion->border ? "true" : "false");
 
         ImGui::Columns(3, "cells");
         ImGui::Separator();
@@ -183,7 +252,6 @@ int main()
         ImGui::Text("y"); ImGui::NextColumn();
         ImGui::Text("z"); ImGui::NextColumn();
         ImGui::Separator();
-        static int selected = -1;
 
         for (int pi = 0; pi < int(points.size()); pi++)
           {
@@ -198,16 +266,14 @@ int main()
         selectedPolygon.setFillColor(sf::Color::Transparent);
         selectedPolygon.setOutlineColor(sf::Color::Red);
         selectedPolygon.setOutlineThickness(2);
-        // sf::Vertex site;
-        // site = sf::Vertex({{static_cast<float>(currentRegion->site->x),
-        //         static_cast<float>(currentRegion->site->y)}, sf::Color::Green});
-        sf::CircleShape site(2.f);
         site.setFillColor(sf::Color::Red);
-        site.setPosition(static_cast<float>(currentRegion->site->x),static_cast<float>(currentRegion->site->y));
-        //       sf::Vector2<double>& p = c->site.p;
-
+        site.setPosition(static_cast<float>(currentRegion->site->x-1),static_cast<float>(currentRegion->site->y-1));
+}
 
         ImGui::End(); // end window
+
+        bool b(true);
+        log.Draw("Mapgen: Log", &b);
 
         window.clear(bgColor); // fill background with color
 
@@ -215,9 +281,30 @@ int main()
         for(std::vector<sf::ConvexShape>::iterator it=polygons.begin() ; it < polygons.end(); it++, i++) {
           window.draw(polygons[i]);
         }
-        window.draw(selectedPolygon);
-        // window.draw(&site, 1, sf::PrimitiveType::Points);
-        window.draw(site);
+
+        sw::Spline river;
+        river.setColor(sf::Color( 51,  51,  91));
+        river.setThickness(3);
+        i = 0;
+        for(PointList::iterator it=mapgen.river.begin() ; it < mapgen.river.end(); it++, i++) {
+          Point p = mapgen.river[i];
+          river.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
+        }
+        river.setBezierInterpolation(); // enable Bezier spline
+        river.setInterpolationSteps(10); // curvature resolution
+        river.smoothHandles();
+        river.update();
+        window.draw(river);
+
+        if(info) {
+          window.draw(selectedPolygon);
+          window.draw(site);
+        }
+        if (sites) {
+          for (auto v : verticies) {
+            window.draw(&v, 1, sf::PrimitiveType::Points);
+          }
+        }
 
 
         ImGui::SFML::Render(window);

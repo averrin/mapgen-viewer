@@ -25,7 +25,10 @@ include_directories(
 file(GLOB VLIB_SOURCE "${PROJECT_BINARY_DIR}/include/Voronoi/src/*.cpp" "${PROJECT_BINARY_DIR}/include/Voronoi/include/*.h")
 add_library(voronoi ${VLIB_SOURCE})
 file(GLOB IMLIB_SOURCE "${PROJECT_BINARY_DIR}/include/imgui/*.cpp" "${PROJECT_BINARY_DIR}/include/imgui/*.h")
-add_library(imgui ${VLIB_SOURCE})
+add_library(imgui ${IMLIB_SOURCE})
+
+file(GLOB SWLIB_SOURCE "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.cpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.hpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/*.hpp")
+add_library(sw ${SWLIB_SOURCE})
 
 set(EXECUTABLE_NAME "mapgen")
 add_executable(${EXECUTABLE_NAME}
@@ -41,6 +44,9 @@ add_executable(${EXECUTABLE_NAME}
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -69,7 +75,7 @@ if (OPENGL_FOUND)
   target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES})
 endif()
 
-target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui)
+target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw)
 
 target_compile_features(mapgen PRIVATE cxx_delegating_constructors)
 
