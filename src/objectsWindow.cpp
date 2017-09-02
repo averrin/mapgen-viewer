@@ -48,7 +48,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
       ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (selection_mask[i] ? ImGuiTreeNodeFlags_Selected : 0);
 
       char t[100];
-      sprintf(t, "%s (%%d)", cluster->name.c_str());
+      sprintf(t, "%s [%s] (%%d)%s",cluster->biom.name.c_str(), cluster->name.c_str(), cluster->discarded ? " X" : "");
       bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, t, int(cluster->regions.size()));
       if (ImGui::IsItemClicked()) {
         node_clicked = i;
@@ -57,6 +57,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
         {
           ImGui::Text("Biom: %s", cluster->biom.name.c_str());
           ImGui::Text("Regions: %zu", cluster->regions.size());
+          ImGui::Text("Has river: %s", cluster->hasRiver ? "true" : "false");
           ImGui::TreePop();
         }
       i++;

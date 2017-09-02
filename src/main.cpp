@@ -131,6 +131,18 @@ int main()
         while (window.pollEvent(event)) {
             ImGui::SFML::ProcessEvent(event);
 
+            switch (event.type)
+              {
+              case sf::Event::KeyPressed:
+                switch (event.key.code)
+                  {
+                  case sf::Keyboard::Escape:
+                    window.close();
+                    break;
+                  }
+                break;
+              }
+
             if (event.type == sf::Event::Closed) {
                 window.close();
             }
@@ -146,6 +158,12 @@ int main()
 
         ImGui::Begin("Mapgen"); // begin window
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text("Polygons: %zu", polygons.size());
+
+        ImGui::Text("Window size: w:%d h:%d",
+                    window.getSize().x,
+                    window.getSize().y
+                    );
 
         if (ImGui::Checkbox("Borders",&borders)) {
           updateVisuals();
@@ -223,12 +241,6 @@ int main()
         }
         ImGui::SameLine(100);
         ImGui::Text("Relax iterations: %d", relax);
-        ImGui::Text("Polygons: %zu", polygons.size());
-
-        ImGui::Text("Window size: w:%d h:%d",
-                    window.getSize().x,
-                    window.getSize().y
-                    );
         if (ImGui::Button("+1000")) {
           nPoints+=1000;
           mapgen.setPointCount(nPoints);

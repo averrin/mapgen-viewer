@@ -40,6 +40,7 @@ private:
   void regenRivers();
   void regenClusters();
   void makeRelax();
+  void makeRiver(Cell* c);
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;
@@ -54,6 +55,7 @@ private:
 	std::unique_ptr<Diagram> _diagram;
   std::vector<sf::ConvexShape>* _polygons;
   Cell* _highestCell;
+  std::map<Region*,Cell*> cellsMap;
 
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;

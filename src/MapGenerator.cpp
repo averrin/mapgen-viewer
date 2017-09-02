@@ -1,5 +1,21 @@
 #include "mapgen/MapGenerator.hpp"
 #include <VoronoiDiagramGenerator.h>
+#include  <random>
+#include  <iterator>
+
+template<typename Iter, typename RandomGenerator>
+Iter select_randomly(Iter start, Iter end, RandomGenerator& g) {
+  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+  std::advance(start, dis(g));
+  return start;
+}
+
+template<typename Iter>
+Iter select_randomly(Iter start, Iter end) {
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+  return select_randomly(start, end, gen);
+}
 
 const int DEFAULT_RELAX = 10;
 
@@ -76,6 +92,13 @@ bool sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2) 
 	if (s1.y < s2.y)
 		return true;
 	if (s1.y == s2.y && s1.x < s2.x)
+		return true;
+
+	return false;
+}
+
+bool clusterOrdered(Cluster* s1, Cluster* s2) {
+	if (s1->regions.size() > s2->regions.size())
 		return true;
 
 	return false;
@@ -175,16 +198,14 @@ void MapGenerator::regenHeight() {
   std::cout << "Height generation finished\n" << std::flush;
 }
 
-void MapGenerator::regenRivers() {
+void MapGenerator::makeRiver(Cell* c) {
   std::vector<Cell*> visited;
-  Cell* c = _highestCell;
   printf("First cell: %p\n", c);
   Region* r = _cells[c];
   printf("First biom: %s\n", r->biom.name.c_str());
   // r->biom = MARK;
   float z = r->getHeight(r->site);
   printf("First vert: %f\n", z);
-  rivers.clear();
   PointList* river = new PointList();
   rivers.push_back(river);
   river->push_back(r->site);
@@ -242,6 +263,18 @@ void MapGenerator::regenRivers() {
   }
 }
 
+void MapGenerator::regenRivers() {
+  rivers.clear();
+  for (auto cluster : clusters){
+    if (cluster->biom.name == "Snow" || cluster->biom.name == "Rock") {
+      Cell* c = cellsMap[*select_randomly(cluster->regions.begin(), cluster->regions.end())];
+      if (c != nullptr) {
+        makeRiver(c);
+      }
+    }
+  }
+}
+
 void MapGenerator::regenRegions() {
   _cells.clear();
   _regions->clear();
@@ -290,13 +323,14 @@ void MapGenerator::regenRegions() {
 
 bool isDiscard(const Cluster* c)
 {
-  return c->discarded;
+  // return c->discarded;
+  return c->regions.size() == 0;
 }
 
 void MapGenerator::regenClusters() {
   clusters.clear();
+  cellsMap.clear();
   std::map<Cell*,Cluster*> _clusters;
-  std::map<Region*,Cell*> cells;
   for (auto c : _diagram->cells) {
     Region* r = _cells[c];
     bool cu = true;
@@ -314,7 +348,7 @@ void MapGenerator::regenClusters() {
           _clusters[c] = _clusters[n];
           knownCluster = _clusters[n];
         } else {
-          Cluster *oldCluster = _clusters[n];
+          Cluster *oldCluster = rn->cluster;
           if (oldCluster != knownCluster) {
             // if (oldCluster->regions.size() > knownCluster->regions.size()) {
             //   Cluster* tmp = knownCluster;
@@ -330,16 +364,17 @@ void MapGenerator::regenClusters() {
               if(std::find(kcrn.begin(), kcrn.end(), orn) == kcrn.end()) {
                 knownCluster->regions.push_back(orn);
               }
-              _clusters[cells[orn]] = knownCluster;
-              oldCluster->discarded = true;
+              _clusters[cellsMap[orn]] = knownCluster;
               // clusters.erase(std::find(clusters.begin(), clusters.end(), oldCluster));
             }
+            oldCluster->discarded = true;
+            oldCluster->regions.clear();
           }
 
           r->cluster = knownCluster;
           // _clusters[n]->regions.push_back(r);
           _clusters[c] = knownCluster;
-          cells[r] = c;
+          cellsMap[r] = c;
         }
         continue;
       }
@@ -360,7 +395,7 @@ void MapGenerator::regenClusters() {
       }
       cluster->regions.push_back(r);
       _clusters[c] = cluster;
-      cells[r] = c;
+      cellsMap[r] = c;
       clusters.push_back(cluster);
     }
   }
@@ -368,6 +403,7 @@ void MapGenerator::regenClusters() {
   clusters.erase(
     std::remove_if(clusters.begin(), clusters.end(), isDiscard),
     clusters.end());
+  std::sort(clusters.begin(), clusters.end(), clusterOrdered);
   printf("Clusters: %zu\n", clusters.size());
 }
 
