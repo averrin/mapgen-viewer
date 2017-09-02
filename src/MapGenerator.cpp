@@ -61,6 +61,17 @@ double normalize(double in, int dimension) {
 	return in / (float)dimension*1.8 - 0.9;
 }
 
+bool cellsOrdered(Cell* c1, Cell* c2) {
+  sf::Vector2<double> s1 = c1->site.p;
+  sf::Vector2<double> s2 = c2->site.p;
+	if (s1.y < s2.y)
+		return true;
+	if (s1.y == s2.y && s1.x < s2.x)
+		return true;
+
+	return false;
+}
+
 bool sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2) {
 	if (s1.y < s2.y)
 		return true;
@@ -173,8 +184,10 @@ void MapGenerator::regenRivers() {
   // r->biom = MARK;
   float z = r->getHeight(r->site);
   printf("First vert: %f\n", z);
-  river.clear();
-  river.push_back(r->site);
+  rivers.clear();
+  PointList* river = new PointList();
+  rivers.push_back(river);
+  river->push_back(r->site);
   visited.push_back(c);
 
   Point next = r->site;
@@ -207,7 +220,7 @@ void MapGenerator::regenRivers() {
       }
       if (f) {
         // river.push_back(r->site);
-        river.push_back(r->site);
+        river->push_back(r->site);
         r->hasRiver = true;
         // river.push_back(next);
         // river.push_back(next);
@@ -217,7 +230,7 @@ void MapGenerator::regenRivers() {
     count++;
     if (count == 100) {
       r->biom = BIOMS[2];
-      river.push_back(r->site);
+      river->push_back(r->site);
 
       for (auto n : end->getNeighbors()) {
         r = _cells[n];
@@ -277,13 +290,59 @@ void MapGenerator::regenRegions() {
 
 void MapGenerator::regenClusters() {
   std::map<Cell*,Cluster*> clusters;
+  std::map<Region*,Cell*> cells;
   for (auto c : _diagram->cells) {
     Region* r = _cells[c];
+    bool cu = true;
+    Cluster *knownCluster = nullptr;
+    // printf("New cell: %p\n", r);
     for (auto n : c->getNeighbors()) {
       Region* rn = _cells[n];
       if (r->biom.name != rn->biom.name){
         r->border = true;
+      } else if (clusters.count(n) != 0) {
+        cu = false;
+        if (knownCluster == nullptr) {
+          r->cluster = clusters[n];
+          clusters[n]->regions.push_back(r);
+          clusters[c] = clusters[n];
+          knownCluster = clusters[n];
+        } else {
+          Cluster *oldCluster = clusters[n];
+          if (oldCluster != knownCluster) {
+          // if (oldCluster->regions.size() > knownCluster->regions.size()) {
+          //   Cluster* tmp = knownCluster;
+          //   knownCluster = oldCluster;
+          //   oldCluster = tmp;
+          // }
+          // printf("Replace cluster %p with %p\n", oldCluster, knownCluster);
+          rn->cluster = knownCluster;
+          clusters[n] = knownCluster;
+          for (Region* orn : oldCluster->regions) {
+            orn->cluster = knownCluster;
+            auto kcrn = knownCluster->regions;
+            if(std::find(kcrn.begin(), kcrn.end(), orn) == kcrn.end()) {
+              knownCluster->regions.push_back(orn);
+            }
+            clusters[cells[orn]] = knownCluster;
+          }}
+
+          r->cluster = knownCluster;
+          clusters[n]->regions.push_back(r);
+          clusters[c] = knownCluster;
+          cells[r] = c;
+        }
+      } else {
+        cu = true;
       }
+        // break;
+    }
+    if(cu) {
+      Cluster* cluster = new Cluster();
+      r->cluster = cluster;
+      cluster->regions.push_back(r);
+      clusters[c] = cluster;
+      cells[r] = c;
     }
   }
 }
@@ -327,6 +386,7 @@ void MapGenerator::regenDiagram() {
     makeRelax();
   }
   delete _sites;
+  std::sort(_diagram->cells.begin(), _diagram->cells.end(), cellsOrdered);
   std::cout << "Diagram generation finished: " << _pointsCount << "\n" << std::flush;
 }
 

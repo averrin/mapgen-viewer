@@ -23,6 +23,7 @@ bool sites;
 bool edges;
 bool info;
 bool heights;
+bool flat;
 
 int main()
 {
@@ -51,6 +52,7 @@ int main()
   log.AddLog("Welcome to Mapgen\n");
 
   std::vector<sf::ConvexShape> polygons;
+  std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::Vertex> verticies;
   sf::Color bgColor;
   float color[3] = { 0.12, 0.12, 0.12 };
@@ -75,11 +77,13 @@ int main()
       }
 
       sf::Color col(region->biom.color);
+      if(!flat){
       int a = 255 * (region->getHeight(region->site)+1.6)/3;
       if (a > 255) {
         a = 255;
       }
       col.a = a;
+      }
       polygon.setFillColor(col);
       if(edges) {
         polygon.setOutlineColor(sf::Color(100,100,100));
@@ -156,7 +160,13 @@ int main()
           updateVisuals();
         }
         ImGui::SameLine(100);
-        ImGui::Checkbox("Info",&info);
+        if(ImGui::Checkbox("Flat",&flat)){
+          updateVisuals();
+        }
+        ImGui::SameLine(200);
+        if(ImGui::Checkbox("Info",&info)) {
+          infoPolygons.clear();
+        }
 
         if (ImGui::InputInt("Seed", &seed)) {
           mapgen.setSeed(seed);
@@ -240,7 +250,34 @@ int main()
         PointList points = currentRegion->getPoints();
         selectedPolygon.setPointCount(int(points.size()));
 
+        Cluster* cluster = currentRegion->cluster;
+        int i = 0;
+        infoPolygons.clear();
+        if (cluster != nullptr) {
+        for(std::vector<Region*>::iterator it=cluster->regions.begin() ; it < cluster->regions.end(); it++, i++) {
+
+          Region* region = cluster->regions[i];
+          sf::ConvexShape polygon;
+          PointList points = region->getPoints();
+          polygon.setPointCount(points.size());
+          int n = 0;
+          for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
+            sf::Vector2<double>* p = points[n];
+            polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+          }
+          sf::Color col = sf::Color::Red;
+          col.a = 50;
+          polygon.setFillColor(col);
+          polygon.setOutlineColor(col);
+          polygon.setOutlineThickness(1);
+          infoPolygons.push_back(polygon);
+        }
+        }
+
         ImGui::Text("Region: %p", currentRegion);
+        if (currentRegion->cluster != nullptr) {
+        ImGui::Text("Cluster: %p", currentRegion->cluster);
+}
         ImGui::Text("Site: x:%f y:%f z:%f", currentRegion->site->x, currentRegion->site->y, currentRegion->getHeight(currentRegion->site));
         ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
         ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
@@ -281,20 +318,26 @@ int main()
         for(std::vector<sf::ConvexShape>::iterator it=polygons.begin() ; it < polygons.end(); it++, i++) {
           window.draw(polygons[i]);
         }
-
-        sw::Spline river;
-        river.setColor(sf::Color( 51,  51,  91));
-        river.setThickness(3);
         i = 0;
-        for(PointList::iterator it=mapgen.river.begin() ; it < mapgen.river.end(); it++, i++) {
-          Point p = mapgen.river[i];
-          river.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
+        for(std::vector<sf::ConvexShape>::iterator it=infoPolygons.begin() ; it < infoPolygons.end(); it++, i++) {
+          window.draw(infoPolygons[i]);
         }
-        river.setBezierInterpolation(); // enable Bezier spline
-        river.setInterpolationSteps(10); // curvature resolution
-        river.smoothHandles();
-        river.update();
-        window.draw(river);
+
+        for (auto rvr : mapgen.rivers){
+          sw::Spline river;
+          river.setColor(sf::Color( 51,  51,  91));
+          river.setThickness(3);
+          i = 0;
+          for(PointList::iterator it=rvr->begin() ; it < rvr->end(); it++, i++) {
+            Point p = (*rvr)[i];
+            river.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
+          }
+          river.setBezierInterpolation(); // enable Bezier spline
+          river.setInterpolationSteps(10); // curvature resolution
+          river.smoothHandles();
+          river.update();
+          window.draw(river);
+        }
 
         if(info) {
           window.draw(selectedPolygon);

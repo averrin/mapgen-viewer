@@ -27,7 +27,7 @@ public:
   std::vector<sf::ConvexShape>* getPolygons();
   void seed();
   std::vector<Region*>* getRegions();
-  PointList river;
+  std::vector<PointList*> rivers;
 
 private:
   void regenHeight();
