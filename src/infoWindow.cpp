@@ -11,7 +11,6 @@ void infoWindow(sf::RenderWindow* window, Region* currentRegion) {
   ImGui::Text("Region: %p", currentRegion);
   ImGui::Text("Cluster: %p", cluster);
   ImGui::Text("Cluster size: %zu", cluster->regions.size());
-  ImGui::Text("Cluster discarded: %s", cluster->discarded ? "true" : "false");
   ImGui::Text("Site: x:%f y:%f z:%f",
               currentRegion->site->x,
               currentRegion->site->y,
@@ -35,5 +34,6 @@ void infoWindow(sf::RenderWindow* window, Region* currentRegion) {
     ImGui::Text("%f", currentRegion->getHeight(p)); ImGui::NextColumn();
   }
 
+  ImGui::Columns(1);
   ImGui::End();
 }

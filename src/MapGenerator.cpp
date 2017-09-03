@@ -67,6 +67,11 @@ const std::vector<Biom> BIOMS = {{
       "Snow"
     },
     {
+      999.000,
+      sf::Color( 51,  51,  91),
+      "Lake"
+    },
+    {
       1.2000,
       sf::Color(220, 220, 255),
       "Ice"
@@ -262,12 +267,12 @@ void MapGenerator::makeRiver(Cell* c) {
     }
     count++;
     if (count == 100) {
-      r->biom = BIOMS[2];
+      r->biom = BIOMS[9];
       river->push_back(r->site);
 
       for (auto n : end->getNeighbors()) {
         r = _cells[n];
-        r->biom = BIOMS[3];
+        r->biom = BIOMS[9];
       }
       // std::cout << "Cannot create river!\n";
       // river.clear();

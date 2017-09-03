@@ -3,7 +3,8 @@
 #include "mapgen/MapGenerator.hpp"
 #include <imgui.h>
 
-std::vector<bool> selection_mask; // Dumb representation of what may be user-side selection state. You may carry selection state inside or outside your objects in whatever format you see fit.
+std::vector<bool> selection_mask;
+std::vector<bool> rivers_selection_mask;
 
 std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerator* mapgen) {
   std::vector<sf::ConvexShape> objectPolygons;
@@ -14,9 +15,10 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     maskInited = false;
     selection_mask.reserve(n);
   }
+
   if(ImGui::TreeNode((void*)(intptr_t)n, "Clusters (%d)", n)){
-    int node_clicked = -1;                // Temporary storage of what node we have clicked to process selection at the end of the loop. May be a pointer to your own node type, etc.
-    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize()*3); // Increase spacing to differentiate leaves from expanded contents.
+    int node_clicked = -1;
+    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize()*3);
     int i = 0;
     for(auto cluster : mapgen->clusters) {
 
@@ -70,28 +72,62 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     ImGui::PopStyleVar();
     ImGui::TreePop();
   }
+
   int rc = int(mapgen->rivers.size());
+  bool riversMaskInited = true;
+  if(int(rivers_selection_mask.size()) < rc) {
+    riversMaskInited = false;
+    rivers_selection_mask.reserve(rc);
+  }
+  int in = 0;
   if(ImGui::TreeNode((void*)(intptr_t)rc, "Rivers (%d)", rc)){
+    int node_clicked = -1;
     for(auto river : mapgen->rivers) {
+      if (!riversMaskInited) {
+        rivers_selection_mask.push_back(false);
+      }
+
       auto n = int(river->size());
-      if(ImGui::TreeNode((void*)(intptr_t)n, "River: %d points", n)){
+      char rn[30];
+      sprintf(rn,"%p: %%d points", river);
+      ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (rivers_selection_mask[in] ? ImGuiTreeNodeFlags_Selected : 0);
+      bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)n, node_flags, rn, n);
+      if (ImGui::IsItemClicked()) {
+        node_clicked = in;
+        printf("River clicked: %d\n", node_clicked);
+      }
+
+      if(node_open){
         ImGui::Columns(3, "cells");
         ImGui::Separator();
         ImGui::Text("x"); ImGui::NextColumn();
         ImGui::Text("y"); ImGui::NextColumn();
-        ImGui::Text("z"); ImGui::NextColumn();
+        ImGui::Text(" "); ImGui::NextColumn();
         ImGui::Separator();
 
         for (int pi = 0; pi < int(river->size()); pi++) {
           Point p = (*river)[pi];
           ImGui::Text("%f", p->x); ImGui::NextColumn();
           ImGui::Text("%f", p->y); ImGui::NextColumn();
-          ImGui::Text("%f", 0.f); ImGui::NextColumn();
+          // ImGui::Text("%f", 0.f); ImGui::NextColumn();
+          char bn[30];
+          sprintf(bn,"del %p", p);
+          if(ImGui::Button(bn)) {
+            river->erase(river->begin() + pi);
+          }
+          ImGui::NextColumn();
         }
-
+        ImGui::Columns(1);
         ImGui::TreePop();
       }
+
+      in++;
     }
+
+    if (node_clicked != -1)
+      {
+        rivers_selection_mask[node_clicked] = !rivers_selection_mask[node_clicked];
+      }
 
     ImGui::TreePop();
   }

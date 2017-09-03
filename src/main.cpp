@@ -139,6 +139,7 @@ int main()
                   case sf::Keyboard::R:
                     mapgen.seed();
                     seed = mapgen.getSeed();
+                    log.AddLog("Update map\n");
                     mapgen.update();
                     updateVisuals();
                     relax = mapgen.getRelax();
@@ -169,6 +170,7 @@ int main()
 
             if (event.type == sf::Event::Resized) {
               mapgen.setSize(window.getSize().x, window.getSize().y);
+              log.AddLog("Update map\n");
               mapgen.update();
               updateVisuals();
             }
@@ -208,6 +210,7 @@ int main()
 
         if (ImGui::InputInt("Seed", &seed)) {
           mapgen.setSeed(seed);
+          log.AddLog("Update map\n");
           mapgen.update();
           updateVisuals();
           relax = mapgen.getRelax();
@@ -215,6 +218,7 @@ int main()
         if (ImGui::Button("Random")) {
           mapgen.seed();
           seed = mapgen.getSeed();
+          log.AddLog("Update map\n");
           mapgen.update();
           updateVisuals();
           relax = mapgen.getRelax();
@@ -230,6 +234,7 @@ int main()
             octaves = 1;
           }
           mapgen.setOctaveCount(octaves);
+          log.AddLog("Update map\n");
           mapgen.update();
           updateVisuals();
           relax = mapgen.getRelax();
@@ -240,6 +245,7 @@ int main()
             freq = 0;
           }
           mapgen.setFrequency(freq);
+          log.AddLog("Update map\n");
           mapgen.update();
           updateVisuals();
         }
@@ -249,12 +255,14 @@ int main()
             nPoints = 5;
           }
           mapgen.setPointCount(nPoints);
+          log.AddLog("Update map\n");
           mapgen.update();
           updateVisuals();
           relax = mapgen.getRelax();
         }
 
         if (ImGui::Button("Relax")) {
+          log.AddLog("Update map\n");
           mapgen.relax();
           updateVisuals();
           relax = mapgen.getRelax();
@@ -264,6 +272,7 @@ int main()
         if (ImGui::Button("+1000")) {
           nPoints+=1000;
           mapgen.setPointCount(nPoints);
+          log.AddLog("Update map\n");
           mapgen.update();
           updateVisuals();
           relax = mapgen.getRelax();
@@ -272,6 +281,7 @@ int main()
         if (ImGui::Button("-1000")) {
           nPoints-=1000;
           mapgen.setPointCount(nPoints);
+          log.AddLog("Update map\n");
           mapgen.update();
           updateVisuals();
           relax = mapgen.getRelax();
@@ -346,9 +356,9 @@ int main()
           window.draw(site);
         }
 
+        int rn =0;
         for (auto rvr : mapgen.rivers){
           sw::Spline river;
-          river.setColor(sf::Color( 51,  51,  91));
           river.setThickness(3);
           i = 0;
           int c = rvr->size();
@@ -357,12 +367,18 @@ int main()
             river.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
             float t = float(i)/c * 2.f;
             river.setThickness(i, t);
+            if(rivers_selection_mask.size() >= mapgen.rivers.size() && rivers_selection_mask[rn]) {
+              river.setColor(sf::Color( 255, 70, 0));
+            } else {
+              river.setColor(sf::Color( 46, 46, 76, float(i)/c * 255.f));
+            }
           }
           river.setBezierInterpolation(); // enable Bezier spline
           river.setInterpolationSteps(10); // curvature resolution
           river.smoothHandles();
           river.update();
           window.draw(river);
+          rn++;
         }
 
         if (sites) {
