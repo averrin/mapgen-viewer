@@ -16,6 +16,7 @@ void infoWindow(sf::RenderWindow* window, Region* currentRegion) {
               currentRegion->site->y,
               currentRegion->getHeight(currentRegion->site)
   );
+  ImGui::Text("Humidity: %f", currentRegion->humidity);
   ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
   ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
   ImGui::Text("Is border: %s", currentRegion->border ? "true" : "false");

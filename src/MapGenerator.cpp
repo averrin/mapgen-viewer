@@ -24,62 +24,62 @@ const std::vector<Biom> BIOMS = {{
     {
       -2.0000,
       sf::Color( 23,  23,  40),
-      "Abyss"
+      "Abyss", 1
     },
     {
       -1.0000,
       sf::Color( 39,  39,  70),
-      "Deep"
+      "Deep", 1
     },
     {
       -0.2500,
       sf::Color( 51,  51,  91),
-      "Shallow"
+      "Shallow", 1
     },
     {
       0.0000,
       sf::Color( 68, 99, 130),
-      "Shore"
+      "Shore", 1
     },
     {
       0.0625,
       sf::Color(210, 185, 139),
-      "Sand"
+      "Sand", 0.3
     },
     {
       0.1250,
       sf::Color(136, 170,  85),
-      "Grass"
+      "Grass", 0.5
     },
     {
       0.3750,
       sf::Color( 51, 119,  85),
-      "Forrest"
+      "Forrest", 0.6
     },
     {
       0.7500,
       sf::Color(148, 148, 148),
-      "Rock"
+      "Rock", 0.3
     },
     {
       1.0000,
       sf::Color(240, 240, 240),
-      "Snow"
-    },
-    {
-      999.000,
-      sf::Color( 51,  51,  91),
-      "Lake"
+      "Snow", 0.8
     },
     {
       1.2000,
       sf::Color(220, 220, 255),
-      "Ice"
+      "Ice", 0.9
+    },
+    {
+      999.000,
+      sf::Color( 51,  51,  91),
+      "Lake", 1
     },
     {
       999.000,
       sf::Color(201, 201, 120),
-      "Prairie"
+      "Prairie", 0.1
     },
     {
       999.000,
@@ -139,6 +139,7 @@ void MapGenerator::relax() {
   makeRelax();
   regenRegions();
   regenRivers();
+  calcHumidity();
 }
 
 void MapGenerator::makeRelax() {
@@ -191,6 +192,7 @@ void MapGenerator::update() {
   regenRegions();
   regenClusters();
   regenRivers();
+  calcHumidity();
 }
 
 void MapGenerator::forceUpdate() {
@@ -199,6 +201,7 @@ void MapGenerator::forceUpdate() {
   regenRegions();
   regenClusters();
   regenRivers();
+  calcHumidity();
 }
 
 void MapGenerator::regenHeight() {
@@ -261,7 +264,6 @@ void MapGenerator::makeRiver(Cell* c) {
         river->push_back(r->site);
         r->hasRiver = true;
         // river.push_back(next);
-        // river.push_back(next);
       }
       end = c2;
     }
@@ -269,13 +271,13 @@ void MapGenerator::makeRiver(Cell* c) {
     if (count == 100) {
       r->biom = BIOMS[9];
       river->push_back(r->site);
+      r->humidity = 1;
 
       for (auto n : end->getNeighbors()) {
         r = _cells[n];
         r->biom = BIOMS[9];
+        r->humidity = 1;
       }
-      // std::cout << "Cannot create river!\n";
-      // river.clear();
     }
   }
 }
@@ -329,6 +331,7 @@ void MapGenerator::regenRegions() {
         }
       }
     Region *region = new Region(b, verts, h, &p);
+    region->humidity = b.humidity;
     region->border = false;
     region->hasRiver = false;
     _regions->push_back(region);
@@ -342,6 +345,26 @@ bool isDiscard(const Cluster* c)
 {
   // return c->discarded;
   return c->regions.size() == 0;
+}
+
+void MapGenerator::calcHumidity() {
+  for (auto r : *_regions) {
+    if(r->hasRiver) {
+      r->humidity += 0.1;
+    }
+  }
+  for (auto r : *_regions) {
+    Cell* c = cellsMap[r];
+    if (c == nullptr) {
+      continue;
+    }
+    for (auto n : c->getNeighbors()) {
+      Region* rn = _cells[n];
+      if (rn->biom.humidity > r->humidity && r->humidity!=1) {
+        r->humidity += (rn->biom.humidity-r->humidity)/2.f;
+      }
+    }
+  }
 }
 
 void MapGenerator::regenClusters() {

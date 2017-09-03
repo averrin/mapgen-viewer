@@ -25,6 +25,7 @@ bool edges;
 bool info;
 bool heights;
 bool flat;
+bool hum;
 
 int main()
 {
@@ -105,6 +106,16 @@ int main()
         col.g = col.g/3;
         polygon.setFillColor(col);
         color[2] = 1.f;
+      }
+
+      if(hum) {
+        sf::Color col(region->biom.color);
+        col.b = 255 * region->humidity;
+        col.a = 255 * region->humidity;
+        col.r = col.b/3;
+        col.g = col.g/3;
+        polygon.setFillColor(col);
+        // color[2] = 1.f;
       }
       polygons.push_back(polygon);
       verticies.push_back(sf::Vertex(sf::Vector2f(region->site->x, region->site->y), sf::Color(100,100,100)));
@@ -206,6 +217,12 @@ int main()
         ImGui::SameLine(200);
         if(ImGui::Checkbox("Info",&info)) {
           infoPolygons.clear();
+          updateVisuals();
+        }
+
+        if(ImGui::Checkbox("Humidity",&hum)) {
+          infoPolygons.clear();
+          updateVisuals();
         }
 
         if (ImGui::InputInt("Seed", &seed)) {

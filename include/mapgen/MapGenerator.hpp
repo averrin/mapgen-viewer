@@ -41,6 +41,7 @@ private:
   void regenClusters();
   void makeRelax();
   void makeRiver(Cell* c);
+  void calcHumidity();
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;

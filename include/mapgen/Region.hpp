@@ -18,6 +18,7 @@ public:
   bool hasRiver;
   Cluster *cluster;
   bool border;
+  float humidity;
 private:
 	PointList _verticies;
   HeightMap _heights;
