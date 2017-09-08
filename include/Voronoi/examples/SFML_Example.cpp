@@ -85,9 +85,12 @@ int main()
         vertices.reserve(diagram->cells.size() + (diagram->edges.size() * 2));
         for (auto c : diagram->cells)
         {
-            //red point for each cell site
-            sf::Vector2<double>& p = c->site.p;
-            vertices.push_back({{ static_cast<float>(p.x),static_cast<float>(p.y)}, sf::Color::Red});
+          if(c == nullptr) {
+            continue;
+          }
+          //red point for each cell site
+          sf::Vector2<double>& p = c->site.p;
+          vertices.push_back({{ static_cast<float>(p.x),static_cast<float>(p.y)}, sf::Color::Red});
         }
 
         for (Edge* e : diagram->edges)

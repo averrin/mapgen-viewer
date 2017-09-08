@@ -26,6 +26,7 @@ bool info;
 bool heights;
 bool flat;
 bool hum;
+bool simplifyRivers;
 
 int main()
 {
@@ -42,6 +43,7 @@ int main()
   freq = mapgen.getFrequency();
   nPoints = mapgen.getPointCount();
   relax = mapgen.getRelax();
+  simplifyRivers = mapgen.simpleRivers;
 
   //used to measure generation time
   sf::Clock timer;
@@ -108,14 +110,13 @@ int main()
         color[2] = 1.f;
       }
 
-      if(hum) {
+      if(hum && region->humidity != 1) {
         sf::Color col(region->biom.color);
         col.b = 255 * region->humidity;
         col.a = 255 * region->humidity;
         col.r = col.b/3;
         col.g = col.g/3;
         polygon.setFillColor(col);
-        // color[2] = 1.f;
       }
       polygons.push_back(polygon);
       verticies.push_back(sf::Vertex(sf::Vector2f(region->site->x, region->site->y), sf::Color(100,100,100)));
@@ -131,7 +132,7 @@ int main()
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
-    mapgen.setSeed(37946940);
+    mapgen.setSeed(111629613 /*81238299*/);
     mapgen.update();
     seed = mapgen.getSeed();
     updateVisuals();
@@ -223,6 +224,11 @@ int main()
         if(ImGui::Checkbox("Humidity",&hum)) {
           infoPolygons.clear();
           updateVisuals();
+        }
+        ImGui::SameLine(100);
+        if(ImGui::Checkbox("Simplify rivers",&simplifyRivers)) {
+          mapgen.simpleRivers = simplifyRivers;
+          mapgen.update();
         }
 
         if (ImGui::InputInt("Seed", &seed)) {
@@ -321,6 +327,9 @@ int main()
 
           sf::Vector2<float> pos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
           Region* currentRegion =  mapgen.getRegion(pos);
+          // char p[100];
+          // sprintf(p,"%p\n",currentRegion);
+          // std::cout<<p<<std::flush;
           sf::ConvexShape selectedPolygon;
 
           infoWindow(&window, currentRegion);

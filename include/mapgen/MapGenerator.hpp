@@ -30,8 +30,12 @@ public:
   std::vector<sf::ConvexShape>* getPolygons();
   void seed();
   std::vector<Region*>* getRegions();
+
   std::vector<PointList*> rivers;
+
   std::vector<Cluster*> clusters;
+  std::vector<MegaCluster*> megaClusters;
+  bool simpleRivers;
 
 private:
   void regenHeight();
@@ -39,9 +43,11 @@ private:
   void regenRegions();
   void regenRivers();
   void regenClusters();
+  void regenMegaClusters();
   void makeRelax();
   void makeRiver(Cell* c);
   void calcHumidity();
+  void simplifyRivers();
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;
@@ -61,6 +67,9 @@ private:
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;
   std::vector<Region*>* _regions;
+
+  template<typename Iter>
+  Iter select_randomly(Iter start, Iter end);
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
 };

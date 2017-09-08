@@ -1,3 +1,5 @@
+#ifndef BIOM_H_
+#define BIOM_H_
 #include <SFML/Graphics.hpp>
 
 struct Biom {
@@ -6,3 +8,5 @@ struct Biom {
   std::string name;
   float humidity;
 };
+
+#endif

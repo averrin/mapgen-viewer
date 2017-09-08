@@ -1,93 +1,10 @@
 #include "mapgen/MapGenerator.hpp"
 #include <VoronoiDiagramGenerator.h>
-#include  <random>
-#include  <iterator>
-
-template<typename Iter, typename RandomGenerator>
-Iter select_randomly(Iter start, Iter end, RandomGenerator& g) {
-  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-  std::advance(start, dis(g));
-  return start;
-}
-
-//TODO: fix seed
-template<typename Iter>
-Iter select_randomly(Iter start, Iter end) {
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
-  return select_randomly(start, end, gen);
-}
+#include <random>
+#include <iterator>
+#include "Biom.cpp"
 
 const int DEFAULT_RELAX = 10;
-
-const std::vector<Biom> BIOMS = {{
-    {
-      -2.0000,
-      sf::Color( 23,  23,  40),
-      "Abyss", 1
-    },
-    {
-      -1.0000,
-      sf::Color( 39,  39,  70),
-      "Deep", 1
-    },
-    {
-      -0.2500,
-      sf::Color( 51,  51,  91),
-      "Shallow", 1
-    },
-    {
-      0.0000,
-      sf::Color( 68, 99, 130),
-      "Shore", 1
-    },
-    {
-      0.0625,
-      sf::Color(210, 185, 139),
-      "Sand", 0.3
-    },
-    {
-      0.1250,
-      sf::Color(136, 170,  85),
-      "Grass", 0.5
-    },
-    {
-      0.3750,
-      sf::Color( 51, 119,  85),
-      "Forrest", 0.6
-    },
-    {
-      0.7500,
-      sf::Color(148, 148, 148),
-      "Rock", 0.3
-    },
-    {
-      1.0000,
-      sf::Color(240, 240, 240),
-      "Snow", 0.8
-    },
-    {
-      1.2000,
-      sf::Color(220, 220, 255),
-      "Ice", 0.9
-    },
-    {
-      999.000,
-      sf::Color( 51,  51,  91),
-      "Lake", 1
-    },
-    {
-      999.000,
-      sf::Color(201, 201, 120),
-      "Prairie", 0.1
-    },
-    {
-      999.000,
-      sf::Color::Red,
-      "Mark"
-    }
-  }};
-const Biom MARK = BIOMS.back();
 
 double normalize(double in, int dimension) {
 	return in / (float)dimension*1.8 - 0.9;
@@ -120,6 +37,16 @@ bool clusterOrdered(Cluster* s1, Cluster* s2) {
 	return false;
 }
 
+template<typename Iter>
+Iter MapGenerator::select_randomly(Iter start, Iter end) {
+  std::mt19937 gen(_seed);
+  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+  std::advance(start, dis(gen));
+  return start;
+}
+
+
+
 MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
 	_vdg = VoronoiDiagramGenerator();
   _pointsCount = 10000;
@@ -127,6 +54,7 @@ MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
   _freq = 0.3;
   _relax = DEFAULT_RELAX;
   _regions = new std::vector<Region*>();
+  simpleRivers = true;
 }
 
 void MapGenerator::build() {
@@ -139,7 +67,64 @@ void MapGenerator::relax() {
   makeRelax();
   regenRegions();
   regenRivers();
+  simplifyRivers();
   calcHumidity();
+}
+
+void MapGenerator::simplifyRivers() {
+  for (auto rvr : rivers) {
+    PointList sr;
+    int c = rvr->size();
+    int i = 0;
+    sr.push_back((*rvr)[0]);
+    for(PointList::iterator it=rvr->begin() ; it < rvr->end(); it++, i++) {
+      Point p = (*rvr)[i];
+      Point p2 = (*rvr)[i+1];
+      if (c - i - 1 < 2) {
+        break;
+      }
+
+      Point p3 = (*rvr)[i+2];
+      Point sp;
+
+      double distancex = (p2->x - p->x);
+      distancex *= distancex;
+      double distancey = (p2->y - p->x);
+      distancey *= distancey;
+
+      double d1 = sqrt(distancex + distancey);
+
+      distancex = (p3->x - p->x);
+      distancex *= distancex;
+      distancey = (p3->y - p->x);
+      distancey *= distancey;
+
+      double d2 = sqrt(distancex + distancey);
+
+      if (d2 < d1) {
+        sp = p2;
+      } else {
+        sp = p3;
+        i++;
+      }
+
+      sr.push_back(sp);
+    }
+
+    rvr->clear();
+    rvr->reserve(sr.size());
+    i = 0;
+    for(PointList::iterator it=sr.begin() ; it < sr.end(); it++, i++) {
+      Point p(sr[i]);
+      if (p->x <= 0.f || p->x != p->x ||
+          p->y <= 0.f || p->y != p->y
+          ) {
+        continue;
+      }
+      rvr->push_back(sr[i]);
+    }
+  }
+  std::cout<<"end\n"<<std::flush;
 }
 
 void MapGenerator::makeRelax() {
@@ -192,7 +177,11 @@ void MapGenerator::update() {
   regenRegions();
   regenClusters();
   regenRivers();
+  if (simpleRivers) {
+    simplifyRivers();
+  }
   calcHumidity();
+  regenMegaClusters();
 }
 
 void MapGenerator::forceUpdate() {
@@ -201,7 +190,9 @@ void MapGenerator::forceUpdate() {
   regenRegions();
   regenClusters();
   regenRivers();
+  simplifyRivers();
   calcHumidity();
+  regenMegaClusters();
 }
 
 void MapGenerator::regenHeight() {
@@ -269,13 +260,13 @@ void MapGenerator::makeRiver(Cell* c) {
     }
     count++;
     if (count == 100) {
-      r->biom = BIOMS[9];
+      r->biom = LAKE;
       river->push_back(r->site);
       r->humidity = 1;
 
       for (auto n : end->getNeighbors()) {
         r = _cells[n];
-        r->biom = BIOMS[9];
+        r->biom = LAKE;
         r->humidity = 1;
       }
     }
@@ -301,6 +292,9 @@ void MapGenerator::regenRegions() {
   float ch = 0.f;
   Biom lastBiom = BIOMS[0];
   for (auto c : _diagram->cells) {
+    if (c == nullptr) {
+      continue;
+    }
     PointList verts;
     int count = int(c->getEdges().size());
     verts.reserve(count);
@@ -367,6 +361,67 @@ void MapGenerator::calcHumidity() {
   }
 }
 
+void MapGenerator::regenMegaClusters() {
+  megaClusters.clear();
+  std::map<Cluster*,MegaCluster*> _megaClusters;
+  for (auto c : clusters) {
+    for (auto r : c->regions) {
+      if (r->border) {
+        Cell* cell = cellsMap[r];
+        if (cell == nullptr) {
+          continue;
+        }
+        for (auto n : cell->getNeighbors()) {
+          Region* rn = _cells[n];
+          Cluster* nc = rn->cluster;
+          if(nc != c && std::find(c->neighbors.begin(), c->neighbors.end(), nc) == c->neighbors.end()) {
+            c->neighbors.push_back(nc);
+          }
+        }
+      }
+    }
+  }
+
+  for (auto c : clusters) {
+    bool cu = true;
+    MegaCluster *knownMegaCluster = nullptr;
+    for (auto nc : c->neighbors) {
+      if (nc->isLand != c->isLand) {
+        continue;
+      }
+      if (_megaClusters.count(nc) != 0) {
+        cu = false;
+        if (knownMegaCluster == nullptr) {
+          knownMegaCluster = _megaClusters[nc];
+          c->megaCluster = knownMegaCluster;
+          for (auto r : c->regions){
+            knownMegaCluster->regions.push_back(r);
+          }
+          _megaClusters[c] = knownMegaCluster;
+        } else {
+          //its other cluster
+          //maybe its not necessary due to small clusters count and its order
+        }
+      }
+    }
+
+    if(cu) {
+      MegaCluster* cluster = new MegaCluster();
+      char buff[100];
+      snprintf(buff, sizeof(buff), "%p", (void*)cluster);
+      std::string buffAsStdStr = buff;
+      cluster->name = buffAsStdStr;
+      c->megaCluster = cluster;
+      cluster->isLand = c->isLand;
+      for (auto r : c->regions){
+        cluster->regions.push_back(r);
+      }
+      _megaClusters[c] = cluster;
+      megaClusters.push_back(cluster);
+    }
+  }
+}
+
 void MapGenerator::regenClusters() {
   clusters.clear();
   cellsMap.clear();
@@ -407,7 +462,7 @@ void MapGenerator::regenClusters() {
               _clusters[cellsMap[orn]] = knownCluster;
               // clusters.erase(std::find(clusters.begin(), clusters.end(), oldCluster));
             }
-            oldCluster->discarded = true;
+            // oldCluster->discarded = true;
             oldCluster->regions.clear();
           }
 
@@ -418,7 +473,6 @@ void MapGenerator::regenClusters() {
         }
         continue;
       }
-        // break;
     }
     if(cu) {
       Cluster* cluster = new Cluster();
@@ -430,6 +484,7 @@ void MapGenerator::regenClusters() {
       cluster->discarded = false;
       r->cluster = cluster;
       cluster->biom = r->biom;
+      cluster->isLand = r->biom.border > 0;
       cluster->regions.push_back(r);
       _clusters[c] = cluster;
       cellsMap[r] = c;

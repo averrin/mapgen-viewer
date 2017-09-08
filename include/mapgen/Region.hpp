@@ -24,10 +24,14 @@ private:
   HeightMap _heights;
 };
 
+typedef Cluster MegaCluster;
 struct Cluster {
   std::string name;
   std::vector<Region*> regions;
+  std::vector<Cluster*> neighbors;
+  MegaCluster* megaCluster;
   Biom biom;
   bool hasRiver;
   bool discarded;
+  bool isLand;
 };

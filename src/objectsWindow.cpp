@@ -57,9 +57,14 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
       }
       if (node_open)
         {
+          ImGui::Text("MegaCluster: %p", cluster->megaCluster);
           ImGui::Text("Biom: %s", cluster->biom.name.c_str());
           ImGui::Text("Regions: %zu", cluster->regions.size());
-          ImGui::Text("Has river: %s", cluster->hasRiver ? "true" : "false");
+          ImGui::Text("Neighbors: %zu", cluster->neighbors.size());
+          ImGui::Text("Is land: %s", cluster->isLand ? "true" : "false");
+          if (cluster->isLand) {
+            ImGui::Text("Has river: %s", cluster->hasRiver ? "true" : "false");
+          }
           ImGui::TreePop();
         }
       i++;
@@ -95,6 +100,10 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
       if (ImGui::IsItemClicked()) {
         node_clicked = in;
         printf("River clicked: %d\n", node_clicked);
+        for (int pi = 0; pi < int(river->size()); pi++) {
+          Point p = (*river)[pi];
+          printf("%f -- %f", p->x, p->y);
+        }
       }
 
       if(node_open){
