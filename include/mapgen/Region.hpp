@@ -1,3 +1,6 @@
+#ifndef REGION_H_
+#define REGION_H_
+
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include "Biom.hpp"
@@ -35,3 +38,5 @@ struct Cluster {
   bool discarded;
   bool isLand;
 };
+
+#endif

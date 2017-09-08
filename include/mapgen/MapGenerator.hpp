@@ -7,6 +7,7 @@
 #include "noise/noiseutils.h"
 
 #include "Region.hpp"
+#include "River.hpp"
 
 class MapGenerator {
 public:
@@ -31,7 +32,7 @@ public:
   void seed();
   std::vector<Region*>* getRegions();
 
-  std::vector<PointList*> rivers;
+  std::vector<River*> rivers;
 
   std::vector<Cluster*> clusters;
   std::vector<MegaCluster*> megaClusters;
@@ -70,6 +71,8 @@ private:
 
   template<typename Iter>
   Iter select_randomly(Iter start, Iter end);
+  template<typename Iter>
+  Iter select_randomly(Iter start, Iter end, int s);
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
 };

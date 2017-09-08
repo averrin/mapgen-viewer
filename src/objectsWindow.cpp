@@ -50,9 +50,9 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
       }
       ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (mega_selection_mask[i] ? ImGuiTreeNodeFlags_Selected : 0);
 
-      char t[100];
-      sprintf(t, "%s [%s] (%%d)",cluster->isLand ? "Land" : "Water", cluster->name.c_str());
-      bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, t, int(cluster->regions.size()));
+      // char t[100];
+      // sprintf(t, "%s [%s] (%%d)",cluster->isLand ? "Land" : "Water", cluster->name.c_str());
+      bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, cluster->name.c_str(), int(cluster->regions.size()));
       if (ImGui::IsItemClicked()) {
         node_clicked = i;
       }
@@ -159,21 +159,17 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
         rivers_selection_mask.push_back(false);
       }
 
-      auto n = int(river->size());
+      auto n = int(river->points->size());
       char rn[30];
-      sprintf(rn,"%p: %%d points", river);
+      sprintf(rn,"%s: %%d points", river->name.c_str());
       ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (rivers_selection_mask[in] ? ImGuiTreeNodeFlags_Selected : 0);
       bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)n, node_flags, rn, n);
       if (ImGui::IsItemClicked()) {
         node_clicked = in;
-        printf("River clicked: %d\n", node_clicked);
-        for (int pi = 0; pi < int(river->size()); pi++) {
-          Point p = (*river)[pi];
-          printf("%f -- %f", p->x, p->y);
-        }
       }
 
       if(node_open){
+        ImGui::Text("Name: %s", river->name.c_str());
         ImGui::Columns(3, "cells");
         ImGui::Separator();
         ImGui::Text("x"); ImGui::NextColumn();
@@ -181,15 +177,15 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
         ImGui::Text(" "); ImGui::NextColumn();
         ImGui::Separator();
 
-        for (int pi = 0; pi < int(river->size()); pi++) {
-          Point p = (*river)[pi];
+        for (int pi = 0; pi < int(river->points->size()); pi++) {
+          Point p = (*river->points)[pi];
           ImGui::Text("%f", p->x); ImGui::NextColumn();
           ImGui::Text("%f", p->y); ImGui::NextColumn();
           // ImGui::Text("%f", 0.f); ImGui::NextColumn();
           char bn[30];
           sprintf(bn,"del %p", p);
           if(ImGui::Button(bn)) {
-            river->erase(river->begin() + pi);
+            river->points->erase(river->points->begin() + pi);
           }
           ImGui::NextColumn();
         }

@@ -3,6 +3,7 @@
 #include <random>
 #include <iterator>
 #include "Biom.cpp"
+#include "names.cpp"
 
 const int DEFAULT_RELAX = 10;
 
@@ -45,7 +46,13 @@ Iter MapGenerator::select_randomly(Iter start, Iter end) {
   return start;
 }
 
-
+template<typename Iter>
+Iter MapGenerator::select_randomly(Iter start, Iter end, int s) {
+  std::mt19937 gen(s);
+  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+  std::advance(start, dis(gen));
+  return start;
+}
 
 MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
 	_vdg = VoronoiDiagramGenerator();
@@ -72,7 +79,8 @@ void MapGenerator::relax() {
 }
 
 void MapGenerator::simplifyRivers() {
-  for (auto rvr : rivers) {
+  for (auto r : rivers) {
+    PointList* rvr = r->points;
     PointList sr;
     int c = rvr->size();
     int i = 0;
@@ -216,8 +224,14 @@ void MapGenerator::makeRiver(Cell* c) {
   // r->biom = MARK;
   float z = r->getHeight(r->site);
   printf("First vert: %f\n", z);
+  River *rvr = new River();
+
+  std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end(), std::clock());
+  std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end(), std::clock());
+  rvr->name = fn+" "+sn;
   PointList* river = new PointList();
-  rivers.push_back(river);
+  rvr->points = river;
+  rivers.push_back(rvr);
   river->push_back(r->site);
   visited.push_back(c);
 
@@ -421,12 +435,17 @@ void MapGenerator::regenMegaClusters() {
 
     if(cu) {
       MegaCluster* cluster = new MegaCluster();
-      char buff[100];
-      snprintf(buff, sizeof(buff), "%p", (void*)cluster);
-      std::string buffAsStdStr = buff;
-      cluster->name = buffAsStdStr;
-      c->megaCluster = cluster;
+      // char buff[100];
+      // snprintf(buff, sizeof(buff), "%p", (void*)cluster);
+      // std::string buffAsStdStr = buff;
+      // cluster->name = buffAsStdStr;
       cluster->isLand = c->isLand;
+      if(cluster->isLand){
+        cluster->name = *select_randomly(island_first_names.begin(), island_first_names.end(), std::clock()) + " " + *select_randomly(island_second_names.begin(), island_second_names.end(), std::clock());
+      } else {
+        cluster->name = *select_randomly(sea_first_names.begin(), sea_first_names.end(), std::clock()) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end(), std::clock());
+      }
+      c->megaCluster = cluster;
       for (auto r : c->regions){
         cluster->regions.push_back(r);
       }

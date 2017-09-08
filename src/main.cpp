@@ -383,7 +383,8 @@ int main()
         }
 
         int rn =0;
-        for (auto rvr : mapgen.rivers){
+        for (auto r : mapgen.rivers){
+          PointList* rvr = r->points;
           sw::Spline river;
           river.setThickness(3);
           i = 0;
