@@ -399,8 +399,22 @@ void MapGenerator::regenMegaClusters() {
           }
           _megaClusters[c] = knownMegaCluster;
         } else {
-          //its other cluster
-          //maybe its not necessary due to small clusters count and its order
+          MegaCluster *oldCluster = nc->megaCluster;
+          if (oldCluster != knownMegaCluster) {
+            nc->megaCluster = knownMegaCluster;
+            _megaClusters[nc] = knownMegaCluster;
+            for (Region* orn : oldCluster->regions) {
+              auto kcrn = knownMegaCluster->regions;
+              if(std::find(kcrn.begin(), kcrn.end(), orn) == kcrn.end()) {
+                knownMegaCluster->regions.push_back(orn);
+              }
+              // _clusters[cellsMap[orn]] = knownMegaCluster;
+            }
+            oldCluster->regions.clear();
+          }
+
+          nc->megaCluster = knownMegaCluster;
+          _megaClusters[c] = knownMegaCluster;
         }
       }
     }
@@ -420,6 +434,10 @@ void MapGenerator::regenMegaClusters() {
       megaClusters.push_back(cluster);
     }
   }
+  megaClusters.erase(
+                     std::remove_if(megaClusters.begin(), megaClusters.end(), isDiscard),
+                     megaClusters.end());
+  std::sort(megaClusters.begin(), megaClusters.end(), clusterOrdered);
 }
 
 void MapGenerator::regenClusters() {

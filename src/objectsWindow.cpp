@@ -4,12 +4,77 @@
 #include <imgui.h>
 
 std::vector<bool> selection_mask;
+std::vector<bool> mega_selection_mask;
 std::vector<bool> rivers_selection_mask;
 
 std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerator* mapgen) {
   std::vector<sf::ConvexShape> objectPolygons;
   ImGui::Begin("Objects");
-  int n = int(mapgen->clusters.size());
+  int n = int(mapgen->megaClusters.size());
+  bool megaInited = true;
+  if(int(mega_selection_mask.size()) < n) {
+    megaInited = false;
+    mega_selection_mask.reserve(n);
+  }
+
+  if(ImGui::TreeNode((void*)(intptr_t)n, "Mega Clusters (%d)", n)){
+    int node_clicked = -1;
+    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize()*3);
+    int i = 0;
+    for(auto cluster : mapgen->megaClusters) {
+
+      if(mega_selection_mask[i]) {
+        int ii = 0;
+        for(std::vector<Region*>::iterator it=cluster->regions.begin() ; it < cluster->regions.end(); it++, ii++) {
+
+          Region* region = cluster->regions[ii];
+          sf::ConvexShape polygon;
+          PointList points = region->getPoints();
+          polygon.setPointCount(points.size());
+          int n = 0;
+          for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
+            sf::Vector2<double>* p = points[n];
+            polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+          }
+          sf::Color col = sf::Color(255, 70, 100);
+          col.a = 100;
+          polygon.setFillColor(col);
+          polygon.setOutlineColor(col);
+          polygon.setOutlineThickness(1);
+          objectPolygons.push_back(polygon);
+        }
+      }
+
+      if (!megaInited) {
+        mega_selection_mask.push_back(false);
+      }
+      ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (mega_selection_mask[i] ? ImGuiTreeNodeFlags_Selected : 0);
+
+      char t[100];
+      sprintf(t, "%s [%s] (%%d)",cluster->isLand ? "Land" : "Water", cluster->name.c_str());
+      bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, t, int(cluster->regions.size()));
+      if (ImGui::IsItemClicked()) {
+        node_clicked = i;
+      }
+      if (node_open)
+        {
+          ImGui::Text("Regions: %zu", cluster->regions.size());
+          // ImGui::Text("Clusters: %zu", cluster->clusters.size());
+          ImGui::Text("Is land: %s", cluster->isLand ? "true" : "false");
+          ImGui::TreePop();
+        }
+      i++;
+    }
+
+    if (node_clicked != -1)
+      {
+        mega_selection_mask[node_clicked] = !mega_selection_mask[node_clicked];
+      }
+    ImGui::PopStyleVar();
+    ImGui::TreePop();
+  }
+
+  n = int(mapgen->clusters.size());
   bool maskInited = true;
   if(int(selection_mask.size()) < n) {
     maskInited = false;
@@ -57,7 +122,9 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
       }
       if (node_open)
         {
-          ImGui::Text("MegaCluster: %p", cluster->megaCluster);
+          if (cluster->megaCluster != nullptr) {
+            ImGui::Text("MegaCluster: %p", cluster->megaCluster);
+          }
           ImGui::Text("Biom: %s", cluster->biom.name.c_str());
           ImGui::Text("Regions: %zu", cluster->regions.size());
           ImGui::Text("Neighbors: %zu", cluster->neighbors.size());
