@@ -421,6 +421,7 @@ void MapGenerator::regenMegaClusters() {
               auto kcrn = knownMegaCluster->regions;
               if(std::find(kcrn.begin(), kcrn.end(), orn) == kcrn.end()) {
                 knownMegaCluster->regions.push_back(orn);
+                orn->cluster->megaCluster = knownMegaCluster;
               }
               // _clusters[cellsMap[orn]] = knownMegaCluster;
             }

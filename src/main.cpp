@@ -340,7 +340,27 @@ int main()
           selectedPolygon.setPointCount(int(points.size()));
 
           Cluster* cluster = currentRegion->cluster;
+
           int i = 0;
+          for(std::vector<Region*>::iterator it=cluster->megaCluster->regions.begin() ; it < cluster->megaCluster->regions.end(); it++, i++) {
+
+            Region* region = cluster->megaCluster->regions[i];
+            sf::ConvexShape polygon;
+            PointList points = region->getPoints();
+            polygon.setPointCount(points.size());
+            int n = 0;
+            for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
+              sf::Vector2<double>* p = points[n];
+              polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+            }
+            sf::Color col = sf::Color::Yellow;
+            col.a = 20;
+            polygon.setFillColor(col);
+            polygon.setOutlineColor(col);
+            polygon.setOutlineThickness(1);
+            infoPolygons.push_back(polygon);
+          }
+          i = 0;
           for(std::vector<Region*>::iterator it=cluster->regions.begin() ; it < cluster->regions.end(); it++, i++) {
 
             Region* region = cluster->regions[i];
