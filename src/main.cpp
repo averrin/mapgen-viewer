@@ -310,7 +310,7 @@ int main()
           relax = mapgen.getRelax();
         }
 
-        ImGui::Text("\n[ESC] for exit\n[S] for save screensot\n[R] for random map");
+        ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random map");
 
         ImGui::End(); // end window
 
