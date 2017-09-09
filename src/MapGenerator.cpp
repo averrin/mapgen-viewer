@@ -5,7 +5,7 @@
 #include "Biom.cpp"
 #include "names.cpp"
 
-const int DEFAULT_RELAX = 10;
+const int DEFAULT_RELAX = 5;
 
 double normalize(double in, int dimension) {
 	return in / (float)dimension*1.8 - 0.9;
@@ -226,21 +226,39 @@ void MapGenerator::regenHeight() {
   module::Perlin terrainType;
   module::RidgedMulti mountainTerrain;
   module::Select finalTerrain;
+  module::ScaleBias flatTerrain;
 
   if (_terrainType == "archipelago") {
 
-    terrainType.SetFrequency (0.8);
+    terrainType.SetFrequency (0.5);
     terrainType.SetPersistence (0.5);
 
     terrainType.SetSeed(_seed);
     mountainTerrain.SetSeed(_seed);
 
-    // module::ScaleBias flatTerrain;
-    // flatTerrain.SetSourceModule (0, _perlin);
-    // flatTerrain.SetScale (0.025);
-    // flatTerrain.SetBias (-0.75);
-
     finalTerrain.SetSourceModule (0, _perlin);
+    finalTerrain.SetSourceModule (1, mountainTerrain);
+    finalTerrain.SetControlModule (terrainType);
+    finalTerrain.SetBounds (0.0, 100.0);
+    finalTerrain.SetEdgeFalloff (0.125);
+    heightMapBuilder.SetSourceModule(terrainType);
+
+  } else if (_terrainType == "new") {
+    terrainType.SetFrequency (0.3);
+    terrainType.SetPersistence (0.4);
+
+    terrainType.SetSeed(_seed);
+    mountainTerrain.SetSeed(_seed);
+
+    flatTerrain.SetSourceModule (0, _perlin);
+    flatTerrain.SetScale (0.3);
+    flatTerrain.SetBias (0.1);
+
+    mountainTerrain.SetFrequency (0.9);
+
+    // terrainType.SetPersistence (0.4);
+
+    finalTerrain.SetSourceModule (0, flatTerrain);
     finalTerrain.SetSourceModule (1, mountainTerrain);
     finalTerrain.SetControlModule (terrainType);
     finalTerrain.SetBounds (0.0, 100.0);
@@ -286,7 +304,7 @@ void MapGenerator::makeRiver(Cell* c) {
   }
 
   int count = 0;
-  while (z >= -0.01 && count < 100) {
+  while (count < 100) {
     std::vector<Cell*> n = c->getNeighbors();
     Cell* end;
     for (Cell* c2 : n) {
@@ -326,6 +344,9 @@ void MapGenerator::makeRiver(Cell* c) {
         r->humidity = 1;
       }
     }
+    if (r->getHeight(r->site) < -0.1) {
+      break;
+    }
   }
 }
 
@@ -333,7 +354,7 @@ void MapGenerator::regenRivers() {
   currentOperation = "Making rivers...";
   rivers.clear();
   for (auto cluster : clusters){
-    if ((cluster->biom.name == "Snow" || cluster->biom.name == "Rock") && cluster->regions.size() > 10) {
+    if ((cluster->biom.name == "Snow" || cluster->biom.name == "Rock") && cluster->regions.size() > 5) {
       Cell* c = cellsMap[*select_randomly(cluster->regions.begin(), cluster->regions.end())];
       if (c != nullptr) {
         makeRiver(c);

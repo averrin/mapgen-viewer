@@ -36,6 +36,11 @@ int main()
   sf::ContextSettings settings;
   settings.antialiasingLevel = 8;
 
+  ImGuiIO& io = ImGui::GetIO();
+  //io.Fonts->AddFontDefault();
+  io.Fonts->AddFontFromFileTTF("./font.ttf", 15.0f);
+
+
   /* sf::RenderWindow  */
   sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "", sf::Style::Default, settings);
 
@@ -146,7 +151,7 @@ int main()
     window.setTitle(windowTitle);
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
-    mapgen.setSeed(111629613 /*81238299*/);
+    // mapgen.setSeed(/*111629613*/ 81238299);
     regen();
 
     sw::ProgressBar progressBar;
@@ -156,7 +161,7 @@ int main()
     bool isIncreasing{ true };
 
     sf::Font sffont;
-    sffont.loadFromFile("font.otf");
+    sffont.loadFromFile("./font.ttf");
 
     sf::Clock deltaClock;
     sf::Clock clock;
@@ -301,8 +306,8 @@ int main()
           regen();
         }
 
-        const char* templates[] = {"basic", "archipelago"};
-        if (ImGui::Combo("Map template", &t, templates, 2)) {
+        const char* templates[] = {"basic", "archipelago", "new"};
+        if (ImGui::Combo("Map template", &t, templates, 3)) {
           mapgen.setMapTemplate(templates[t]);
           regen();
         }
@@ -317,18 +322,12 @@ int main()
           updateVisuals();
         }
 
-        if (ImGui::InputInt("Height octaves", &octaves)) {
-          if (octaves < 1) {
-            octaves = 1;
-          }
+        if (ImGui::SliderInt("Height octaves", &octaves, 1, 10)) {
           mapgen.setOctaveCount(octaves);
           regen();
         }
 
-        if (ImGui::InputFloat("Height freq", &freq)) {
-          if (freq < 0) {
-            freq = 0;
-          }
+        if (ImGui::SliderFloat("Height freq", &freq, 0.001, 2.f)) {
           mapgen.setFrequency(freq);
           regen();
         }
