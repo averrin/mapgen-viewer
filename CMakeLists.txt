@@ -10,6 +10,7 @@ set (mapgen_VERSION_MAJOR 0)
 set (mapgen_VERSION_MINOR 1)
 
 file(GLOB SOURCE "src/*.cpp" "include/mapgen/*.h")
+file(COPY "font.otf" DESTINATION "bin/font.otf")
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/MapgenConfig.h.in"

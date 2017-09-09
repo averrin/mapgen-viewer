@@ -156,7 +156,7 @@ int main()
     bool isIncreasing{ true };
 
     sf::Font sffont;
-    sffont.loadFromFile("/home/alexeynabrodov/.fonts/FiraCode-Medium.otf");
+    sffont.loadFromFile("font.otf");
 
     sf::Clock deltaClock;
     sf::Clock clock;
