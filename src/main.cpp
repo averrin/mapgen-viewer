@@ -1,5 +1,6 @@
 #include <memory>
 #include <map>
+#include <thread>
 #include <imgui.h>
 #include <imgui-SFML.h>
 
@@ -27,6 +28,7 @@ bool heights;
 bool flat;
 bool hum;
 bool simplifyRivers;
+int t = 0;
 
 int main()
 {
@@ -61,6 +63,9 @@ int main()
   std::vector<sf::Vertex> verticies;
   sf::Color bgColor;
   float color[3] = { 0.12, 0.12, 0.12 };
+
+  std::thread generator([&](){});
+
   auto updateVisuals = [&](){
     log.AddLog("Update geometry\n");
     polygons.clear();
@@ -123,6 +128,15 @@ int main()
     }
   };
 
+  auto regen = [&](){
+    generator.join();
+    generator = std::thread([&](){
+        mapgen.update();
+        seed = mapgen.getSeed();
+        relax = mapgen.getRelax();
+        updateVisuals();
+      });};
+
     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
@@ -133,11 +147,21 @@ int main()
     window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 
     mapgen.setSeed(111629613 /*81238299*/);
-    mapgen.update();
-    seed = mapgen.getSeed();
-    updateVisuals();
+    regen();
+
+    sw::ProgressBar progressBar;
+    progressBar.setShowBackgroundAndFrame(true);
+    progressBar.setSize(sf::Vector2f(400, 10));
+    progressBar.setPosition((sf::Vector2f(window.getSize()) - progressBar.getSize()) / 2.f);
+    bool isIncreasing{ true };
+
+    sf::Font sffont;
+    sffont.loadFromFile("/home/alexeynabrodov/.fonts/FiraCode-Medium.otf");
 
     sf::Clock deltaClock;
+    sf::Clock clock;
+
+    bool faded = false;
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -150,11 +174,8 @@ int main()
                   {
                   case sf::Keyboard::R:
                     mapgen.seed();
-                    seed = mapgen.getSeed();
                     log.AddLog("Update map\n");
-                    mapgen.update();
-                    updateVisuals();
-                    relax = mapgen.getRelax();
+                    regen();
                     break;
                   case sf::Keyboard::Escape:
                     window.close();
@@ -188,8 +209,51 @@ int main()
             }
         }
 
-        ImGui::SFML::Update(window, deltaClock.restart());
+        if (!mapgen.ready) {
+          // window.clear(bgColor);
+          if (!faded) {
+            sf::RectangleShape rectangle;
+            rectangle.setSize(sf::Vector2f(window.getSize().x, window.getSize().y));
+            auto color = sf::Color::Black;
+            color.a = 150;
+            rectangle.setFillColor(color);
+            rectangle.setPosition(0, 0);
+            window.draw(rectangle);
+            faded = true;
+          }
+          const float frame{ clock.restart().asSeconds() * 0.3f };
+          const float target{ isIncreasing ? progressBar.getRatio() + frame : progressBar.getRatio() - frame };
+          if (target < 0.f)
+            isIncreasing = true;
+          else if (target > 1.f)
+            isIncreasing = false;
+          progressBar.setRatio(target);
+          // Create a text
+          sf::Text operation(mapgen.currentOperation, sffont);
+          operation.setCharacterSize(20);
+          // operation.setStyle(sf::Text::Bold);
+          operation.setColor(sf::Color::White);
 
+          auto middle = (sf::Vector2f(window.getSize())) / 2.f;
+          operation.setPosition(sf::Vector2f(middle.x - operation.getGlobalBounds().width/2.f, middle.y+25.f));
+
+          window.draw(progressBar);
+
+          sf::RectangleShape bg;
+          bg.setSize(sf::Vector2f(420, 40));
+          bg.setFillColor(sf::Color::Black);
+          bg.setOutlineColor(sf::Color::White);
+          bg.setOutlineThickness(1);
+          middle = (sf::Vector2f(window.getSize()) - bg.getSize()) / 2.f;
+          bg.setPosition(sf::Vector2f(middle.x, middle.y + 37.f));
+          window.draw(bg);
+          window.draw(operation);
+          window.display();
+          continue;
+        }
+        faded = false;
+
+        ImGui::SFML::Update(window, deltaClock.restart());
         ImGui::Begin("Mapgen"); // begin window
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::Text("Polygons: %zu", polygons.size());
@@ -228,23 +292,24 @@ int main()
         ImGui::SameLine(100);
         if(ImGui::Checkbox("Simplify rivers",&simplifyRivers)) {
           mapgen.simpleRivers = simplifyRivers;
-          mapgen.update();
+          regen();
         }
 
         if (ImGui::InputInt("Seed", &seed)) {
           mapgen.setSeed(seed);
           log.AddLog("Update map\n");
-          mapgen.update();
-          updateVisuals();
-          relax = mapgen.getRelax();
+          regen();
         }
+
+        const char* templates[] = {"basic", "archipelago"};
+        if (ImGui::Combo("Map template", &t, templates, 2)) {
+          mapgen.setMapTemplate(templates[t]);
+          regen();
+        }
+
         if (ImGui::Button("Random")) {
           mapgen.seed();
-          seed = mapgen.getSeed();
-          log.AddLog("Update map\n");
-          mapgen.update();
-          updateVisuals();
-          relax = mapgen.getRelax();
+          regen();
         }
         ImGui::SameLine(100);
         if (ImGui::Button("Update")) {
@@ -257,10 +322,7 @@ int main()
             octaves = 1;
           }
           mapgen.setOctaveCount(octaves);
-          log.AddLog("Update map\n");
-          mapgen.update();
-          updateVisuals();
-          relax = mapgen.getRelax();
+          regen();
         }
 
         if (ImGui::InputFloat("Height freq", &freq)) {
@@ -268,9 +330,7 @@ int main()
             freq = 0;
           }
           mapgen.setFrequency(freq);
-          log.AddLog("Update map\n");
-          mapgen.update();
-          updateVisuals();
+          regen();
         }
 
         if (ImGui::InputInt("Points", &nPoints)) {
@@ -278,36 +338,27 @@ int main()
             nPoints = 5;
           }
           mapgen.setPointCount(nPoints);
-          log.AddLog("Update map\n");
-          mapgen.update();
-          updateVisuals();
-          relax = mapgen.getRelax();
+          regen();
         }
 
-        if (ImGui::Button("Relax")) {
-          log.AddLog("Update map\n");
-          mapgen.relax();
-          updateVisuals();
-          relax = mapgen.getRelax();
-        }
-        ImGui::SameLine(100);
+        // if (ImGui::Button("Relax")) {
+        //   log.AddLog("Update map\n");
+        //   mapgen.relax();
+        //   updateVisuals();
+        //   relax = mapgen.getRelax();
+        // }
+        // ImGui::SameLine(100);
         ImGui::Text("Relax iterations: %d", relax);
         if (ImGui::Button("+1000")) {
           nPoints+=1000;
           mapgen.setPointCount(nPoints);
-          log.AddLog("Update map\n");
-          mapgen.update();
-          updateVisuals();
-          relax = mapgen.getRelax();
+          regen();
         }
         ImGui::SameLine(100);
         if (ImGui::Button("-1000")) {
           nPoints-=1000;
           mapgen.setPointCount(nPoints);
-          log.AddLog("Update map\n");
-          mapgen.update();
-          updateVisuals();
-          relax = mapgen.getRelax();
+          regen();
         }
 
         ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random map");
@@ -446,5 +497,6 @@ int main()
         window.display();
     }
  
+    generator.join();
     ImGui::SFML::Shutdown();
 }

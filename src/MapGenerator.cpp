@@ -57,11 +57,13 @@ Iter MapGenerator::select_randomly(Iter start, Iter end, int s) {
 MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
 	_vdg = VoronoiDiagramGenerator();
   _pointsCount = 10000;
-  _octaves = 3;
+  _octaves = 4;
   _freq = 0.3;
   _relax = DEFAULT_RELAX;
   _regions = new std::vector<Region*>();
   simpleRivers = true;
+  _terrainType = "basic";
+  currentOperation = "";
 }
 
 void MapGenerator::build() {
@@ -79,6 +81,7 @@ void MapGenerator::relax() {
 }
 
 void MapGenerator::simplifyRivers() {
+  currentOperation = "Simplify rivers...";
   for (auto r : rivers) {
     PointList* rvr = r->points;
     PointList sr;
@@ -180,6 +183,7 @@ void MapGenerator::setPointCount(int c) {
 
 
 void MapGenerator::update() {
+  ready = false;
   regenHeight();
   regenDiagram();
   regenRegions();
@@ -190,10 +194,12 @@ void MapGenerator::update() {
   }
   calcHumidity();
   regenMegaClusters();
+  ready = true;
 }
 
 void MapGenerator::forceUpdate() {
   // regenHeight();
+  ready = false;
   regenDiagram();
   regenRegions();
   regenClusters();
@@ -201,15 +207,50 @@ void MapGenerator::forceUpdate() {
   simplifyRivers();
   calcHumidity();
   regenMegaClusters();
+  ready = true;
+}
+
+void MapGenerator::setMapTemplate(const char* templateName) {
+  _terrainType = std::string(templateName);
 }
 
 void MapGenerator::regenHeight() {
+  currentOperation = "Making mountains and seas...";
+  utils::NoiseMapBuilderPlane heightMapBuilder;
+  heightMapBuilder.SetDestNoiseMap(_heightMap);
+
   _perlin.SetSeed(_seed);
   _perlin.SetOctaveCount(_octaves);
   _perlin.SetFrequency(_freq);
-  utils::NoiseMapBuilderPlane heightMapBuilder;
-  heightMapBuilder.SetSourceModule(_perlin);
-  heightMapBuilder.SetDestNoiseMap(_heightMap);
+
+  module::Perlin terrainType;
+  module::RidgedMulti mountainTerrain;
+  module::Select finalTerrain;
+
+  if (_terrainType == "archipelago") {
+
+    terrainType.SetFrequency (0.8);
+    terrainType.SetPersistence (0.5);
+
+    terrainType.SetSeed(_seed);
+    mountainTerrain.SetSeed(_seed);
+
+    // module::ScaleBias flatTerrain;
+    // flatTerrain.SetSourceModule (0, _perlin);
+    // flatTerrain.SetScale (0.025);
+    // flatTerrain.SetBias (-0.75);
+
+    finalTerrain.SetSourceModule (0, _perlin);
+    finalTerrain.SetSourceModule (1, mountainTerrain);
+    finalTerrain.SetControlModule (terrainType);
+    finalTerrain.SetBounds (0.0, 100.0);
+    finalTerrain.SetEdgeFalloff (0.125);
+    heightMapBuilder.SetSourceModule(terrainType);
+
+  } else {
+    heightMapBuilder.SetSourceModule(_perlin);
+  }
+
   heightMapBuilder.SetDestSize(_w, _h);
   heightMapBuilder.SetBounds(0.0, 10.0, 0.0, 10.0);
   heightMapBuilder.Build();
@@ -217,13 +258,14 @@ void MapGenerator::regenHeight() {
 }
 
 void MapGenerator::makeRiver(Cell* c) {
+  currentOperation = "Making rivers...";
   std::vector<Cell*> visited;
-  printf("First cell: %p\n", c);
+  // printf("First cell: %p\n", c);
   Region* r = _cells[c];
-  printf("First biom: %s\n", r->biom.name.c_str());
+  // printf("First biom: %s\n", r->biom.name.c_str());
   // r->biom = MARK;
   float z = r->getHeight(r->site);
-  printf("First vert: %f\n", z);
+  // printf("First vert: %f\n", z);
   River *rvr = new River();
 
   std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end(), std::clock());
@@ -244,7 +286,7 @@ void MapGenerator::makeRiver(Cell* c) {
   }
 
   int count = 0;
-  while (z > 0.f && count < 100) {
+  while (z >= -0.01 && count < 100) {
     std::vector<Cell*> n = c->getNeighbors();
     Cell* end;
     for (Cell* c2 : n) {
@@ -288,9 +330,10 @@ void MapGenerator::makeRiver(Cell* c) {
 }
 
 void MapGenerator::regenRivers() {
+  currentOperation = "Making rivers...";
   rivers.clear();
   for (auto cluster : clusters){
-    if (cluster->biom.name == "Snow" || cluster->biom.name == "Rock") {
+    if ((cluster->biom.name == "Snow" || cluster->biom.name == "Rock") && cluster->regions.size() > 10) {
       Cell* c = cellsMap[*select_randomly(cluster->regions.begin(), cluster->regions.end())];
       if (c != nullptr) {
         makeRiver(c);
@@ -300,6 +343,7 @@ void MapGenerator::regenRivers() {
 }
 
 void MapGenerator::regenRegions() {
+  currentOperation = "Splitting nothing...";
   _cells.clear();
   _regions->clear();
   _regions->reserve(_diagram->cells.size());
@@ -356,6 +400,7 @@ bool isDiscard(const Cluster* c)
 }
 
 void MapGenerator::calcHumidity() {
+  currentOperation = "Making world moist...";
   for (auto r : *_regions) {
     if(r->hasRiver) {
       r->humidity += 0.1;
@@ -376,6 +421,7 @@ void MapGenerator::calcHumidity() {
 }
 
 void MapGenerator::regenMegaClusters() {
+  currentOperation = "Finding far lands...";
   megaClusters.clear();
   std::map<Cluster*,MegaCluster*> _megaClusters;
   for (auto c : clusters) {
@@ -461,6 +507,7 @@ void MapGenerator::regenMegaClusters() {
 }
 
 void MapGenerator::regenClusters() {
+  currentOperation = "Meeting with neighbors...";
   clusters.clear();
   cellsMap.clear();
   std::map<Cell*,Cluster*> _clusters;
@@ -568,11 +615,13 @@ int MapGenerator::getRelax() {
 }
 
 void MapGenerator::regenDiagram() {
+  currentOperation = "Making nothing...";
   _bbox = sf::Rect<double>(0,0,_w, _h);
   _sites = new std::vector<sf::Vector2<double>>();
   genRandomSites(*_sites, _bbox, _w, _h, _pointsCount);
   _diagram.reset(_vdg.compute(*_sites, _bbox));
   for (int n = 0; n < _relax; n++) {
+    currentOperation = "Relaxing...";
     makeRelax();
   }
   delete _sites;

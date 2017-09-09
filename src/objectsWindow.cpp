@@ -161,7 +161,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
 
       auto n = int(river->points->size());
       char rn[30];
-      sprintf(rn,"%s: %%d points", river->name.c_str());
+      sprintf(rn,"%s [%p]: %%d points", river->name.c_str(), river);
       ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (rivers_selection_mask[in] ? ImGuiTreeNodeFlags_Selected : 0);
       bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)n, node_flags, rn, n);
       if (ImGui::IsItemClicked()) {

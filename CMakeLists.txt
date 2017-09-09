@@ -41,7 +41,10 @@ add_executable(${EXECUTABLE_NAME}
   src/Region.cpp
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
@@ -76,7 +79,7 @@ if (OPENGL_FOUND)
   target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES})
 endif()
 
-target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw)
+target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw Threads::Threads)
 
 target_compile_features(mapgen PRIVATE cxx_delegating_constructors)
 

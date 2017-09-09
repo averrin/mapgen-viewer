@@ -31,12 +31,15 @@ public:
   std::vector<sf::ConvexShape>* getPolygons();
   void seed();
   std::vector<Region*>* getRegions();
+  void setMapTemplate(const char* t);
 
   std::vector<River*> rivers;
 
   std::vector<Cluster*> clusters;
   std::vector<MegaCluster*> megaClusters;
   bool simpleRivers;
+  bool ready;
+  std::string currentOperation;
 
 private:
   void regenHeight();
@@ -49,6 +52,7 @@ private:
   void makeRiver(Cell* c);
   void calcHumidity();
   void simplifyRivers();
+  // module::Module& getSourceModule();
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;
@@ -68,6 +72,7 @@ private:
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;
   std::vector<Region*>* _regions;
+  std::string _terrainType;
 
   template<typename Iter>
   Iter select_randomly(Iter start, Iter end);
