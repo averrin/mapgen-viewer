@@ -635,6 +635,12 @@ int MapGenerator::getRelax() {
   return _relax;
 }
 
+bool damagedCell(Cell* c)
+{
+  // return c->discarded;
+  return c->pointIntersection(c->site.p.x, c->site.p.y) == -1;
+}
+
 void MapGenerator::regenDiagram() {
   currentOperation = "Making nothing...";
   _bbox = sf::Rect<double>(0,0,_w, _h);
@@ -645,9 +651,15 @@ void MapGenerator::regenDiagram() {
     currentOperation = "Relaxing...";
     makeRelax();
   }
+
+  while (std::count_if(_diagram->cells.begin(), _diagram->cells.end(), damagedCell) != 0) {
+    _relax++;
+    makeRelax();
+  }
   delete _sites;
+
   std::sort(_diagram->cells.begin(), _diagram->cells.end(), cellsOrdered);
-  std::cout << "Diagram generation finished: " << _pointsCount << "\n" << std::flush;
+  std::cout << "Diagram generation finished: " << _diagram->cells.size() << "\n" << std::flush;
 }
 
 void MapGenerator::genRandomSites(std::vector<sf::Vector2<double>>& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites) {

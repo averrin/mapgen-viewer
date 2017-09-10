@@ -291,6 +291,9 @@ public:
   void drawInfo() {
     sf::Vector2<float> pos = window->mapPixelToCoords(sf::Mouse::getPosition(*window));
     Region* currentRegion =  mapgen->getRegion(pos);
+    if (currentRegion == nullptr) {
+      return;
+    }
     // char p[100];
     // sprintf(p,"%p\n",currentRegion);
     // std::cout<<p<<std::flush;
