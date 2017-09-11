@@ -4,12 +4,14 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include "Biom.hpp"
+#include <VoronoiDiagramGenerator.h>
 
 typedef sf::Vector2<double>* Point;
 typedef std::vector<Point> PointList;
 typedef std::map<Point,float> HeightMap;
 
 struct Cluster;
+typedef Cluster MegaCluster;
 class Region {
 public:
   Region();
@@ -20,14 +22,15 @@ public:
   Point site;
   bool hasRiver;
   Cluster *cluster;
+  MegaCluster *megaCluster;
   bool border;
   float humidity;
+  Cell* cell;
 private:
 	PointList _verticies;
   HeightMap _heights;
 };
 
-typedef Cluster MegaCluster;
 struct Cluster {
   std::string name;
   std::vector<Region*> regions;

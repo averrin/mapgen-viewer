@@ -45,14 +45,15 @@ private:
   void makeHeights();
   void makeDiagram();
   void makeRegions();
+  void makeRegions_old();
   void makeRivers();
   void makeClusters();
   void makeMegaClusters();
+  void makeMegaClusters_old();
   void makeRelax();
   void makeRiver(Cell* c);
   void calcHumidity();
   void simplifyRivers();
-  // module::Module& getSourceModule();
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;
