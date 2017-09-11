@@ -115,7 +115,8 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
       ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (selection_mask[i] ? ImGuiTreeNodeFlags_Selected : 0);
 
       char t[100];
-      sprintf(t, "%s [%s] (%%d)%s",cluster->biom.name.c_str(), cluster->name.c_str(), cluster->discarded ? " X" : "");
+      sprintf(t, "%s [%s] (%%d)", cluster->biom.name.c_str(),
+              cluster->name.c_str());
       bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, t, int(cluster->regions.size()));
       if (ImGui::IsItemClicked()) {
         node_clicked = i;

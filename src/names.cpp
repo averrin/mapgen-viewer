@@ -1,5 +1,6 @@
 #include <vector>
 #include <string>
+#include <random>
 
 const std::string _river_first_names[] = {"Alligator","Amazon","Arching","Arctic","Arrowhead","Bamboo","Black","Bland","Blue","Bogbeast","Boundless","Brilliant","Bursting","Calm","Charmed","Choral","Climbing","Cobalt","Cold","Coral","Crocodile","Crystal","Cursed","Dancing","Dark","Darkest","Dead","Deep","Distant","Dragonfly","Dread","Dreaded","Eastern","Emerald","Empty","Enchanted","Ethereal","Ever Reaching","Fair","Flowing","Foaming","Forbidden","Frothy","Frozen","Glassy","Gleaming","Glistening","Gray","Green","Harmony","Heaving","Homeless","Hungry","Infernal","Infinite","Invisible","Iris","Isolated","Jade","Laughing","Lifeless","Lilypad","Lion's Tail","Living","Lonely","Lotus","Lucent","Majestic","Mesmerizing","Mighty","Mirrored","Misty","Moaning","Molten","Moon-lit","Motionless","Moving","Narrow","New","Northern","Peaceful","Perfumed","Pleasant","Quiet","Raging","Rainy","Red","Restless","Rippling","Rocking","Rolling","Rough","Rushing","Sandy","Sanguine","Savage","Serene","Serpent","Shimmering","Silent","Sleeping","Slumbrous","Soundless","Southern","Sparkling","Sterile","Stern","Straitened","Sunny","Surging","Tadpole","Teal","Throbbing","Thundering","Tinted","Tortoise","Tossing","Tranquil","Treacherous","Troubled","Turbulent","Turquoise","Turtle","Uncanny","Unknown","Violent","Waveless","Western","Whispering","White","Wild","Windy","Wondering","Wrinkled"};
 const std::string _river_second_names[] = {"Creek","River","Stream","Brook","Run","Tributary","Beck","Rill"};
@@ -18,3 +19,25 @@ const std::string _sea_second_names[] = {"Abyss","Tides","Waves","Bay","Deep","D
 
 std::vector<std::string> sea_first_names (_sea_first_names, _sea_first_names + sizeof(_sea_first_names) / sizeof(_sea_first_names[0]) );
 std::vector<std::string> sea_second_names (_sea_second_names, _sea_second_names + sizeof(_sea_second_names) / sizeof(_sea_second_names[0]) );
+
+template<typename Iter>
+Iter select_randomly(Iter start, Iter end, int s) {
+  std::mt19937 gen(s);
+  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+  std::advance(start, dis(gen));
+  return start;
+}
+
+std::string generateRiverName() {
+  std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end(), std::clock());
+  std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end(), std::clock());
+  return fn+" "+sn;
+}
+
+std::string generateLandName() {
+  return *select_randomly(island_first_names.begin(), island_first_names.end(), std::clock()) + " " + *select_randomly(island_second_names.begin(), island_second_names.end(), std::clock());
+  }
+
+std::string generateSeaName() {
+  return *select_randomly(sea_first_names.begin(), sea_first_names.end(), std::clock()) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end(), std::clock());
+}

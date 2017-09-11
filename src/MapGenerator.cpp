@@ -18,7 +18,6 @@ bool cellsOrdered(Cell* c1, Cell* c2) {
 		return true;
 	if (s1.y == s2.y && s1.x < s2.x)
 		return true;
-
 	return false;
 }
 
@@ -27,28 +26,18 @@ bool sitesOrdered(const sf::Vector2<double>& s1, const sf::Vector2<double>& s2) 
 		return true;
 	if (s1.y == s2.y && s1.x < s2.x)
 		return true;
-
 	return false;
 }
 
 bool clusterOrdered(Cluster* s1, Cluster* s2) {
 	if (s1->regions.size() > s2->regions.size())
 		return true;
-
 	return false;
 }
 
 template<typename Iter>
 Iter MapGenerator::select_randomly(Iter start, Iter end) {
   std::mt19937 gen(_seed);
-  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-  std::advance(start, dis(gen));
-  return start;
-}
-
-template<typename Iter>
-Iter MapGenerator::select_randomly(Iter start, Iter end, int s) {
-  std::mt19937 gen(s);
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
   std::advance(start, dis(gen));
   return start;
@@ -66,16 +55,11 @@ MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
   currentOperation = "";
 }
 
-void MapGenerator::build() {
-  seed();
-  update();
-}
-
 void MapGenerator::relax() {
   _relax++;
   makeRelax();
-  regenRegions();
-  regenRivers();
+  makeRegions();
+  makeRivers();
   simplifyRivers();
   calcHumidity();
 }
@@ -184,29 +168,16 @@ void MapGenerator::setPointCount(int c) {
 
 void MapGenerator::update() {
   ready = false;
-  regenHeight();
-  regenDiagram();
-  regenRegions();
-  regenClusters();
-  regenRivers();
+  makeHeights();
+  makeDiagram();
+  makeRegions();
+  makeClusters();
+  makeRivers();
   if (simpleRivers) {
     simplifyRivers();
   }
   calcHumidity();
-  regenMegaClusters();
-  ready = true;
-}
-
-void MapGenerator::forceUpdate() {
-  // regenHeight();
-  ready = false;
-  regenDiagram();
-  regenRegions();
-  regenClusters();
-  regenRivers();
-  simplifyRivers();
-  calcHumidity();
-  regenMegaClusters();
+  makeMegaClusters();
   ready = true;
 }
 
@@ -214,7 +185,7 @@ void MapGenerator::setMapTemplate(const char* templateName) {
   _terrainType = std::string(templateName);
 }
 
-void MapGenerator::regenHeight() {
+void MapGenerator::makeHeights() {
   currentOperation = "Making mountains and seas...";
   utils::NoiseMapBuilderPlane heightMapBuilder;
   heightMapBuilder.SetDestNoiseMap(_heightMap);
@@ -230,11 +201,11 @@ void MapGenerator::regenHeight() {
 
   if (_terrainType == "archipelago") {
 
-    terrainType.SetFrequency (0.5);
+    terrainType.SetFrequency(0.5);
     terrainType.SetPersistence (0.5);
 
-    terrainType.SetSeed(_seed);
-    mountainTerrain.SetSeed(_seed);
+    terrainType.SetSeed(_seed+1);
+    mountainTerrain.SetSeed(_seed+2);
 
     finalTerrain.SetSourceModule (0, _perlin);
     finalTerrain.SetSourceModule (1, mountainTerrain);
@@ -256,8 +227,6 @@ void MapGenerator::regenHeight() {
 
     mountainTerrain.SetFrequency (0.9);
 
-    // terrainType.SetPersistence (0.4);
-
     finalTerrain.SetSourceModule (0, flatTerrain);
     finalTerrain.SetSourceModule (1, mountainTerrain);
     finalTerrain.SetControlModule (terrainType);
@@ -278,17 +247,11 @@ void MapGenerator::regenHeight() {
 void MapGenerator::makeRiver(Cell* c) {
   currentOperation = "Making rivers...";
   std::vector<Cell*> visited;
-  // printf("First cell: %p\n", c);
   Region* r = _cells[c];
-  // printf("First biom: %s\n", r->biom.name.c_str());
-  // r->biom = MARK;
   float z = r->getHeight(r->site);
-  // printf("First vert: %f\n", z);
   River *rvr = new River();
 
-  std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end(), std::clock());
-  std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end(), std::clock());
-  rvr->name = fn+" "+sn;
+  rvr->name = generateRiverName();
   PointList* river = new PointList();
   rvr->points = river;
   rivers.push_back(rvr);
@@ -316,7 +279,6 @@ void MapGenerator::makeRiver(Cell* c) {
       r->cluster->hasRiver = true;
       bool f = false;
       for (auto e : c2->getEdges()) {
-        // printf("Next candidate: %f < %f\n", r->getHeight(e->startPoint()), z);
         if (r->getHeight(e->startPoint()) < z) {
           next = e->startPoint();
           z = r->getHeight(next);
@@ -325,10 +287,8 @@ void MapGenerator::makeRiver(Cell* c) {
         }
       }
       if (f) {
-        // river.push_back(r->site);
         river->push_back(r->site);
         r->hasRiver = true;
-        // river.push_back(next);
       }
       end = c2;
     }
@@ -350,7 +310,7 @@ void MapGenerator::makeRiver(Cell* c) {
   }
 }
 
-void MapGenerator::regenRivers() {
+void MapGenerator::makeRivers() {
   currentOperation = "Making rivers...";
   rivers.clear();
   for (auto cluster : clusters){
@@ -363,7 +323,7 @@ void MapGenerator::regenRivers() {
   }
 }
 
-void MapGenerator::regenRegions() {
+void MapGenerator::makeRegions() {
   currentOperation = "Splitting nothing...";
   _cells.clear();
   _regions->clear();
@@ -416,7 +376,6 @@ void MapGenerator::regenRegions() {
 
 bool isDiscard(const Cluster* c)
 {
-  // return c->discarded;
   return c->regions.size() == 0;
 }
 
@@ -441,7 +400,7 @@ void MapGenerator::calcHumidity() {
   }
 }
 
-void MapGenerator::regenMegaClusters() {
+void MapGenerator::makeMegaClusters() {
   currentOperation = "Finding far lands...";
   megaClusters.clear();
   std::map<Cluster*,MegaCluster*> _megaClusters;
@@ -490,7 +449,6 @@ void MapGenerator::regenMegaClusters() {
                 knownMegaCluster->regions.push_back(orn);
                 orn->cluster->megaCluster = knownMegaCluster;
               }
-              // _clusters[cellsMap[orn]] = knownMegaCluster;
             }
             oldCluster->regions.clear();
           }
@@ -509,9 +467,9 @@ void MapGenerator::regenMegaClusters() {
       // cluster->name = buffAsStdStr;
       cluster->isLand = c->isLand;
       if(cluster->isLand){
-        cluster->name = *select_randomly(island_first_names.begin(), island_first_names.end(), std::clock()) + " " + *select_randomly(island_second_names.begin(), island_second_names.end(), std::clock());
+        cluster->name = generateLandName();
       } else {
-        cluster->name = *select_randomly(sea_first_names.begin(), sea_first_names.end(), std::clock()) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end(), std::clock());
+        cluster->name = generateSeaName();
       }
       c->megaCluster = cluster;
       for (auto r : c->regions){
@@ -527,7 +485,7 @@ void MapGenerator::regenMegaClusters() {
   std::sort(megaClusters.begin(), megaClusters.end(), clusterOrdered);
 }
 
-void MapGenerator::regenClusters() {
+void MapGenerator::makeClusters() {
   currentOperation = "Meeting with neighbors...";
   clusters.clear();
   cellsMap.clear();
@@ -568,12 +526,10 @@ void MapGenerator::regenClusters() {
               _clusters[cellsMap[orn]] = knownCluster;
               // clusters.erase(std::find(clusters.begin(), clusters.end(), oldCluster));
             }
-            // oldCluster->discarded = true;
             oldCluster->regions.clear();
           }
 
           r->cluster = knownCluster;
-          // _clusters[n]->regions.push_back(r);
           _clusters[c] = knownCluster;
           cellsMap[r] = c;
         }
@@ -587,7 +543,6 @@ void MapGenerator::regenClusters() {
       std::string buffAsStdStr = buff;
       cluster->name = buffAsStdStr;
       cluster->hasRiver = false;
-      cluster->discarded = false;
       r->cluster = cluster;
       cluster->biom = r->biom;
       cluster->isLand = r->biom.border > 0;
@@ -637,11 +592,10 @@ int MapGenerator::getRelax() {
 
 bool damagedCell(Cell* c)
 {
-  // return c->discarded;
   return c->pointIntersection(c->site.p.x, c->site.p.y) == -1;
 }
 
-void MapGenerator::regenDiagram() {
+void MapGenerator::makeDiagram() {
   currentOperation = "Making nothing...";
   _bbox = sf::Rect<double>(0,0,_w, _h);
   _sites = new std::vector<sf::Vector2<double>>();

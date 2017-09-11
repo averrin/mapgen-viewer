@@ -63,10 +63,9 @@ public:
     char windowTitle[255] = "MapGen";
 
     window->setTitle(windowTitle);
-    window->resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
+    window->resetGLStates();
 
     initMapGen();
-    // mapgen.setSeed(/*111629613*/ 81238299);
     generator = std::thread([&](){});
     regen();
 
@@ -98,6 +97,7 @@ public:
   void initMapGen() {
     seed = std::clock();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
+    // mapgen.setSeed(/*111629613*/ 81238299);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -228,21 +228,17 @@ public:
       log.AddLog("Update map\n");
       regen();
     }
-
-    const char* templates[] = {"basic", "archipelago", "new"};
-    if (ImGui::Combo("Map template", &t, templates, 3)) {
-      mapgen->setMapTemplate(templates[t]);
-      regen();
-    }
+    ImGui::SameLine(300);
 
     if (ImGui::Button("Random")) {
       mapgen->seed();
       regen();
     }
-    ImGui::SameLine(100);
-    if (ImGui::Button("Update")) {
-      mapgen->forceUpdate();
-      updateVisuals();
+
+    const char* templates[] = {"basic", "archipelago", "new"};
+    if (ImGui::Combo("Map template", &t, templates, 3)) {
+      mapgen->setMapTemplate(templates[t]);
+      regen();
     }
 
     if (ImGui::SliderInt("Height octaves", &octaves, 1, 10)) {

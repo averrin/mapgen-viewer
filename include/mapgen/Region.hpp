@@ -35,7 +35,6 @@ struct Cluster {
   MegaCluster* megaCluster;
   Biom biom;
   bool hasRiver;
-  bool discarded;
   bool isLand;
 };
 
