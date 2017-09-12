@@ -173,10 +173,51 @@ void MapGenerator::update() {
   calcHumidity();
   calcTemp();
 
+  makeMinerals();
+  makeBorders();
   makeFinalRegions();
-
   makeClusters();
+
   ready = true;
+}
+
+void MapGenerator::makeMinerals() {
+  currentOperation = "Search for minerals...";
+  utils::NoiseMapBuilderPlane heightMapBuilder;
+  heightMapBuilder.SetDestNoiseMap(_mineralsMap);
+
+  module::Billow minerals;
+  minerals.SetSeed(_seed+5);
+  heightMapBuilder.SetSourceModule(minerals);
+
+  heightMapBuilder.SetDestSize(_w, _h);
+  heightMapBuilder.SetBounds(10.0, 20.0, 10.0, 20.0);
+  heightMapBuilder.Build();
+}
+
+void MapGenerator::makeBorders() {
+  for (auto c: megaClusters) {
+    for (auto r: c->regions) {
+      if (!r->border) {
+        continue;
+      }
+
+      Cell* c = r->cell;
+      for (auto n: c->getNeighbors()) {
+        Region* rn = _cells[n];
+        if (rn->biom.name != r->biom.name){
+          for (auto e: n->getEdges()) {
+            if (c->pointIntersection(e->startPoint()->x, e->startPoint()->y) == 0) {
+              r->megaCluster->border.push_back(e->startPoint());
+            }
+          }
+        }
+      }
+    }
+    //TODO: sort points by distance;
+    //TODO: do something with inner points
+    // std::sort(r->megaCluster->border.begin(), r->megaCluster->border.end(), borderOrdered);
+  }
 }
 
 void MapGenerator::setMapTemplate(const char* templateName) {
@@ -355,8 +396,11 @@ void MapGenerator::makeFinalRegions() {
   currentOperation = "Making forrests and deserts...";
   for (auto r : *_regions) {
     if (r->biom.name == LAKE.name) {
+      r->minerals = 0;
       continue;
     }
+    r->minerals = _mineralsMap.GetValue(r->site->x, r->site->y);
+    r->minerals = r->minerals > 0 ? r->minerals : 0;
     float ht = r->getHeight(r->site);
     Biom b = BIOMS[0];
     for (int i = 0; i < int(BIOMS.size()); i++)
@@ -372,6 +416,40 @@ void MapGenerator::makeFinalRegions() {
         }
       }
     r->biom = b;
+    float hc = (1.f-std::abs(r->humidity-0.8f));
+    hc = hc <= 0 ? 0 : hc/3.f;
+    float hic = (1.f-std::abs(r->getHeight(r->site)-0.7f));
+    hic = hic <= 0 ? 0 : hic/3.f;
+    float tc = (1.f-std::abs(r->temperature-temperature*2.f/3.f));
+    tc = tc <= 0 ? 0 : tc/3.f;
+
+    r->nice = hc + hic + tc;
+  }
+
+  for (auto cluster : megaClusters){
+    if (!cluster->isLand) {
+      continue;
+    }
+    for (auto r : cluster->regions) {
+      Cell* c = r->cell;
+      if(c == nullptr) {
+        continue;
+      }
+      auto ns = c->getNeighbors();
+      if (std::count_if(ns.begin(), ns.end(), [&](Cell* oc){
+            Region* reg = _cells[oc];
+            return reg->minerals > r->minerals;
+          })==0 && r->minerals != 0){
+        cluster->resourcePoints.push_back(r);
+      }
+
+      if (std::count_if(ns.begin(), ns.end(), [&](Cell* oc){
+            Region* reg = _cells[oc];
+            return reg->nice >= r->nice;
+          })==0 && r->biom.name != LAKE.name){
+        cluster->goodPoints.push_back(r);
+      }
+    }
   }
 }
 

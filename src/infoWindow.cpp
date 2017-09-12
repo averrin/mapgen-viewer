@@ -12,6 +12,8 @@ void infoWindow(sf::RenderWindow* window, Region* currentRegion) {
   }
 
   ImGui::Text("Region: %p", currentRegion);
+  ImGui::Text("Minerals: %f", currentRegion->minerals);
+  ImGui::Text("Goodness: %f", currentRegion->nice);
   ImGui::Text("Cluster: %p", cluster);
   ImGui::Text("Cluster size: %zu", cluster->regions.size());
   ImGui::Text("Mega Cluster: %s", currentRegion->megaCluster->name.c_str());

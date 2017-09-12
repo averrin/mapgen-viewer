@@ -57,6 +57,8 @@ private:
   void calcHumidity();
   void calcTemp();
   void simplifyRivers();
+  void makeBorders();
+  void makeMinerals();
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;
@@ -75,6 +77,7 @@ private:
 
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;
+  utils::NoiseMap _mineralsMap;
   std::vector<Region*>* _regions;
   std::string _terrainType;
 

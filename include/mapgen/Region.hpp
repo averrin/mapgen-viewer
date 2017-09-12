@@ -27,6 +27,8 @@ public:
   float humidity;
   Cell* cell;
   float temperature;
+  float minerals;
+  float nice;
 private:
 	PointList _verticies;
   HeightMap _heights;
@@ -40,6 +42,10 @@ struct Cluster {
   Biom biom;
   bool hasRiver;
   bool isLand;
+  Point* center;
+  PointList border;
+  std::vector<Region*> resourcePoints;
+  std::vector<Region*> goodPoints;
 };
 
 #endif

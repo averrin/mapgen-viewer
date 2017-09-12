@@ -18,6 +18,7 @@
 
 class Application {
   std::vector<sf::ConvexShape> polygons;
+  std::vector<sf::CircleShape> poi;
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::Vertex> verticies;
   sf::Color bgColor;
@@ -51,6 +52,7 @@ class Application {
   bool getScreenshot = false;
   float temperature;
   bool temp = false;
+  bool minerals = false;
 
 public:
   Application() {
@@ -131,6 +133,10 @@ public:
         break;
       case sf::Keyboard::T:
         temp = !temp;
+        updateVisuals();
+        break;
+      case sf::Keyboard::M:
+        minerals = !minerals;
         updateVisuals();
         break;
       case sf::Keyboard::I:
@@ -242,6 +248,11 @@ public:
       updateVisuals();
     }
     ImGui::SameLine(200);
+    if (ImGui::Checkbox("Minerals", &minerals)) {
+      infoPolygons.clear();
+      updateVisuals();
+    }
+
     if (ImGui::Checkbox("Simplify rivers", &simplifyRivers)) {
       mapgen->simpleRivers = simplifyRivers;
       regen();
@@ -336,6 +347,16 @@ public:
     Cluster *cluster = currentRegion->cluster;
 
     int i = 0;
+    // sf::ConvexShape polygon;
+    // polygon.setPointCount(cluster->megaCluster->border.size());
+    // for (auto p: cluster->megaCluster->border) {
+    //   polygon.setPoint(i, sf::Vector2f(p->x, p->y));
+    //   i++;
+    // }
+    // polygon.setFillColor(sf::Color::Transparent);
+    // polygon.setOutlineColor(sf::Color::Red);
+    // polygon.setOutlineThickness(3);
+    // infoPolygons.push_back(polygon);
     for (std::vector<Region *>::iterator
              it = cluster->megaCluster->regions.begin();
          it < cluster->megaCluster->regions.end(); it++, i++) {
@@ -444,6 +465,7 @@ public:
         window->draw(polygons[i]);
       }
 
+      drawRivers();
 
       sf::Vector2u windowSize = window->getSize();
       cachedMap.create(windowSize.x, windowSize.y);
@@ -494,7 +516,12 @@ public:
       window->clear(bgColor); // fill background with color
 
       drawMap();
-      drawRivers();
+
+      if(info){
+        for (auto p: poi) {
+          window->draw(p);
+        }
+      }
 
       sf::Vector2u windowSize = window->getSize();
       sf::Text mark("Mapgen by Averrin", sffont);
@@ -527,7 +554,13 @@ public:
         texture.update(*window);
         sf::Image screenshot = texture.copyToImage();
         char s[100];
-        sprintf(s, "%d.png", seed);
+        if (!hum && !temp) {
+          sprintf(s, "%d.png", seed);
+        } else if (hum) {
+          sprintf(s, "%d-hum.png", seed);
+        } else {
+          sprintf(s, "%d-temp.png", seed);
+        }
         screenshot.saveToFile(s);
         char l[255];
         sprintf(l, "Screenshot created: %s\n", s);
@@ -544,7 +577,26 @@ public:
   void updateVisuals() {
     log.AddLog("Update geometry\n");
     polygons.clear();
+    poi.clear();
     verticies.clear();
+
+    for (auto mc: mapgen->megaClusters) {
+      for (auto p: mc->resourcePoints) {
+        float rad = p->minerals * 3 + 1;
+        sf::CircleShape poiShape(rad);
+        poiShape.setFillColor(sf::Color::Blue);
+        poiShape.setPosition(sf::Vector2f(p->site->x - rad/2.f, p->site->y - rad/2.f));
+        poi.push_back(poiShape);
+      }
+      for (auto p: mc->goodPoints) {
+        float rad = p->minerals * 3 + 1;
+        sf::CircleShape poiShape(rad);
+        poiShape.setFillColor(sf::Color::Red);
+        poiShape.setPosition(sf::Vector2f(p->site->x - rad/2.f, p->site->y - rad/2.f));
+        poi.push_back(poiShape);
+      }
+    }
+
     int i = 0;
     std::vector<Region *> *regions = mapgen->getRegions();
     polygons.reserve(regions->size());
@@ -553,6 +605,7 @@ public:
          it < regions->end(); it++, i++) {
 
       Region *region = (*regions)[i];
+
       sf::ConvexShape polygon;
       PointList points = region->getPoints();
       polygon.setPointCount(points.size());
@@ -590,6 +643,16 @@ public:
         col.g = col.g / 3;
         polygon.setFillColor(col);
         color[2] = 1.f;
+      }
+
+      if (minerals) {
+        sf::Color col(region->biom.color);
+        col.g = 255 * (region->minerals) / 1.2;
+        // col.a = 20 + 255 * (region->minerals + 1.6) / 3.2;
+        col.b = col.b / 3;
+        col.r = col.g / 3;
+        polygon.setFillColor(col);
+        color[0] = 1.f;
       }
 
       if (hum && region->humidity != 1) {
