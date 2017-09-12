@@ -7,6 +7,9 @@ void infoWindow(sf::RenderWindow* window, Region* currentRegion) {
 
   PointList points = currentRegion->getPoints();
   Cluster* cluster = currentRegion->cluster;
+  if (cluster == nullptr) {
+    return;
+  }
 
   ImGui::Text("Region: %p", currentRegion);
   ImGui::Text("Cluster: %p", cluster);
@@ -18,6 +21,7 @@ void infoWindow(sf::RenderWindow* window, Region* currentRegion) {
               currentRegion->getHeight(currentRegion->site)
   );
   ImGui::Text("Humidity: %f", currentRegion->humidity);
+  ImGui::Text("Temperature: %f", currentRegion->temperature);
   ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
   ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
   ImGui::Text("Is border: %s", currentRegion->border ? "true" : "false");

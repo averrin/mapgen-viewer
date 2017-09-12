@@ -26,6 +26,7 @@ public:
   bool border;
   float humidity;
   Cell* cell;
+  float temperature;
 private:
 	PointList _verticies;
   HeightMap _heights;

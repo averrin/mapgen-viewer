@@ -124,7 +124,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
       if (node_open)
         {
           if (cluster->megaCluster != nullptr) {
-            ImGui::Text("MegaCluster: %p", cluster->megaCluster);
+            ImGui::Text("MegaCluster: %s", cluster->megaCluster->name.c_str());
           }
           ImGui::Text("Biom: %s", cluster->biom.name.c_str());
           ImGui::Text("Regions: %zu", cluster->regions.size());

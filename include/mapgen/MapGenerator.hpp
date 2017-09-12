@@ -40,19 +40,22 @@ public:
   bool simpleRivers;
   bool ready;
   std::string currentOperation;
+  float temperature;
 
 private:
   void makeHeights();
   void makeDiagram();
   void makeRegions();
+  void makeFinalRegions();
   void makeRegions_old();
   void makeRivers();
   void makeClusters();
   void makeMegaClusters();
   void makeMegaClusters_old();
   void makeRelax();
-  void makeRiver(Cell* c);
+  void makeRiver(Region* r);
   void calcHumidity();
+  void calcTemp();
   void simplifyRivers();
   int _seed;
   VoronoiDiagramGenerator _vdg;

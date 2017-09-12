@@ -31,6 +31,8 @@ add_library(imgui ${IMLIB_SOURCE})
 file(GLOB SWLIB_SOURCE "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.cpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.hpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/*.hpp")
 add_library(sw ${SWLIB_SOURCE})
 
+add_subdirectory(backward-cpp)
+
 set(EXECUTABLE_NAME "mapgen")
 add_executable(${EXECUTABLE_NAME}
   include/imgui/imgui.cpp
@@ -40,7 +42,10 @@ add_executable(${EXECUTABLE_NAME}
   src/noiseutils.cpp
   src/MapGenerator.cpp
   src/Region.cpp
+  ${BACKWARD_ENABLE}
 )
+
+add_backward(mapgen)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
