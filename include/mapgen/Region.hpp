@@ -12,6 +12,7 @@ typedef std::map<Point,float> HeightMap;
 
 struct Cluster;
 typedef Cluster MegaCluster;
+class City;
 class Region {
 public:
   Region();
@@ -29,6 +30,9 @@ public:
   float temperature;
   float minerals;
   float nice;
+  City* city;
+  float distanceFormCapital;
+  bool coast;
 private:
 	PointList _verticies;
   HeightMap _heights;
@@ -46,6 +50,7 @@ struct Cluster {
   PointList border;
   std::vector<Region*> resourcePoints;
   std::vector<Region*> goodPoints;
+  std::vector<City*> cities;
 };
 
 #endif

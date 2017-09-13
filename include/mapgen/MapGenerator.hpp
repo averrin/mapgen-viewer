@@ -8,6 +8,7 @@
 
 #include "Region.hpp"
 #include "River.hpp"
+#include "City.hpp"
 
 class MapGenerator {
 public:
@@ -35,6 +36,7 @@ public:
 
   std::vector<River*> rivers;
 
+  std::vector<City*> cities;
   std::vector<Cluster*> clusters;
   std::vector<MegaCluster*> megaClusters;
   bool simpleRivers;
@@ -59,6 +61,7 @@ private:
   void simplifyRivers();
   void makeBorders();
   void makeMinerals();
+  void makeCities();
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;

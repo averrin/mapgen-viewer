@@ -3,6 +3,7 @@
 #include <random>
 #include <iterator>
 #include "Biom.cpp"
+#include "City.cpp"
 #include "names.cpp"
 
 const int DEFAULT_RELAX = 5;
@@ -56,6 +57,13 @@ MapGenerator::MapGenerator(int w, int h): _w(w), _h(h) {
   temperature = DEFAULT_TEMPERATURE;
 }
 
+double getDistance(Point p, Point p2) {
+  double distancex = (p2->x - p->x);
+  double distancey = (p2->y - p->y);
+
+  return std::sqrt(distancex * distancex + distancey * distancey);
+}
+
 void MapGenerator::simplifyRivers() {
   currentOperation = "Simplify rivers...";
   for (auto r : rivers) {
@@ -74,19 +82,8 @@ void MapGenerator::simplifyRivers() {
       Point p3 = (*rvr)[i+2];
       Point sp;
 
-      double distancex = (p2->x - p->x);
-      distancex *= distancex;
-      double distancey = (p2->y - p->x);
-      distancey *= distancey;
-
-      double d1 = sqrt(distancex + distancey);
-
-      distancex = (p3->x - p->x);
-      distancex *= distancex;
-      distancey = (p3->y - p->x);
-      distancey *= distancey;
-
-      double d2 = sqrt(distancex + distancey);
+      double d1 = getDistance(p, p2);
+      double d2 = getDistance(p, p3);
 
       if (d2 < d1) {
         sp = p2;
@@ -178,7 +175,57 @@ void MapGenerator::update() {
   makeFinalRegions();
   makeClusters();
 
+  makeCities();
+
   ready = true;
+}
+
+void MapGenerator::makeCities() {
+  currentOperation = "Founding cities...";
+  double minDistance = std::numeric_limits<double>::max();
+  Region* betterPlace;
+  MegaCluster* biggestCluster;
+  for (auto c: megaClusters) {
+    if (c->isLand) {
+      biggestCluster = c;
+      break;
+    }
+  }
+
+  std::vector<Region*> places;
+  std::copy_if(biggestCluster->regions.begin(), biggestCluster->regions.end(), std::back_inserter(places), [](Region* r){
+      return r->biom.name != LAKE.name && r->nice >= 0.5 && r->minerals >= 0.5 && r->temperature >= DEFAULT_TEMPERATURE/3;
+    });
+  std::sort(places.begin(), places.end(), [&](Region* r, Region* r2){
+      if (r->nice + r->minerals >= r2->nice + r2->minerals){
+        return true;
+      }
+      return false;
+    });
+  City* capital = new City(places[0], generateCityName());
+  capital->isCapital = true;
+  cities.push_back(capital);
+
+  // std::vector<Region*>::iterator portPlace = std::find_if(biggestCluster->regions.begin(), biggestCluster->regions.end(), [](Region* r){
+  //     return r->border && r->hasRiver;
+  //   });
+
+  places.clear();
+  std::copy_if(biggestCluster->regions.begin(), biggestCluster->regions.end(), std::back_inserter(places), [&](Region* r){
+      return r->border && r->hasRiver && r->coast && r != capital->region;
+    });
+  std::sort(places.begin(), places.end(), [&](Region* r, Region* r2){
+      if ( getDistance(r->site, capital->region->site) <= getDistance(r2->site, capital->region->site)){
+        return true;
+      }
+      return false;
+    });
+  City* port = new City(places[0], generateCityName());
+  cities.push_back(port);
+
+  for (auto r : *_regions) {
+    r->distanceFormCapital = getDistance(r->site, capital->region->site);
+  }
 }
 
 void MapGenerator::makeMinerals() {
@@ -484,6 +531,8 @@ void MapGenerator::makeRegions() {
     h.insert(std::make_pair(&p, ht));
     Biom b = ht < 0.0625 ? SEA : LAND;
     Region *region = new Region(b, verts, h, &p);
+    region->city = nullptr;
+    region->coast = false;
     region->cell = c;
     region->humidity = DEFAULT_HUMIDITY;
     region->border = false;
@@ -569,6 +618,7 @@ void MapGenerator::makeMegaClusters() {
       Region* rn = _cells[n];
       if (r->biom.name != rn->biom.name){
         r->border = true;
+        r->coast = r->biom.name == LAND.name && rn->biom.name == SEA.name;
       } else if (_megaClusters.count(rn) != 0) {
         cu = false;
         if (knownCluster == nullptr) {

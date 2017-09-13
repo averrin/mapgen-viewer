@@ -17,6 +17,8 @@ void infoWindow(sf::RenderWindow* window, Region* currentRegion) {
   ImGui::Text("Cluster: %p", cluster);
   ImGui::Text("Cluster size: %zu", cluster->regions.size());
   ImGui::Text("Mega Cluster: %s", currentRegion->megaCluster->name.c_str());
+  ImGui::Text("Distance from capital: %f", currentRegion->distanceFormCapital);
+  ImGui::Text("Coast: %s", currentRegion->coast ? "true" : "false");
   ImGui::Text("Site: x:%f y:%f z:%f",
               currentRegion->site->x,
               currentRegion->site->y,

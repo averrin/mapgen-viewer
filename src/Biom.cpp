@@ -16,6 +16,7 @@ Biom ICE = {1.2000, sf::Color(220, 220, 255), "Ice", 0.9};
 Biom PRAIRIE = {999.000, sf::Color(239, 220, 124), "Prairie", 0.1};
 Biom MEADOW = {999.000, sf::Color(126, 190, 75), "Meadow", 0.1};
 Biom DESERT = {999.000, sf::Color(244, 164, 96), "Desert", 0.3};
+Biom CITY = {999.000, sf::Color(220,220,220), "City", 0.3};
 
 Biom RAIN_FORREST = {0.3750, sf::Color(51, 90, 75), "Rain forrest", 0.6};
 
@@ -25,6 +26,7 @@ std::vector<Biom> BIOMS = {{
 
 Biom LAKE = {999.000, sf::Color(51, 51, 91), "Lake", 1};
 Biom MARK = {999.000, sf::Color::Red, "Mark"};
+Biom MARK2 = {999.000, sf::Color::Black, "Mark"};
 
 Biom LAND = {0.500, sf::Color(136, 170, 85), "Land", 1};
 Biom SEA = {-1.000, sf::Color(39, 39, 70), "Sea", 1};

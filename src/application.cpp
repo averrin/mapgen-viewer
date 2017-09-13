@@ -20,7 +20,10 @@ class Application {
   std::vector<sf::ConvexShape> polygons;
   std::vector<sf::CircleShape> poi;
   std::vector<sf::ConvexShape> infoPolygons;
+  std::vector<sf::Sprite> sprites;
   std::vector<sf::Vertex> verticies;
+  sf::Texture *capitalIcon;
+  sf::Texture *anchorIcon;
   sf::Color bgColor;
   AppLog log;
   MapGenerator *mapgen;
@@ -85,6 +88,18 @@ public:
         (sf::Vector2f(window->getSize()) - progressBar.getSize()) / 2.f);
 
     sffont.loadFromFile("./font.ttf");
+
+    capitalIcon = new sf::Texture();
+    if (!capitalIcon->loadFromFile("images/capital.png")) {
+      std::cout<<"Image error"<<std::endl;
+    }
+    capitalIcon->setSmooth(true);
+
+    anchorIcon = new sf::Texture();
+    if (!anchorIcon->loadFromFile("images/anchor.png")) {
+      std::cout<<"Image error"<<std::endl;
+    }
+    anchorIcon->setSmooth(true);
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
@@ -294,10 +309,10 @@ public:
       regen();
     }
 
-    if (ImGui::SliderFloat("Base temperature", &temperature, -20.f, 50.f)) {
-      mapgen->temperature = temperature;
-      regen();
-    }
+    // if (ImGui::SliderFloat("Base temperature", &temperature, -20.f, 50.f)) {
+    //   mapgen->temperature = temperature;
+    //   regen();
+    // }
 
     // if (ImGui::Button("Relax")) {
     //   log.AddLog("Update map\n");
@@ -466,6 +481,9 @@ public:
       }
 
       drawRivers();
+      for (auto sprite : sprites) {
+        window->draw(sprite);
+      }
 
       sf::Vector2u windowSize = window->getSize();
       cachedMap.create(windowSize.x, windowSize.y);
@@ -579,6 +597,7 @@ public:
     polygons.clear();
     poi.clear();
     verticies.clear();
+    sprites.clear();
 
     for (auto mc: mapgen->megaClusters) {
       for (auto p: mc->resourcePoints) {
@@ -624,7 +643,25 @@ public:
         }
         col.a = a;
       }
+      if (region->city != nullptr) {
+        sf::Sprite sprite;
+        if (region->city->isCapital) {
+          sprite.setTexture(*capitalIcon);
+          auto p = region->site;
+          sprite.setScale(0.05, 0.05);
+          auto size = capitalIcon->getSize();
+          sprite.setPosition(sf::Vector2f(p->x-size.x*0.05/2.f, p->y-size.y*0.05/2.f));
+        } else {
+          sprite.setTexture(*anchorIcon);
+          auto p = region->site;
+          sprite.setScale(0.1, 0.1);
+          auto size = anchorIcon->getSize();
+          sprite.setPosition(sf::Vector2f(p->x-size.x*0.05/2.f, p->y-size.y*0.05/2.f));
+        }
+        sprites.push_back(sprite);
+      }
       polygon.setFillColor(col);
+
       if (edges) {
         polygon.setOutlineColor(sf::Color(100, 100, 100));
         polygon.setOutlineThickness(1);
