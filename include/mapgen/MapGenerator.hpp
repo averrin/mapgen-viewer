@@ -5,10 +5,14 @@
 #include <VoronoiDiagramGenerator.h>
 #include <libnoise/noise.h>
 #include "noise/noiseutils.h"
+#include <functional>
 
 #include "Region.hpp"
-#include "River.hpp"
-#include "City.hpp"
+#include "Map.hpp"
+#include "micropather.h"
+
+typedef std::function<bool (Region*)> filterFunc;
+typedef std::function<bool (Region*, Region*)> sortFunc;
 
 class MapGenerator {
 public:
@@ -31,18 +35,14 @@ public:
   Region* getRegion(sf::Vector2f pos);
   std::vector<sf::ConvexShape>* getPolygons();
   void seed();
-  std::vector<Region*>* getRegions();
+  std::vector<Region*> getRegions();
   void setMapTemplate(const char* t);
 
-  std::vector<River*> rivers;
-
-  std::vector<City*> cities;
-  std::vector<Cluster*> clusters;
-  std::vector<MegaCluster*> megaClusters;
   bool simpleRivers;
   bool ready;
   std::string currentOperation;
   float temperature;
+  Map* map;
 
 private:
   void makeHeights();
@@ -62,6 +62,7 @@ private:
   void makeBorders();
   void makeMinerals();
   void makeCities();
+  std::vector<Region*> filterRegions(std::vector<Region*> regions, filterFunc filter, sortFunc sort);
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;
@@ -74,14 +75,12 @@ private:
 	std::vector<sf::Vector2<double>>* _sites;
   std::map<Cell*,Region*> _cells;
 	std::unique_ptr<Diagram> _diagram;
-  std::vector<sf::ConvexShape>* _polygons;
   Cell* _highestCell;
   std::map<Region*,Cell*> cellsMap;
 
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;
   utils::NoiseMap _mineralsMap;
-  std::vector<Region*>* _regions;
   std::string _terrainType;
 
   template<typename Iter>

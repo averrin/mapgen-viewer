@@ -10,7 +10,7 @@ std::vector<bool> rivers_selection_mask;
 std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerator* mapgen) {
   std::vector<sf::ConvexShape> objectPolygons;
   ImGui::Begin("Objects");
-  int n = int(mapgen->megaClusters.size());
+  int n = int(mapgen->map->megaClusters.size());
   bool megaInited = true;
   if(int(mega_selection_mask.size()) < n) {
     megaInited = false;
@@ -21,7 +21,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     int node_clicked = -1;
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize()*3);
     int i = 0;
-    for(auto cluster : mapgen->megaClusters) {
+    for(auto cluster : mapgen->map->megaClusters) {
 
       if(mega_selection_mask[i]) {
         int ii = 0;
@@ -74,7 +74,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     ImGui::TreePop();
   }
 
-  n = int(mapgen->clusters.size());
+  n = int(mapgen->map->clusters.size());
   bool maskInited = true;
   if(int(selection_mask.size()) < n) {
     maskInited = false;
@@ -85,7 +85,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     int node_clicked = -1;
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize()*3);
     int i = 0;
-    for(auto cluster : mapgen->clusters) {
+    for(auto cluster : mapgen->map->clusters) {
 
       if(selection_mask[i]) {
         int ii = 0;
@@ -146,7 +146,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     ImGui::TreePop();
   }
 
-  int rc = int(mapgen->rivers.size());
+  int rc = int(mapgen->map->rivers.size());
   bool riversMaskInited = true;
   if(int(rivers_selection_mask.size()) < rc) {
     riversMaskInited = false;
@@ -155,7 +155,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
   int in = 0;
   if(ImGui::TreeNode((void*)(intptr_t)rc, "Rivers (%d)", rc)){
     int node_clicked = -1;
-    for(auto river : mapgen->rivers) {
+    for(auto river : mapgen->map->rivers) {
       if (!riversMaskInited) {
         rivers_selection_mask.push_back(false);
       }

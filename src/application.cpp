@@ -444,7 +444,7 @@ public:
 
   void drawRivers() {
     int rn = 0;
-    for (auto r : mapgen->rivers) {
+    for (auto r : mapgen->map->rivers) {
       PointList *rvr = r->points;
       sw::Spline river;
       river.setThickness(3);
@@ -456,7 +456,7 @@ public:
                         {static_cast<float>(p->x), static_cast<float>(p->y)});
         float t = float(i) / c * 2.f;
         river.setThickness(i, t);
-        if (rivers_selection_mask.size() >= mapgen->rivers.size() &&
+        if (rivers_selection_mask.size() >= mapgen->map->rivers.size() &&
             rivers_selection_mask[rn]) {
           river.setColor(sf::Color(255, 70, 0));
         } else {
@@ -599,7 +599,7 @@ public:
     verticies.clear();
     sprites.clear();
 
-    for (auto mc: mapgen->megaClusters) {
+    for (auto mc: mapgen->map->megaClusters) {
       for (auto p: mc->resourcePoints) {
         float rad = p->minerals * 3 + 1;
         sf::CircleShape poiShape(rad);
@@ -617,13 +617,13 @@ public:
     }
 
     int i = 0;
-    std::vector<Region *> *regions = mapgen->getRegions();
-    polygons.reserve(regions->size());
-    verticies.reserve(regions->size());
-    for (std::vector<Region *>::iterator it = regions->begin();
-         it < regions->end(); it++, i++) {
+    std::vector<Region *> regions = mapgen->getRegions();
+    polygons.reserve(regions.size());
+    verticies.reserve(regions.size());
+    for (std::vector<Region *>::iterator it = regions.begin();
+         it < regions.end(); it++, i++) {
 
-      Region *region = (*regions)[i];
+      Region *region = regions[i];
 
       sf::ConvexShape polygon;
       PointList points = region->getPoints();
