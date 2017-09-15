@@ -228,6 +228,10 @@ void MapGenerator::makeCities() {
       }
       return false;
     });
+  if (places.size() == 0) {
+    return;
+  }
+
   City *capital = new City(places[0], generateCityName(), CAPITAL);
   capital->isCapital = true;
   map->cities.push_back(capital);

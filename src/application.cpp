@@ -518,6 +518,7 @@ public:
         window->draw(polygons[i]);
       }
 
+      drawRivers();
       drawRoads();
       for (auto sprite : sprites) {
         window->draw(sprite);

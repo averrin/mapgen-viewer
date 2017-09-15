@@ -28,7 +28,7 @@ public:
     float hd = (r->getHeight(r->site) - r2->getHeight(r2->site));
     if (hd < 0) {
       d += 10000 * std::abs(hd);
-      if (r2->city != nullptr) {
+      if (r2->city != nullptr && d >= 5000) {
         d -= 5000;
       }
     }
