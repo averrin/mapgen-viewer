@@ -6,10 +6,9 @@
 std::vector<bool> selection_mask;
 std::vector<bool> mega_selection_mask;
 std::vector<bool> rivers_selection_mask;
+std::vector<bool> cities_selection_mask;
 
-std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerator* mapgen) {
-  std::vector<sf::ConvexShape> objectPolygons;
-  ImGui::Begin("Objects");
+void listMegaClusters(sf::RenderWindow* window, MapGenerator* mapgen, std::vector<sf::ConvexShape>* objectPolygons) {
   int n = int(mapgen->map->megaClusters.size());
   bool megaInited = true;
   if(int(mega_selection_mask.size()) < n) {
@@ -41,7 +40,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
           polygon.setFillColor(col);
           polygon.setOutlineColor(col);
           polygon.setOutlineThickness(1);
-          objectPolygons.push_back(polygon);
+          objectPolygons->push_back(polygon);
         }
       }
 
@@ -73,8 +72,10 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     ImGui::PopStyleVar();
     ImGui::TreePop();
   }
+}
 
-  n = int(mapgen->map->clusters.size());
+void listClusters(sf::RenderWindow* window, MapGenerator* mapgen, std::vector<sf::ConvexShape>* objectPolygons) {
+  int n = int(mapgen->map->clusters.size());
   bool maskInited = true;
   if(int(selection_mask.size()) < n) {
     maskInited = false;
@@ -105,7 +106,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
           polygon.setFillColor(col);
           polygon.setOutlineColor(col);
           polygon.setOutlineThickness(1);
-          objectPolygons.push_back(polygon);
+          objectPolygons->push_back(polygon);
         }
       }
 
@@ -145,7 +146,10 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
     ImGui::PopStyleVar();
     ImGui::TreePop();
   }
+  
+}
 
+void listRivers(sf::RenderWindow* window, MapGenerator* mapgen, std::vector<sf::ConvexShape>* objectPolygons) {
   int rc = int(mapgen->map->rivers.size());
   bool riversMaskInited = true;
   if(int(rivers_selection_mask.size()) < rc) {
@@ -204,6 +208,100 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerato
 
     ImGui::TreePop();
   }
+
+}
+
+
+void listCities(sf::RenderWindow* window, MapGenerator* mapgen, std::vector<sf::ConvexShape>* objectPolygons) {
+  int rc = int(mapgen->map->cities.size());
+  bool maskInited = true;
+  if(int(cities_selection_mask.size()) < rc) {
+    maskInited = false;
+    cities_selection_mask.reserve(rc);
+  }
+  int in = 0;
+  if(ImGui::TreeNode((void*)(intptr_t)rc, "Cities (%d)", rc)){
+    int node_clicked = -1;
+    for(auto city : mapgen->map->cities) {
+      auto regions = city->region->neighbors;
+      if(cities_selection_mask[in]) {
+        int ii = 0;
+        for(std::vector<Region*>::iterator it=regions.begin() ; it < regions.end(); it++, ii++) {
+
+          Region* region = regions[ii];
+          sf::ConvexShape polygon;
+          PointList points = region->getPoints();
+          polygon.setPointCount(points.size());
+          int n = 0;
+          for(PointList::iterator it2=points.begin() ; it2 < points.end(); it2++, n++) {
+            sf::Vector2<double>* p = points[n];
+            polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+          }
+          sf::Color col = sf::Color(255, 70, 0);
+          col.a = 100;
+          polygon.setFillColor(col);
+          polygon.setOutlineColor(col);
+          polygon.setOutlineThickness(1);
+          objectPolygons->push_back(polygon);
+        }
+      }
+
+      if (!maskInited) {
+        cities_selection_mask.push_back(false);
+      }
+
+      char rn[60];
+      std::string type = "";
+      switch (city->type) {
+      case CAPITAL:
+        type = "Capital";
+        break;
+      case PORT:
+        type = "Port";
+        break;
+      case MINE:
+        type = "Mine";
+        break;
+      case AGRO:
+        type = "Agro";
+        break;
+      }
+
+      sprintf(rn,"%s [%s]", city->name.c_str(), type.c_str());
+      ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | (cities_selection_mask[in] ? ImGuiTreeNodeFlags_Selected : 0);
+      bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)in, node_flags, rn, in);
+      if (ImGui::IsItemClicked()) {
+        node_clicked = in;
+      }
+
+      if(node_open){
+        ImGui::Text("Name: %s", city->name.c_str());
+        ImGui::Text("Type: %s", type.c_str());
+        ImGui::TreePop();
+      }
+
+      in++;
+    }
+
+    if (node_clicked != -1)
+      {
+        cities_selection_mask[node_clicked] = !cities_selection_mask[node_clicked];
+      }
+
+    ImGui::TreePop();
+  }
+
+}
+
+std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow* window, MapGenerator* mapgen) {
+  std::vector<sf::ConvexShape> objectPolygons;
+
+  ImGui::Begin("Objects");
+  listMegaClusters(window, mapgen, &objectPolygons);
+  listClusters(window, mapgen, &objectPolygons);
+  listRivers(window, mapgen, &objectPolygons);
+  listCities(window, mapgen, &objectPolygons);
   ImGui::End();
+
   return objectPolygons;
 }

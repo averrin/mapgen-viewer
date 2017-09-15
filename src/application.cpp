@@ -485,27 +485,23 @@ public:
   void drawRoads() {
     int rn = 0;
     for (auto r : mapgen->map->roads) {
-      sw::Spline river;
-      river.setThickness(3);
+      sw::Spline road;
+      road.setThickness(2);
       int i = 0;
-      // int c = rvr->size();
-      // for (PointList::iterator it = rvr->begin(); it < rvr->end(); it++, i++) {
       for (auto reg : r){
         if (reg == nullptr) {
           continue;
         }
         Point p = reg->site;
-        river.addVertex(i,
+        road.addVertex(i,
                         {static_cast<float>(p->x), static_cast<float>(p->y)});
-        // float t = float(i) / c * 2.f;
-        river.setThickness(2);
-        river.setColor(sf::Color(70, 50, 0));
+        road.setColor(sf::Color(70, 50, 0, 100));
       }
-      river.setBezierInterpolation();  // enable Bezier spline
-      river.setInterpolationSteps(10); // curvature resolution
-      river.smoothHandles();
-      river.update();
-      window->draw(river);
+      road.setBezierInterpolation();  // enable Bezier spline
+      road.setInterpolationSteps(10); // curvature resolution
+      road.smoothHandles();
+      road.update();
+      window->draw(road);
       rn++;
     }
   }

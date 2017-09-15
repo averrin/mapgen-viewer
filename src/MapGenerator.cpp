@@ -171,7 +171,7 @@ void MapGenerator::update() {
 
 void  MapGenerator::makeRoads() {
   map->roads.clear();
-  currentOperation = "Make roads...";
+  currentOperation = "Making roads...";
   _pather = new micropather::MicroPather( map );
 
   MegaCluster *biggestCluster;
@@ -182,23 +182,56 @@ void  MapGenerator::makeRoads() {
     }
   }
 
-  for (auto c: biggestCluster->cities){
-    micropather::MPVector< void* > path;
-    float totalCost = 0;
-    _pather->Reset();
-    int result = _pather->Solve( map->cities[0]->region, c->region, &path, &totalCost );
-    if (result != micropather::MicroPather::SOLVED) {
-      continue;
-    }
-    printf("Path [%d] length: %d with cost: %f", result, path.size(),totalCost);
-    std::cout<<result<<std::endl<<std::flush;
-    std::vector<Region*> road;
-    unsigned size = path.size();
-    for(int k=0; k<size; ++k ) {
-      auto ptr = path[k];
-      road.push_back((Region*)ptr);
-    }
-    map->roads.push_back(road);
+  // for (auto c: biggestCluster->cities){
+  //   micropather::MPVector< void* > path;
+  //   float totalCost = 0;
+  //   _pather->Reset();
+  //   int result = _pather->Solve( map->cities[0]->region, c->region, &path, &totalCost );
+  //   if (result != micropather::MicroPather::SOLVED) {
+  //     continue;
+  //   }
+  //   printf("Path [%d] length: %d with cost: %f", result, path.size(),totalCost);
+  //   std::cout<<result<<std::endl<<std::flush;
+  //   std::vector<Region*> road;
+  //   unsigned size = path.size();
+  //   for(int k=0; k<size; ++k ) {
+  //     auto ptr = path[k];
+  //     road.push_back((Region*)ptr);
+  //   }
+  //   map->roads.push_back(road);
+  // };
+
+  std::map<City*,City*> pathCache;
+  int tc = map->cities.size()*map->cities.size();
+  int k = 0;
+  for (auto c: map->cities){
+    for (auto oc: map->cities){
+      if (c == oc || (pathCache[c] == oc)) {
+        tc--;
+        continue;
+      }
+      k++;
+      char op[100];
+      sprintf(op, "Making roads [%d/%d]", k, tc);
+      currentOperation = op;
+      pathCache[oc] = c;
+      micropather::MPVector< void* > path;
+      float totalCost = 0;
+      _pather->Reset();
+      int result = _pather->Solve( c->region, oc->region, &path, &totalCost );
+      if (result != micropather::MicroPather::SOLVED) {
+        continue;
+      }
+      // printf("Path [%d] length: %d with cost: %f", result, path.size(),totalCost);
+      // std::cout<<result<<std::endl<<std::flush;
+      std::vector<Region*> road;
+      unsigned size = path.size();
+      for(int k=0; k<size; ++k ) {
+        auto ptr = path[k];
+        road.push_back((Region*)ptr);
+      }
+      map->roads.push_back(road);
+    };
   };
 }
 
