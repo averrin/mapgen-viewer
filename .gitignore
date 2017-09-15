@@ -1,0 +1,12 @@
+./*.png
+bin/*
+build
+Makefile
+*.a
+*.o
+imgui.ini
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+install_manifest*
