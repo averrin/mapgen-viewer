@@ -33,6 +33,7 @@ public:
   City* city;
   float distanceFormCapital;
   bool coast;
+  std::vector<Region*> neighbors;
 private:
 	PointList _verticies;
   HeightMap _heights;

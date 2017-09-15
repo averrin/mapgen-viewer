@@ -6,7 +6,7 @@ struct Biom {
   float border;
   sf::Color color;
   std::string name;
-  float humidity;
+  float feritlity;
 };
 
 #endif

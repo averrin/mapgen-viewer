@@ -22,8 +22,7 @@ class Application {
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::Sprite> sprites;
   std::vector<sf::Vertex> verticies;
-  sf::Texture *capitalIcon;
-  sf::Texture *anchorIcon;
+  std::map<std::string,sf::Texture*> icons;
   sf::Color bgColor;
   AppLog log;
   MapGenerator *mapgen;
@@ -89,17 +88,28 @@ public:
 
     sffont.loadFromFile("./font.ttf");
 
-    capitalIcon = new sf::Texture();
-    if (!capitalIcon->loadFromFile("images/capital.png")) {
-      std::cout<<"Image error"<<std::endl;
-    }
+    //TODO: automate it
+    sf::Texture *capitalIcon = new sf::Texture();
+    capitalIcon->loadFromFile("images/castle.png");
     capitalIcon->setSmooth(true);
 
-    anchorIcon = new sf::Texture();
-    if (!anchorIcon->loadFromFile("images/anchor.png")) {
-      std::cout<<"Image error"<<std::endl;
-    }
+    sf::Texture *anchorIcon = new sf::Texture();
+    anchorIcon->loadFromFile("images/docks.png");
     anchorIcon->setSmooth(true);
+
+    sf::Texture *mineIcon = new sf::Texture();
+    mineIcon->loadFromFile("images/mine.png");
+    mineIcon->setSmooth(true);
+
+    sf::Texture *agroIcon = new sf::Texture();
+    agroIcon->loadFromFile("images/farm.png");
+    agroIcon->setSmooth(true);
+
+
+    icons.insert(std::make_pair("capital", capitalIcon));
+    icons.insert(std::make_pair("port", anchorIcon));
+    icons.insert(std::make_pair("mine", mineIcon));
+    icons.insert(std::make_pair("agro", agroIcon));
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
@@ -472,6 +482,34 @@ public:
     }
   }
 
+  void drawRoads() {
+    int rn = 0;
+    for (auto r : mapgen->map->roads) {
+      sw::Spline river;
+      river.setThickness(3);
+      int i = 0;
+      // int c = rvr->size();
+      // for (PointList::iterator it = rvr->begin(); it < rvr->end(); it++, i++) {
+      for (auto reg : r){
+        if (reg == nullptr) {
+          continue;
+        }
+        Point p = reg->site;
+        river.addVertex(i,
+                        {static_cast<float>(p->x), static_cast<float>(p->y)});
+        // float t = float(i) / c * 2.f;
+        river.setThickness(2);
+        river.setColor(sf::Color(70, 50, 0));
+      }
+      river.setBezierInterpolation();  // enable Bezier spline
+      river.setInterpolationSteps(10); // curvature resolution
+      river.smoothHandles();
+      river.update();
+      window->draw(river);
+      rn++;
+    }
+  }
+
   void drawMap() {
     if (needUpdate) {
       int i = 0;
@@ -480,7 +518,7 @@ public:
         window->draw(polygons[i]);
       }
 
-      drawRivers();
+      drawRoads();
       for (auto sprite : sprites) {
         window->draw(sprite);
       }
@@ -645,19 +683,31 @@ public:
       }
       if (region->city != nullptr) {
         sf::Sprite sprite;
-        if (region->city->isCapital) {
-          sprite.setTexture(*capitalIcon);
+        if (region->city->type == CAPITAL) {
+          sprite.setTexture(*icons["capital"]);
           auto p = region->site;
-          sprite.setScale(0.05, 0.05);
-          auto size = capitalIcon->getSize();
-          sprite.setPosition(sf::Vector2f(p->x-size.x*0.05/2.f, p->y-size.y*0.05/2.f));
-        } else {
-          sprite.setTexture(*anchorIcon);
+          // sprite.setScale(0.05, 0.05);
+          auto size = icons["capital"]->getSize();
+          sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
+        } else if (region->city->type == PORT) {
+          sprite.setTexture(*icons["port"]);
           auto p = region->site;
-          sprite.setScale(0.1, 0.1);
-          auto size = anchorIcon->getSize();
-          sprite.setPosition(sf::Vector2f(p->x-size.x*0.05/2.f, p->y-size.y*0.05/2.f));
-        }
+          // sprite.setScale(0.1, 0.1);
+          auto size = icons["port"]->getSize();
+          sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
+        } else if (region->city->type == MINE) {
+          sprite.setTexture(*icons["mine"]);
+          auto p = region->site;
+          // sprite.setScale(0.1, 0.1);
+          auto size = icons["mine"]->getSize();
+          sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
+      } else if (region->city->type == AGRO) {
+        sprite.setTexture(*icons["agro"]);
+        auto p = region->site;
+        // sprite.setScale(0.05, 0.05);
+        auto size = icons["agro"]->getSize();
+        sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
+      }
         sprites.push_back(sprite);
       }
       polygon.setFillColor(col);

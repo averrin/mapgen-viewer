@@ -56,7 +56,7 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   _terrainType = "basic";
   currentOperation = "";
   temperature = DEFAULT_TEMPERATURE;
-  map = new Map();
+  map = nullptr;
 }
 
 double getDistance(Point p, Point p2) {
@@ -140,6 +140,11 @@ void MapGenerator::setPointCount(int c) { _pointsCount = c; }
 
 void MapGenerator::update() {
   ready = false;
+  if (map != nullptr) {
+    delete map;
+  }
+
+  map = new Map();
   makeHeights();
   makeDiagram();
 
@@ -159,14 +164,48 @@ void MapGenerator::update() {
   makeClusters();
 
   makeCities();
+  makeRoads();
 
   ready = true;
 }
 
+void  MapGenerator::makeRoads() {
+  map->roads.clear();
+  currentOperation = "Make roads...";
+  _pather = new micropather::MicroPather( map );
+
+  MegaCluster *biggestCluster;
+  for (auto c : map->megaClusters) {
+    if (c->isLand) {
+      biggestCluster = c;
+      break;
+    }
+  }
+
+  for (auto c: biggestCluster->cities){
+    micropather::MPVector< void* > path;
+    float totalCost = 0;
+    _pather->Reset();
+    int result = _pather->Solve( map->cities[0]->region, c->region, &path, &totalCost );
+    if (result != micropather::MicroPather::SOLVED) {
+      continue;
+    }
+    printf("Path [%d] length: %d with cost: %f", result, path.size(),totalCost);
+    std::cout<<result<<std::endl<<std::flush;
+    std::vector<Region*> road;
+    unsigned size = path.size();
+    for(int k=0; k<size; ++k ) {
+      auto ptr = path[k];
+      road.push_back((Region*)ptr);
+    }
+    map->roads.push_back(road);
+  };
+}
+
 void MapGenerator::makeCities() {
   currentOperation = "Founding cities...";
-  double minDistance = std::numeric_limits<double>::max();
-  Region *betterPlace;
+  // double minDistance = std::numeric_limits<double>::max();
+  // Region *betterPlace;
   MegaCluster *biggestCluster;
   for (auto c : map->megaClusters) {
     if (c->isLand) {
@@ -176,43 +215,110 @@ void MapGenerator::makeCities() {
   }
 
   std::vector<Region *> places;
-  places =
-      filterRegions(biggestCluster->regions,
-                    [&](Region *r) {
-                      return r->biom.name != LAKE.name && r->nice >= 0.5 &&
-                             r->temperature >= DEFAULT_TEMPERATURE / 3 &&
-                             r->hasRiver;
-                    },
-                    [&](Region *r, Region *r2) {
-                      if (r->nice + r->minerals >= r2->nice + r2->minerals) {
-                        return true;
-                      }
-                      return false;
-                    });
-  City *capital = new City(places[0], generateCityName());
+  places = filterRegions(
+    biggestCluster->regions,
+    [&](Region *r) {
+      return r->biom.name != LAKE.name && r->nice >= 0.5 &&
+              r->temperature >= DEFAULT_TEMPERATURE / 3 &&
+              r->hasRiver;
+    },
+    [&](Region *r, Region *r2) {
+      if (r->nice + r->minerals >= r2->nice + r2->minerals) {
+        return true;
+      }
+      return false;
+    });
+  City *capital = new City(places[0], generateCityName(), CAPITAL);
   capital->isCapital = true;
   map->cities.push_back(capital);
+  biggestCluster->cities.push_back(capital);
 
   for (auto r : map->regions) {
     r->distanceFormCapital = getDistance(r->site, capital->region->site);
   }
 
-  places = filterRegions(
-      biggestCluster->regions,
-      [&](Region *r) {
-        return r->border && r->hasRiver && r->coast && r != capital->region;
-      },
-      [&](Region *r, Region *r2) {
-        if (r->distanceFormCapital <= r2->distanceFormCapital) {
-          return true;
-        }
-        return false;
-      });
-
   if (!capital->region->coast) {
-    City *port = new City(places[0], generateCityName());
+    places = filterRegions(
+        biggestCluster->regions,
+        [&](Region *r) {
+          return r->border && r->hasRiver && r->coast && r->city == nullptr && r->biom.name!=LAKE.name;
+        },
+        [&](Region *r, Region *r2) {
+          if (r->distanceFormCapital <= r2->distanceFormCapital) {
+            return true;
+          }
+          return false;
+        });
+
+    City *port = new City(places[0], generateCityName(), PORT);
     map->cities.push_back(port);
+    biggestCluster->cities.push_back(port);
   }
+
+  for (auto mc: map->megaClusters) {
+    if (!mc->isLand) {
+      continue;
+    }
+    places = filterRegions(
+                           mc->regions,
+                           [&](Region *r) {
+                             return r->city == nullptr && r->minerals > 1 && r->biom.name!=LAKE.name && r->biom.name!=SNOW.name && r->biom.name!=ICE.name;
+                           },
+                           [&](Region *r, Region *r2) {
+                             if (r->minerals > r2->minerals) {
+                               return true;
+                             }
+                             return false;
+                           });
+    for (auto r : places) {
+      bool canPlace = true;
+      for (auto n: r->neighbors) {
+        if (n->city != nullptr) {
+          canPlace = false;
+          break;
+        }
+      }
+      if (!canPlace) {
+        continue;
+      }
+      City *c = new City(r, generateCityName(), MINE);
+      map->cities.push_back(c);
+      mc->cities.push_back(c);
+    }
+  }
+
+  for (auto mc: map->megaClusters) {
+    if (!mc->isLand) {
+      continue;
+    }
+    places = filterRegions(
+                           mc->regions,
+                           [&](Region *r) {
+                             return r->city == nullptr && r->nice > 0.8 && r->biom.feritlity > 0.7 && r->biom.name!=LAKE.name;
+                           },
+                           [&](Region *r, Region *r2) {
+                             if (r->nice*r->biom.feritlity > r2->nice*r2->biom.feritlity) {
+                               return true;
+                             }
+                             return false;
+                           });
+    for (auto r : places) {
+      bool canPlace = true;
+      for (auto n: r->neighbors) {
+        if (n->city != nullptr) {
+          canPlace = false;
+          break;
+        }
+      }
+      if (!canPlace) {
+        continue;
+      }
+      City *c = new City(r, generateCityName(), AGRO);
+      map->cities.push_back(c);
+      mc->cities.push_back(c);
+    }
+  }
+
 }
 
 std::vector<Region *> MapGenerator::filterRegions(std::vector<Region *> regions,
@@ -382,6 +488,7 @@ void MapGenerator::makeRiver(Region *r) {
       if (f) {
         river->push_back(r->site);
         r->hasRiver = true;
+        r->biom.feritlity+=0.2;
       }
       end = c2;
     }
@@ -545,6 +652,13 @@ void MapGenerator::makeRegions() {
     map->regions.push_back(region);
     _cells.insert(std::make_pair(c, region));
   }
+
+  for (auto r : map->regions) {
+    auto c = r->cell;
+    for (auto n : c->getNeighbors()) {
+      r->neighbors.push_back(_cells[n]);
+    }
+  }
 }
 
 bool isDiscard(const Cluster *c) { return c->regions.size() == 0; }
@@ -563,6 +677,7 @@ void MapGenerator::calcTemp() {
     for (auto n : c->getNeighbors()) {
       if (_cells[n]->biom.name == LAKE.name) {
         r->temperature += 2;
+        r->biom.feritlity+=0.2;
       }
     }
   }

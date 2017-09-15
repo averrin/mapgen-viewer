@@ -7,8 +7,10 @@
 #include "noise/noiseutils.h"
 #include <functional>
 
+//TODO: fix it and use header
+#include "../../src/Map.cpp"
+
 #include "Region.hpp"
-#include "Map.hpp"
 #include "micropather.h"
 
 typedef std::function<bool (Region*)> filterFunc;
@@ -62,6 +64,7 @@ private:
   void makeBorders();
   void makeMinerals();
   void makeCities();
+  void makeRoads();
   std::vector<Region*> filterRegions(std::vector<Region*> regions, filterFunc filter, sortFunc sort);
   int _seed;
   VoronoiDiagramGenerator _vdg;
@@ -78,6 +81,7 @@ private:
   Cell* _highestCell;
   std::map<Region*,Cell*> cellsMap;
 
+  micropather::MicroPather* _pather;
   module::Perlin _perlin;
   utils::NoiseMap _heightMap;
   utils::NoiseMap _mineralsMap;
