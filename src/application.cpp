@@ -22,7 +22,7 @@ class Application {
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::Sprite> sprites;
   std::vector<sf::Vertex> verticies;
-  std::map<std::string,sf::Texture*> icons;
+  std::map<CityType,sf::Texture*> icons;
   sf::Color bgColor;
   AppLog log;
   MapGenerator *mapgen;
@@ -106,10 +106,10 @@ public:
     agroIcon->setSmooth(true);
 
 
-    icons.insert(std::make_pair("capital", capitalIcon));
-    icons.insert(std::make_pair("port", anchorIcon));
-    icons.insert(std::make_pair("mine", mineIcon));
-    icons.insert(std::make_pair("agro", agroIcon));
+    icons.insert(std::make_pair(CAPITAL, capitalIcon));
+    icons.insert(std::make_pair(PORT, anchorIcon));
+    icons.insert(std::make_pair(MINE, mineIcon));
+    icons.insert(std::make_pair(AGRO, agroIcon));
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
@@ -684,31 +684,12 @@ public:
       }
       if (region->city != nullptr) {
         sf::Sprite sprite;
-        if (region->city->type == CAPITAL) {
-          sprite.setTexture(*icons["capital"]);
-          auto p = region->site;
-          // sprite.setScale(0.05, 0.05);
-          auto size = icons["capital"]->getSize();
-          sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
-        } else if (region->city->type == PORT) {
-          sprite.setTexture(*icons["port"]);
-          auto p = region->site;
-          // sprite.setScale(0.1, 0.1);
-          auto size = icons["port"]->getSize();
-          sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
-        } else if (region->city->type == MINE) {
-          sprite.setTexture(*icons["mine"]);
-          auto p = region->site;
-          // sprite.setScale(0.1, 0.1);
-          auto size = icons["mine"]->getSize();
-          sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
-      } else if (region->city->type == AGRO) {
-        sprite.setTexture(*icons["agro"]);
+        auto texture = icons[region->city->type];
+        sprite.setTexture(*texture);
         auto p = region->site;
         // sprite.setScale(0.05, 0.05);
-        auto size = icons["agro"]->getSize();
+        auto size = texture->getSize();
         sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
-      }
         sprites.push_back(sprite);
       }
       polygon.setFillColor(col);
