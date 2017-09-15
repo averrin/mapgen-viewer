@@ -22,7 +22,7 @@ class Application {
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::Sprite> sprites;
   std::vector<sf::Vertex> verticies;
-  std::map<CityType,sf::Texture*> icons;
+  std::map<CityType, sf::Texture *> icons;
   sf::Color bgColor;
   AppLog log;
   MapGenerator *mapgen;
@@ -88,7 +88,7 @@ public:
 
     sffont.loadFromFile("./font.ttf");
 
-    //TODO: automate it
+    // TODO: automate it
     sf::Texture *capitalIcon = new sf::Texture();
     capitalIcon->loadFromFile("images/castle.png");
     capitalIcon->setSmooth(true);
@@ -104,7 +104,6 @@ public:
     sf::Texture *agroIcon = new sf::Texture();
     agroIcon->loadFromFile("images/farm.png");
     agroIcon->setSmooth(true);
-
 
     icons.insert(std::make_pair(CAPITAL, capitalIcon));
     icons.insert(std::make_pair(PORT, anchorIcon));
@@ -488,13 +487,12 @@ public:
       sw::Spline road;
       road.setThickness(2);
       int i = 0;
-      for (auto reg : r){
+      for (auto reg : r) {
         if (reg == nullptr) {
           continue;
         }
         Point p = reg->site;
-        road.addVertex(i,
-                        {static_cast<float>(p->x), static_cast<float>(p->y)});
+        road.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
         road.setColor(sf::Color(70, 50, 0, 100));
       }
       road.setBezierInterpolation();  // enable Bezier spline
@@ -570,8 +568,8 @@ public:
 
       drawMap();
 
-      if(info){
-        for (auto p: poi) {
+      if (info) {
+        for (auto p : poi) {
           window->draw(p);
         }
       }
@@ -634,19 +632,21 @@ public:
     verticies.clear();
     sprites.clear();
 
-    for (auto mc: mapgen->map->megaClusters) {
-      for (auto p: mc->resourcePoints) {
+    for (auto mc : mapgen->map->megaClusters) {
+      for (auto p : mc->resourcePoints) {
         float rad = p->minerals * 3 + 1;
         sf::CircleShape poiShape(rad);
         poiShape.setFillColor(sf::Color::Blue);
-        poiShape.setPosition(sf::Vector2f(p->site->x - rad/2.f, p->site->y - rad/2.f));
+        poiShape.setPosition(
+            sf::Vector2f(p->site->x - rad / 2.f, p->site->y - rad / 2.f));
         poi.push_back(poiShape);
       }
-      for (auto p: mc->goodPoints) {
+      for (auto p : mc->goodPoints) {
         float rad = p->minerals * 3 + 1;
         sf::CircleShape poiShape(rad);
         poiShape.setFillColor(sf::Color::Red);
-        poiShape.setPosition(sf::Vector2f(p->site->x - rad/2.f, p->site->y - rad/2.f));
+        poiShape.setPosition(
+            sf::Vector2f(p->site->x - rad / 2.f, p->site->y - rad / 2.f));
         poi.push_back(poiShape);
       }
     }
@@ -685,7 +685,8 @@ public:
         auto p = region->site;
         // sprite.setScale(0.05, 0.05);
         auto size = texture->getSize();
-        sprite.setPosition(sf::Vector2f(p->x-size.x/2.f, p->y-size.y/2.f));
+        sprite.setPosition(
+            sf::Vector2f(p->x - size.x / 2.f, p->y - size.y / 2.f));
         sprites.push_back(sprite);
       }
       polygon.setFillColor(col);
@@ -731,9 +732,10 @@ public:
 
       if (temp) {
         if (region->temperature < temperature) {
-          sf::Color col(255,0,255);
+          sf::Color col(255, 0, 255);
           col.r = std::min(255.f, 255 * (temperature / region->temperature));
-          col.b = std::min(255.f, 255 * std::abs(1.f-(temperature / region->temperature)));
+          col.b = std::min(
+              255.f, 255 * std::abs(1.f - (temperature / region->temperature)));
 
           polygon.setFillColor(col);
         }

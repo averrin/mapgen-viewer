@@ -169,10 +169,10 @@ void MapGenerator::update() {
   ready = true;
 }
 
-void  MapGenerator::makeRoads() {
+void MapGenerator::makeRoads() {
   map->roads.clear();
   currentOperation = "Making roads...";
-  _pather = new micropather::MicroPather( map );
+  _pather = new micropather::MicroPather(map);
 
   MegaCluster *biggestCluster;
   for (auto c : map->megaClusters) {
@@ -186,11 +186,13 @@ void  MapGenerator::makeRoads() {
   //   micropather::MPVector< void* > path;
   //   float totalCost = 0;
   //   _pather->Reset();
-  //   int result = _pather->Solve( map->cities[0]->region, c->region, &path, &totalCost );
+  //   int result = _pather->Solve( map->cities[0]->region, c->region, &path,
+  //   &totalCost );
   //   if (result != micropather::MicroPather::SOLVED) {
   //     continue;
   //   }
-  //   printf("Path [%d] length: %d with cost: %f", result, path.size(),totalCost);
+  //   printf("Path [%d] length: %d with cost: %f", result,
+  //   path.size(),totalCost);
   //   std::cout<<result<<std::endl<<std::flush;
   //   std::vector<Region*> road;
   //   unsigned size = path.size();
@@ -201,11 +203,11 @@ void  MapGenerator::makeRoads() {
   //   map->roads.push_back(road);
   // };
 
-  std::map<City*,City*> pathCache;
-  int tc = map->cities.size()*map->cities.size();
+  std::map<City *, City *> pathCache;
+  int tc = map->cities.size() * map->cities.size();
   int k = 0;
-  for (auto c: map->cities){
-    for (auto oc: map->cities){
+  for (auto c : map->cities) {
+    for (auto oc : map->cities) {
       if (c == oc || (pathCache[c] == oc)) {
         tc--;
         continue;
@@ -215,20 +217,21 @@ void  MapGenerator::makeRoads() {
       sprintf(op, "Making roads [%d/%d]", k, tc);
       currentOperation = op;
       pathCache[oc] = c;
-      micropather::MPVector< void* > path;
+      micropather::MPVector<void *> path;
       float totalCost = 0;
       _pather->Reset();
-      int result = _pather->Solve( c->region, oc->region, &path, &totalCost );
+      int result = _pather->Solve(c->region, oc->region, &path, &totalCost);
       if (result != micropather::MicroPather::SOLVED) {
         continue;
       }
-      // printf("Path [%d] length: %d with cost: %f", result, path.size(),totalCost);
+      // printf("Path [%d] length: %d with cost: %f", result,
+      // path.size(),totalCost);
       // std::cout<<result<<std::endl<<std::flush;
-      std::vector<Region*> road;
+      std::vector<Region *> road;
       unsigned size = path.size();
-      for(int k=0; k<size; ++k ) {
+      for (int k = 0; k < size; ++k) {
         auto ptr = path[k];
-        road.push_back((Region*)ptr);
+        road.push_back((Region *)ptr);
       }
       map->roads.push_back(road);
     };
@@ -248,19 +251,19 @@ void MapGenerator::makeCities() {
   }
 
   std::vector<Region *> places;
-  places = filterRegions(
-    biggestCluster->regions,
-    [&](Region *r) {
-      return r->biom.name != LAKE.name && r->nice >= 0.5 &&
-              r->temperature >= DEFAULT_TEMPERATURE / 3 &&
-              r->hasRiver;
-    },
-    [&](Region *r, Region *r2) {
-      if (r->nice + r->minerals >= r2->nice + r2->minerals) {
-        return true;
-      }
-      return false;
-    });
+  places =
+      filterRegions(biggestCluster->regions,
+                    [&](Region *r) {
+                      return r->biom.name != LAKE.name && r->nice >= 0.5 &&
+                             r->temperature >= DEFAULT_TEMPERATURE / 3 &&
+                             r->hasRiver;
+                    },
+                    [&](Region *r, Region *r2) {
+                      if (r->nice + r->minerals >= r2->nice + r2->minerals) {
+                        return true;
+                      }
+                      return false;
+                    });
   if (places.size() == 0) {
     return;
   }
@@ -275,31 +278,34 @@ void MapGenerator::makeCities() {
   }
 
   if (!capital->region->coast) {
-    places = filterRegions(
-        biggestCluster->regions,
-        [&](Region *r) {
-          return r->border && r->hasRiver && r->coast && r->city == nullptr && r->biom.name!=LAKE.name;
-        },
-        [&](Region *r, Region *r2) {
-          if (r->distanceFormCapital <= r2->distanceFormCapital) {
-            return true;
-          }
-          return false;
-        });
+    places =
+        filterRegions(biggestCluster->regions,
+                      [&](Region *r) {
+                        return r->border && r->hasRiver && r->coast &&
+                               r->city == nullptr && r->biom.name != LAKE.name;
+                      },
+                      [&](Region *r, Region *r2) {
+                        if (r->distanceFormCapital <= r2->distanceFormCapital) {
+                          return true;
+                        }
+                        return false;
+                      });
 
     City *port = new City(places[0], generateCityName(), PORT);
     map->cities.push_back(port);
     biggestCluster->cities.push_back(port);
   }
 
-  for (auto mc: map->megaClusters) {
+  for (auto mc : map->megaClusters) {
     if (!mc->isLand) {
       continue;
     }
-    places = filterRegions(
-                           mc->regions,
+    places = filterRegions(mc->regions,
                            [&](Region *r) {
-                             return r->city == nullptr && r->minerals > 1 && r->biom.name!=LAKE.name && r->biom.name!=SNOW.name && r->biom.name!=ICE.name;
+                             return r->city == nullptr && r->minerals > 1 &&
+                                    r->biom.name != LAKE.name &&
+                                    r->biom.name != SNOW.name &&
+                                    r->biom.name != ICE.name;
                            },
                            [&](Region *r, Region *r2) {
                              if (r->minerals > r2->minerals) {
@@ -309,7 +315,7 @@ void MapGenerator::makeCities() {
                            });
     for (auto r : places) {
       bool canPlace = true;
-      for (auto n: r->neighbors) {
+      for (auto n : r->neighbors) {
         if (n->city != nullptr) {
           canPlace = false;
           break;
@@ -324,24 +330,25 @@ void MapGenerator::makeCities() {
     }
   }
 
-  for (auto mc: map->megaClusters) {
+  for (auto mc : map->megaClusters) {
     if (!mc->isLand) {
       continue;
     }
     places = filterRegions(
-                           mc->regions,
-                           [&](Region *r) {
-                             return r->city == nullptr && r->nice > 0.8 && r->biom.feritlity > 0.7 && r->biom.name!=LAKE.name;
-                           },
-                           [&](Region *r, Region *r2) {
-                             if (r->nice*r->biom.feritlity > r2->nice*r2->biom.feritlity) {
-                               return true;
-                             }
-                             return false;
-                           });
+        mc->regions,
+        [&](Region *r) {
+          return r->city == nullptr && r->nice > 0.8 &&
+                 r->biom.feritlity > 0.7 && r->biom.name != LAKE.name;
+        },
+        [&](Region *r, Region *r2) {
+          if (r->nice * r->biom.feritlity > r2->nice * r2->biom.feritlity) {
+            return true;
+          }
+          return false;
+        });
     for (auto r : places) {
       bool canPlace = true;
-      for (auto n: r->neighbors) {
+      for (auto n : r->neighbors) {
         if (n->city != nullptr) {
           canPlace = false;
           break;
@@ -355,7 +362,6 @@ void MapGenerator::makeCities() {
       mc->cities.push_back(c);
     }
   }
-
 }
 
 std::vector<Region *> MapGenerator::filterRegions(std::vector<Region *> regions,
@@ -525,7 +531,7 @@ void MapGenerator::makeRiver(Region *r) {
       if (f) {
         river->push_back(r->site);
         r->hasRiver = true;
-        r->biom.feritlity+=0.2;
+        r->biom.feritlity += 0.2;
       }
       end = c2;
     }
@@ -714,7 +720,7 @@ void MapGenerator::calcTemp() {
     for (auto n : c->getNeighbors()) {
       if (_cells[n]->biom.name == LAKE.name) {
         r->temperature += 2;
-        r->biom.feritlity+=0.2;
+        r->biom.feritlity += 0.2;
       }
     }
   }
