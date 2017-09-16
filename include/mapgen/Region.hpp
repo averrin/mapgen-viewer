@@ -34,6 +34,8 @@ public:
   float distanceFormCapital;
   bool coast;
   std::vector<Region*> neighbors;
+  bool hasRoad = false;
+  int traffic = 0;
 private:
 	PointList _verticies;
   HeightMap _heights;
@@ -52,6 +54,7 @@ struct Cluster {
   std::vector<Region*> resourcePoints;
   std::vector<Region*> goodPoints;
   std::vector<City*> cities;
+  bool hasPort = false;
 };
 
 #endif

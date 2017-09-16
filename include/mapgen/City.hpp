@@ -8,6 +8,8 @@ enum CityType {
   PORT,
   MINE,
   AGRO,
+  TRADE,
+  LIGHTHOUSE,
 };
 
 class City {

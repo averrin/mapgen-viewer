@@ -166,7 +166,53 @@ void MapGenerator::update() {
   makeCities();
   makeRoads();
 
+  simulation();
+
   ready = true;
+}
+
+void MapGenerator::simulation() {
+  currentOperation = "Simulate some life...";
+  std::sort(map->cities.begin(), map->cities.end(), [&](City *c, City *c2) {
+    if (c->region->traffic > c2->region->traffic) {
+      return true;
+    }
+    return false;
+  });
+
+  map->cities[0]->type = CAPITAL;
+  map->cities[1]->type = TRADE;
+  map->cities[2]->type = TRADE;
+  map->cities[3]->type = TRADE;
+
+  std::vector<Region*> cache;
+  for (auto r : map->regions){
+    bool tc = false;
+    for (auto cc : cache) {
+      if (getDistance(r->site, cc->site) < 100) {
+        tc = true;
+      }
+    }
+    if (tc) {
+      continue;
+    }
+
+    if (!r->megaCluster->isLand) {
+      continue;
+    }
+    int i = 0;
+    for (auto n : r->neighbors) {
+      if (n->traffic > 50 && !n->megaCluster->isLand) {
+        i++;
+      }
+    }
+    if (i >= 3) {
+      City *c = new City(r, generateCityName(), LIGHTHOUSE);
+      map->cities.push_back(c);
+      cache.push_back(c->region);
+      // mc->cities.push_back(c);
+    }
+  }
 }
 
 void MapGenerator::makeRoads() {
@@ -182,32 +228,12 @@ void MapGenerator::makeRoads() {
     }
   }
 
-  // for (auto c: biggestCluster->cities){
-  //   micropather::MPVector< void* > path;
-  //   float totalCost = 0;
-  //   _pather->Reset();
-  //   int result = _pather->Solve( map->cities[0]->region, c->region, &path,
-  //   &totalCost );
-  //   if (result != micropather::MicroPather::SOLVED) {
-  //     continue;
-  //   }
-  //   printf("Path [%d] length: %d with cost: %f", result,
-  //   path.size(),totalCost);
-  //   std::cout<<result<<std::endl<<std::flush;
-  //   std::vector<Region*> road;
-  //   unsigned size = path.size();
-  //   for(int k=0; k<size; ++k ) {
-  //     auto ptr = path[k];
-  //     road.push_back((Region*)ptr);
-  //   }
-  //   map->roads.push_back(road);
-  // };
-
   int tc = (map->cities.size() * map->cities.size() - map->cities.size()) / 2;
   int k = 0;
   int n = 1;
   for (auto c : map->cities) {
-    for (auto oc : std::vector<City*>(map->cities.begin()+n, map->cities.end())) {
+    for (auto oc :
+         std::vector<City *>(map->cities.begin() + n, map->cities.end())) {
       k++;
       char op[100];
       sprintf(op, "Making roads [%d/%d]", k, tc);
@@ -226,13 +252,35 @@ void MapGenerator::makeRoads() {
       unsigned size = path.size();
       for (int k = 0; k < size; ++k) {
         auto ptr = path[k];
-        road.push_back((Region *)ptr);
+        Region *r = (Region *)ptr;
+        road.push_back(r);
+        r->hasRoad = true;
+        r->traffic += 1;
       }
       map->roads.push_back(road);
     };
     n++;
   };
 }
+
+std::vector<Region *> MapGenerator::getSea(Region *r, int &d) {
+  // std::cout<<d<<std::endl<<std::flush;
+  std::vector<Region *> seas;
+  for (auto n : r->neighbors) {
+    if (!n->megaCluster->isLand) {
+      seas.push_back(n);
+      if (d < 10) {
+        d++;
+        // std::cout<<d<<std::endl<<std::flush;
+        auto s = getSea(n, d);
+        for (auto ns : s) {
+          seas.push_back(ns);
+        }
+      }
+    }
+  }
+  return seas;
+};
 
 void MapGenerator::makeCities() {
   currentOperation = "Founding cities...";
@@ -247,50 +295,6 @@ void MapGenerator::makeCities() {
   }
 
   std::vector<Region *> places;
-  places =
-      filterRegions(biggestCluster->regions,
-                    [&](Region *r) {
-                      return r->biom.name != LAKE.name && r->nice >= 0.5 &&
-                             r->temperature >= DEFAULT_TEMPERATURE / 3 &&
-                             r->hasRiver;
-                    },
-                    [&](Region *r, Region *r2) {
-                      if (r->nice + r->minerals >= r2->nice + r2->minerals) {
-                        return true;
-                      }
-                      return false;
-                    });
-  if (places.size() == 0) {
-    return;
-  }
-
-  City *capital = new City(places[0], generateCityName(), CAPITAL);
-  capital->isCapital = true;
-  map->cities.push_back(capital);
-  biggestCluster->cities.push_back(capital);
-
-  for (auto r : map->regions) {
-    r->distanceFormCapital = getDistance(r->site, capital->region->site);
-  }
-
-  if (!capital->region->coast) {
-    places =
-        filterRegions(biggestCluster->regions,
-                      [&](Region *r) {
-                        return r->border && r->hasRiver && r->coast &&
-                               r->city == nullptr && r->biom.name != LAKE.name;
-                      },
-                      [&](Region *r, Region *r2) {
-                        if (r->distanceFormCapital <= r2->distanceFormCapital) {
-                          return true;
-                        }
-                        return false;
-                      });
-
-    City *port = new City(places[0], generateCityName(), PORT);
-    map->cities.push_back(port);
-    biggestCluster->cities.push_back(port);
-  }
 
   for (auto mc : map->megaClusters) {
     if (!mc->isLand) {
@@ -356,6 +360,103 @@ void MapGenerator::makeCities() {
       City *c = new City(r, generateCityName(), AGRO);
       map->cities.push_back(c);
       mc->cities.push_back(c);
+    }
+  }
+
+  for (auto mc : map->megaClusters) {
+    if (!mc->isLand) {
+      continue;
+    }
+
+    int b = 40;
+
+    std::vector<Region*> cache;
+    places = filterRegions(mc->regions,
+                           [&](Region *r) {
+                             if (r->megaCluster->cities.size() == 0) {
+                               return false;
+                             }
+
+                             bool deep = false;
+                             for (auto n : r->neighbors) {
+                               if (n->getHeight(n->site) < 0.01) {
+                                 deep = true;
+                                 break;
+                               }
+                             }
+                             if (!deep || r->city != nullptr) {
+                               return false;
+                             }
+
+                             int d = 0;
+                             int sc = int(getSea(r, d).size());
+
+                             bool cond = (int)sc < b;
+
+                             if (cond) {
+
+                               for (auto cc : cache) {
+                                 if (getDistance(r->site, cc->site) < 200) {
+                                   return false;
+                                 }
+                               }
+
+                               cache.push_back(r);
+                             }
+
+                             return cond;
+                           },
+                           [&](Region *r, Region *r2) { return false; });
+
+    for (auto r : places) {
+      bool canPlace = true;
+      for (auto n : r->neighbors) {
+        if (n->city != nullptr) {
+          canPlace = false;
+          break;
+        }
+      }
+      if (!canPlace) {
+        continue;
+      }
+
+      City *c = new City(r, generateCityName(), PORT);
+      map->cities.push_back(c);
+      mc->cities.push_back(c);
+      mc->hasPort = true;
+    }
+  }
+
+  for (auto mc : map->megaClusters) {
+    if (!mc->hasPort && mc->cities.size() > 0) {
+      places = filterRegions(mc->regions,
+                             [&](Region *r) {
+
+                               bool deep = false;
+                               for (auto n : r->neighbors) {
+                                 if (!n->megaCluster->isLand) {
+                                   deep = true;
+                                   break;
+                                 }
+                               }
+                               if (!deep || r->city != nullptr) {
+                                 return false;
+                               }
+                               return true;
+                             },
+                             [&](Region *r, Region *r2) { return false; });
+      std::cout<<places.size()<<std::endl<<std::flush;
+
+      if (places.size() == 0) {
+        continue;
+      }
+
+      auto r = *select_randomly(places.begin(), places.end());
+
+      City *c = new City(r, generateCityName(), PORT);
+      map->cities.push_back(c);
+      mc->cities.push_back(c);
+      mc->hasPort = true;
     }
   }
 }

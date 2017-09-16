@@ -65,7 +65,9 @@ private:
   void makeMinerals();
   void makeCities();
   void makeRoads();
+  void simulation();
   std::vector<Region*> filterRegions(std::vector<Region*> regions, filterFunc filter, sortFunc sort);
+  std::vector<Region*> getSea(Region* r, int &d);
   int _seed;
   VoronoiDiagramGenerator _vdg;
   int _pointsCount;

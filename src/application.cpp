@@ -55,6 +55,7 @@ class Application {
   float temperature;
   bool temp = false;
   bool minerals = false;
+  bool roads = true;
 
 public:
   Application() {
@@ -105,10 +106,20 @@ public:
     agroIcon->loadFromFile("images/farm.png");
     agroIcon->setSmooth(true);
 
+    sf::Texture *tradeIcon = new sf::Texture();
+    tradeIcon->loadFromFile("images/trade.png");
+    tradeIcon->setSmooth(true);
+
+    sf::Texture *lhIcon = new sf::Texture();
+    lhIcon->loadFromFile("images/lighthouse.png");
+    lhIcon->setSmooth(true);
+
     icons.insert(std::make_pair(CAPITAL, capitalIcon));
     icons.insert(std::make_pair(PORT, anchorIcon));
     icons.insert(std::make_pair(MINE, mineIcon));
     icons.insert(std::make_pair(AGRO, agroIcon));
+    icons.insert(std::make_pair(TRADE, tradeIcon));
+    icons.insert(std::make_pair(LIGHTHOUSE, lhIcon));
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
@@ -126,7 +137,7 @@ public:
   }
 
   void initMapGen() {
-    seed = std::clock();
+    seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
     // mapgen.setSeed(/*111629613*/ 81238299);
     octaves = mapgen->getOctaveCount();
@@ -162,6 +173,10 @@ public:
       case sf::Keyboard::M:
         minerals = !minerals;
         updateVisuals();
+        break;
+      case sf::Keyboard::P:
+        roads = !roads;
+        needUpdate = true;
         break;
       case sf::Keyboard::I:
         info = !info;
@@ -493,7 +508,11 @@ public:
         }
         Point p = reg->site;
         road.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
-        road.setColor(sf::Color(70, 50, 0, 100));
+        if (reg->megaCluster->isLand) {
+          road.setColor(i, sf::Color(70, 50, 0, 100));
+        } else {
+          road.setColor(i, sf::Color(100, 100, 100, 60));
+        }
       }
       road.setBezierInterpolation();  // enable Bezier spline
       road.setInterpolationSteps(10); // curvature resolution
@@ -513,7 +532,9 @@ public:
       }
 
       drawRivers();
-      drawRoads();
+      if (roads) {
+        drawRoads();
+      }
       for (auto sprite : sprites) {
         window->draw(sprite);
       }
@@ -688,6 +709,13 @@ public:
         sprite.setPosition(
             sf::Vector2f(p->x - size.x / 2.f, p->y - size.y / 2.f));
         sprites.push_back(sprite);
+
+        float rad = (region->traffic - 50)/100 * 3 + 2;
+        sf::CircleShape poiShape(rad);
+        poiShape.setFillColor(sf::Color::Green);
+        poiShape.setPosition(
+                             sf::Vector2f(region->site->x - rad / 2.f, region->site->y - rad / 2.f));
+        poi.push_back(poiShape);
       }
       polygon.setFillColor(col);
 

@@ -289,6 +289,12 @@ void listCities(sf::RenderWindow *window, MapGenerator *mapgen,
       case AGRO:
         type = "Agro";
         break;
+      case TRADE:
+        type = "Trade post";
+        break;
+      case LIGHTHOUSE:
+        type = "Lighthouse";
+        break;
       }
 
       sprintf(rn, "%s [%s]", city->name.c_str(), type.c_str());
@@ -305,6 +311,7 @@ void listCities(sf::RenderWindow *window, MapGenerator *mapgen,
       if (node_open) {
         ImGui::Text("Name: %s", city->name.c_str());
         ImGui::Text("Type: %s", type.c_str());
+        ImGui::Text("Trade: %d", city->region->traffic);
         ImGui::TreePop();
       }
 

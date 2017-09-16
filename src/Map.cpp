@@ -23,14 +23,18 @@ public:
     Point p2 = r2->site;
     double distancex = (p2->x - p->x);
     double distancey = (p2->y - p->y);
-
     float d = std::sqrt(distancex * distancex + distancey * distancey);
-    float hd = (r->getHeight(r->site) - r2->getHeight(r2->site));
-    if (hd < 0) {
-      d += 10000 * std::abs(hd);
-      if (r2->city != nullptr && d >= 5000) {
-        d -= 5000;
+
+    if (r->megaCluster->isLand) {
+      float hd = (r->getHeight(r->site) - r2->getHeight(r2->site));
+      if (hd < 0) {
+        d += 10000 * std::abs(hd);
+        if (r2->city != nullptr && d >= 5000) {
+          d -= 5000;
+        }
       }
+    } else {
+      d *= 0.8;
     }
     return d;
   }
@@ -41,10 +45,26 @@ public:
   };
 
   void AdjacentCost( void* state, MP_VECTOR< micropather::StateCost > *neighbors ){
-    for (auto n : ((Region*)state)->neighbors) {
-      if(!n->megaCluster->isLand || n->biom.name == "Lake"){
+    auto r = ((Region*)state);
+    for (auto n : r->neighbors) {
+
+      if(n->biom.name == "Lake"){
         continue;
       }
+      if (r->megaCluster->isLand) {
+        if (!n->megaCluster->isLand) {
+          if (r->city == nullptr || r->city->type != PORT) {
+            continue;
+          }
+        }
+      } else {
+        if (n->megaCluster->isLand) {
+          if (n->city == nullptr || n->city->type != PORT) {
+            continue;
+          }
+        }
+      }
+
       micropather::StateCost nodeCost = { (void*)n, getRegionDistance((Region*)state, (Region*)n) };
       neighbors->push_back( nodeCost );
     }
