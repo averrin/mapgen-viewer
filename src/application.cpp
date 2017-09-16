@@ -56,6 +56,7 @@ class Application {
   bool temp = false;
   bool minerals = false;
   bool roads = true;
+  bool ready = false;
 
 public:
   Application() {
@@ -127,12 +128,14 @@ public:
   }
 
   void regen() {
-    generator.join();
+    if (generator.joinable()) generator.join();
     generator = std::thread([&]() {
+      ready = false;
       mapgen->update();
       seed = mapgen->getSeed();
       relax = mapgen->getRelax();
       updateVisuals();
+      ready = mapgen->ready;
     });
   }
 
@@ -250,7 +253,6 @@ public:
     ImGui::Begin("Mapgen"); // begin window
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::Text("Polygons: %zu", polygons.size());
 
     ImGui::Text("Window size: w:%d h:%d", window->getSize().x,
                 window->getSize().y);
@@ -292,15 +294,13 @@ public:
       updateVisuals();
     }
 
-    if (ImGui::Checkbox("Simplify rivers", &simplifyRivers)) {
-      mapgen->simpleRivers = simplifyRivers;
-      regen();
+    if (ImGui::Checkbox("Roads", &roads)) {
+      updateVisuals();
     }
 
     if (ImGui::InputInt("Seed", &seed)) {
       mapgen->setSeed(seed);
       log.AddLog("Update map\n");
-      regen();
     }
     ImGui::SameLine(300);
 
@@ -312,17 +312,14 @@ public:
     const char *templates[] = {"basic", "archipelago", "new"};
     if (ImGui::Combo("Map template", &t, templates, 3)) {
       mapgen->setMapTemplate(templates[t]);
-      regen();
     }
 
     if (ImGui::SliderInt("Height octaves", &octaves, 1, 10)) {
       mapgen->setOctaveCount(octaves);
-      regen();
     }
 
     if (ImGui::SliderFloat("Height freq", &freq, 0.001, 2.f)) {
       mapgen->setFrequency(freq);
-      regen();
     }
 
     if (ImGui::InputInt("Points", &nPoints)) {
@@ -330,7 +327,6 @@ public:
         nPoints = 5;
       }
       mapgen->setPointCount(nPoints);
-      regen();
     }
 
     // if (ImGui::SliderFloat("Base temperature", &temperature, -20.f, 50.f)) {
@@ -345,7 +341,10 @@ public:
     //   relax = mapgen.getRelax();
     // }
     // ImGui::SameLine(100);
-    ImGui::Text("Relax iterations: %d", relax);
+
+    if (ImGui::Button("Update")) {
+      regen();
+    }
     if (ImGui::Button("+1000")) {
       nPoints += 1000;
       mapgen->setPointCount(nPoints);
@@ -359,7 +358,7 @@ public:
     }
 
     ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
-                "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info");
+                "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] toggle pathes");
 
     ImGui::End(); // end window
   }
@@ -524,11 +523,10 @@ public:
   }
 
   void drawMap() {
+    // if (generator.joinable()) generator.join();
     if (needUpdate) {
-      int i = 0;
-      for (std::vector<sf::ConvexShape>::iterator it = polygons.begin();
-           it < polygons.end(); it++, i++) {
-        window->draw(polygons[i]);
+      for (auto p : polygons) {
+        window->draw(p);
       }
 
       drawRivers();
@@ -537,6 +535,12 @@ public:
       }
       for (auto sprite : sprites) {
         window->draw(sprite);
+      }
+
+      if (info) {
+        for (auto p : poi) {
+          window->draw(p);
+        }
       }
 
       sf::Vector2u windowSize = window->getSize();
@@ -573,7 +577,7 @@ public:
         processEvent(event);
       }
 
-      if (!mapgen->ready) {
+      if (!ready) {
         if (!faded) {
           fade();
           faded = true;
@@ -588,12 +592,6 @@ public:
       window->clear(bgColor); // fill background with color
 
       drawMap();
-
-      if (info) {
-        for (auto p : poi) {
-          window->draw(p);
-        }
-      }
 
       sf::Vector2u windowSize = window->getSize();
       sf::Text mark("Mapgen by Averrin", sffont);
@@ -642,7 +640,7 @@ public:
       }
     }
 
-    generator.join();
+    if (generator.joinable()) generator.join();
     ImGui::SFML::Shutdown();
   }
 
