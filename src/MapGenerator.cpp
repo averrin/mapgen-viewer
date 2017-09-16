@@ -203,20 +203,15 @@ void MapGenerator::makeRoads() {
   //   map->roads.push_back(road);
   // };
 
-  std::map<City *, City *> pathCache;
-  int tc = map->cities.size() * map->cities.size();
+  int tc = (map->cities.size() * map->cities.size() - map->cities.size()) / 2;
   int k = 0;
+  int n = 1;
   for (auto c : map->cities) {
-    for (auto oc : map->cities) {
-      if (c == oc || (pathCache[c] == oc)) {
-        tc--;
-        continue;
-      }
+    for (auto oc : std::vector<City*>(map->cities.begin()+n, map->cities.end())) {
       k++;
       char op[100];
       sprintf(op, "Making roads [%d/%d]", k, tc);
       currentOperation = op;
-      pathCache[oc] = c;
       micropather::MPVector<void *> path;
       float totalCost = 0;
       _pather->Reset();
@@ -235,6 +230,7 @@ void MapGenerator::makeRoads() {
       }
       map->roads.push_back(road);
     };
+    n++;
   };
 }
 
