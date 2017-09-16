@@ -185,8 +185,35 @@ void MapGenerator::simulation() {
   map->cities[2]->type = TRADE;
   map->cities[3]->type = TRADE;
 
-  std::vector<Region*> cache;
-  for (auto r : map->regions){
+  std::vector<City *> cities;
+  std::copy_if(map->cities.begin(), map->cities.end(),
+               std::back_inserter(cities), [&](City *c) {
+                 bool badPort = c->type == PORT &&
+                                c->region->traffic <= map->cities.size();
+                 if (badPort) {
+                   c->region->city = nullptr;
+                 }
+                 return !badPort;
+               });
+  map->cities.clear();
+  for (auto c : cities) {
+    map->cities.push_back(c);
+  }
+
+  std::vector<std::vector<Region *>> roads;
+  std::copy_if(
+      map->roads.begin(), map->roads.end(), std::back_inserter(roads),
+      [&](std::vector<Region *> r) { return r.back()->city != nullptr && r[0]->city != nullptr; });
+  map->roads.clear();
+  for (auto r : roads) {
+    map->roads.push_back(r);
+  }
+
+  std::vector<Region *> cache;
+  for (auto r : map->regions) {
+    if(r->city != nullptr) {
+      continue;
+    }
     bool tc = false;
     for (auto cc : cache) {
       if (getDistance(r->site, cc->site) < 100) {
@@ -213,6 +240,7 @@ void MapGenerator::simulation() {
       // mc->cities.push_back(c);
     }
   }
+
 }
 
 void MapGenerator::makeRoads() {
@@ -263,23 +291,19 @@ void MapGenerator::makeRoads() {
   };
 }
 
-std::vector<Region *> MapGenerator::getSea(Region *r, int &d) {
-  // std::cout<<d<<std::endl<<std::flush;
-  std::vector<Region *> seas;
+void MapGenerator::getSea(std::vector<Region *> *seas, Region *base,
+                          Region *r) {
+  // std::cout<<"."<<std::endl<<std::flush;
   for (auto n : r->neighbors) {
-    if (!n->megaCluster->isLand) {
-      seas.push_back(n);
-      if (d < 10) {
-        d++;
-        // std::cout<<d<<std::endl<<std::flush;
-        auto s = getSea(n, d);
-        for (auto ns : s) {
-          seas.push_back(ns);
-        }
+    if (!n->megaCluster->isLand &&
+        std::find(seas->begin(), seas->end(), n) == seas->end()) {
+      seas->push_back(n);
+      float d = getDistance(base->site, n->site);
+      if (d < 100) {
+        getSea(seas, base, n);
       }
     }
   }
-  return seas;
 };
 
 void MapGenerator::makeCities() {
@@ -368,9 +392,9 @@ void MapGenerator::makeCities() {
       continue;
     }
 
-    int b = 40;
+    int b = 200;
 
-    std::vector<Region*> cache;
+    std::vector<Region *> cache;
     places = filterRegions(mc->regions,
                            [&](Region *r) {
                              if (r->megaCluster->cities.size() == 0) {
@@ -387,13 +411,18 @@ void MapGenerator::makeCities() {
                              if (!deep || r->city != nullptr) {
                                return false;
                              }
-
-                             int d = 0;
-                             int sc = int(getSea(r, d).size());
+                             std::vector<Region *> seas;
+                             getSea(&seas, r, r);
+                             int sc = int(seas.size());
+                             // std::cout<<sc<<std::endl<<std::flush;
 
                              bool cond = (int)sc < b;
 
                              if (cond) {
+
+                               // for (auto ns : seas) {
+                               //   ns->biom.color = sf::Color::Black;
+                               // }
 
                                for (auto cc : cache) {
                                  if (getDistance(r->site, cc->site) < 200) {
@@ -445,7 +474,7 @@ void MapGenerator::makeCities() {
                                return true;
                              },
                              [&](Region *r, Region *r2) { return false; });
-      std::cout<<places.size()<<std::endl<<std::flush;
+      std::cout << places.size() << std::endl << std::flush;
 
       if (places.size() == 0) {
         continue;
