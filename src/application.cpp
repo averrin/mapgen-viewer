@@ -55,6 +55,8 @@ class Application {
   bool minerals = false;
   bool roads = false;
   bool ready = false;
+  Region *lockedRegion = nullptr;
+  bool lock = false;
 
 public:
   Application() {
@@ -132,7 +134,8 @@ public:
   }
 
   void regen() {
-    if (generator.joinable()) generator.join();
+    if (generator.joinable())
+      generator.join();
     generator = std::thread([&]() {
       ready = false;
       mapgen->update();
@@ -144,14 +147,15 @@ public:
   }
 
   void simulate() {
-    if (generator.joinable()) generator.join();
+    if (generator.joinable())
+      generator.join();
     generator = std::thread([&]() {
-        ready = false;
-        mapgen->startSimulation();
-        roads = true;
-        updateVisuals();
-        ready = mapgen->ready;
-      });
+      ready = false;
+      mapgen->startSimulation();
+      roads = true;
+      updateVisuals();
+      ready = mapgen->ready;
+    });
   }
 
   void initMapGen() {
@@ -224,6 +228,11 @@ public:
       mapgen->update();
       updateVisuals();
       break;
+    case sf::Event::MouseButtonPressed:
+      if (event.mouseButton.button == sf::Mouse::Right && info) {
+        lock = !lock;
+      }
+      break;
     }
   }
 
@@ -269,7 +278,7 @@ public:
   }
 
   void drawMainWindow() {
-    ImGui::Begin("Mapgen"); // begin window
+    ImGui::Begin("Mapgen");
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -315,7 +324,6 @@ public:
       updateVisuals();
     }
 
-
     if (ImGui::InputInt("Seed", &seed)) {
       mapgen->setSeed(seed);
       log.AddLog("Update map\n");
@@ -347,19 +355,6 @@ public:
       mapgen->setPointCount(nPoints);
     }
 
-    // if (ImGui::SliderFloat("Base temperature", &temperature, -20.f, 50.f)) {
-    //   mapgen->temperature = temperature;
-    //   regen();
-    // }
-
-    // if (ImGui::Button("Relax")) {
-    //   log.AddLog("Update map\n");
-    //   mapgen.relax();
-    //   updateVisuals();
-    //   relax = mapgen.getRelax();
-    // }
-    // ImGui::SameLine(100);
-
     if (ImGui::Button("Update")) {
       regen();
     }
@@ -368,21 +363,29 @@ public:
     }
 
     ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
-                "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] toggle pathes");
+                "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] "
+                "toggle pathes\n[RCLICK] toggle selection lock");
 
-    ImGui::End(); // end window
+    ImGui::End();
   }
 
   void drawInfo() {
     sf::Vector2<float> pos =
         window->mapPixelToCoords(sf::Mouse::getPosition(*window));
+
     Region *currentRegion = mapgen->getRegion(pos);
+    if (lock) {
+      if (lockedRegion == nullptr) {
+        lockedRegion = currentRegion;
+      } else {
+        currentRegion = lockedRegion;
+      }
+    } else {
+      lockedRegion = nullptr;
+    }
     if (currentRegion == nullptr) {
       return;
     }
-    // char p[100];
-    // sprintf(p,"%p\n",currentRegion);
-    // std::cout<<p<<std::flush;
     sf::ConvexShape selectedPolygon;
 
     infoWindow(window, currentRegion);
@@ -395,16 +398,6 @@ public:
     Cluster *cluster = currentRegion->cluster;
 
     int i = 0;
-    // sf::ConvexShape polygon;
-    // polygon.setPointCount(cluster->megaCluster->border.size());
-    // for (auto p: cluster->megaCluster->border) {
-    //   polygon.setPoint(i, sf::Vector2f(p->x, p->y));
-    //   i++;
-    // }
-    // polygon.setFillColor(sf::Color::Transparent);
-    // polygon.setOutlineColor(sf::Color::Red);
-    // polygon.setOutlineThickness(3);
-    // infoPolygons.push_back(polygon);
     for (std::vector<Region *>::iterator
              it = cluster->megaCluster->regions.begin();
          it < cluster->megaCluster->regions.end(); it++, i++) {
@@ -496,8 +489,8 @@ public:
           river.setColor(sf::Color(46, 46, 76, float(i) / c * 255.f));
         }
       }
-      river.setBezierInterpolation();  // enable Bezier spline
-      river.setInterpolationSteps(10); // curvature resolution
+      river.setBezierInterpolation();
+      river.setInterpolationSteps(10);
       river.smoothHandles();
       river.update();
       window->draw(river);
@@ -509,7 +502,6 @@ public:
     int rn = 0;
     for (auto r : mapgen->map->roads) {
       sw::Spline road;
-      road.setThickness(r->weight);
       int i = 0;
       for (auto reg : r->regions) {
         if (reg == nullptr) {
@@ -518,13 +510,16 @@ public:
         Point p = reg->site;
         road.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
         if (reg->megaCluster->isLand) {
-          road.setColor(i, sf::Color(70, 50, 0, 100));
+          road.setColor(i, sf::Color(70, 50, 0, 40));
         } else {
           road.setColor(i, sf::Color(100, 100, 100, 60));
+          road.setThickness(r->weight - 1);
         }
+        float w = std::min(4.f, 1.f + reg->traffic / 200.f);
+        road.setThickness(w);
       }
-      road.setBezierInterpolation();  // enable Bezier spline
-      road.setInterpolationSteps(10); // curvature resolution
+      road.setBezierInterpolation();
+      road.setInterpolationSteps(10);
       road.smoothHandles();
       road.update();
       window->draw(road);
@@ -533,7 +528,6 @@ public:
   }
 
   void drawMap() {
-    // if (generator.joinable()) generator.join();
     if (needUpdate) {
       for (auto p : polygons) {
         window->draw(p);
@@ -599,7 +593,7 @@ public:
 
       ImGui::SFML::Update(*window, deltaClock.restart());
 
-      window->clear(bgColor); // fill background with color
+      window->clear(bgColor);
 
       drawMap();
 
@@ -644,7 +638,8 @@ public:
       }
     }
 
-    if (generator.joinable()) generator.join();
+    if (generator.joinable())
+      generator.join();
     ImGui::SFML::Shutdown();
   }
 
@@ -675,10 +670,7 @@ public:
 
     std::vector<Region *> regions = mapgen->getRegions();
     polygons.reserve(regions.size());
-    for (Region* region : regions) {
-      // std::cout<<"|"<<(region->location == nullptr ? "true" : "false")<<std::endl<<std::flush;
-      // std::cout<<"||"<<(region->city == nullptr ? "true" : "false")<<std::endl<<std::flush;
-
+    for (Region *region : regions) {
       sf::ConvexShape polygon;
       PointList points = region->getPoints();
       polygon.setPointCount(points.size());
@@ -702,17 +694,16 @@ public:
         auto texture = icons[region->location->type];
         sprite.setTexture(*texture);
         auto p = region->site;
-        // sprite.setScale(0.05, 0.05);
         auto size = texture->getSize();
         sprite.setPosition(
             sf::Vector2f(p->x - size.x / 2.f, p->y - size.y / 2.f));
         sprites.push_back(sprite);
 
-        float rad = (region->traffic - 50)/100 * 3 + 2;
+        float rad = (region->traffic - 50) / 100 * 3 + 2;
         sf::CircleShape poiShape(rad);
         poiShape.setFillColor(sf::Color::Green);
-        poiShape.setPosition(
-                             sf::Vector2f(region->site->x - rad / 2.f, region->site->y - rad / 2.f));
+        poiShape.setPosition(sf::Vector2f(region->site->x - rad / 2.f,
+                                          region->site->y - rad / 2.f));
         poi.push_back(poiShape);
       }
       polygon.setFillColor(col);
@@ -740,7 +731,6 @@ public:
       if (minerals) {
         sf::Color col(region->biom.color);
         col.g = 255 * (region->minerals) / 1.2;
-        // col.a = 20 + 255 * (region->minerals + 1.6) / 3.2;
         col.b = col.b / 3;
         col.r = col.g / 3;
         polygon.setFillColor(col);

@@ -251,7 +251,7 @@ void MapGenerator::simulation() {
   map->roads.clear();
   for (auto r : roads) {
     if (r->regions.back()->city->type == CAPITAL) {
-      r->weight = 3;
+      r->weight = 4;
     }
     map->roads.push_back(r);
   }
@@ -284,7 +284,6 @@ void MapGenerator::simulation() {
       Location *l = new Location(r, generateCityName(), LIGHTHOUSE);
       map->locations.push_back(l);
       cache.push_back(l->region);
-      // mc->cities.push_back(c);
     }
   }
 
@@ -358,7 +357,6 @@ void MapGenerator::makeRoads() {
 
 void MapGenerator::getSea(std::vector<Region *> *seas, Region *base,
                           Region *r) {
-  // std::cout<<"."<<std::endl<<std::flush;
   for (auto n : r->neighbors) {
     if (!n->megaCluster->isLand &&
         std::find(seas->begin(), seas->end(), n) == seas->end()) {
@@ -373,8 +371,6 @@ void MapGenerator::getSea(std::vector<Region *> *seas, Region *base,
 
 void MapGenerator::makeCities() {
   currentOperation = "Founding cities...";
-  // double minDistance = std::numeric_limits<double>::max();
-  // Region *betterPlace;
   MegaCluster *biggestCluster;
   for (auto c : map->megaClusters) {
     if (c->isLand) {
@@ -416,12 +412,6 @@ void MapGenerator::makeCities() {
           break;
         }
       }
-      // for (auto cc : cache) {
-      //   if (getDistance(r->site, cc->site) < 20) {
-      //     canPlace = false;
-      //   }
-      // }
-
       if (!canPlace) {
         continue;
       }
@@ -492,16 +482,10 @@ void MapGenerator::makeCities() {
                              std::vector<Region *> seas;
                              getSea(&seas, r, r);
                              int sc = int(seas.size());
-                             // std::cout<<sc<<std::endl<<std::flush;
 
                              bool cond = (int)sc < b;
 
                              if (cond) {
-
-                               // for (auto ns : seas) {
-                               //   ns->biom.color = sf::Color::Black;
-                               // }
-
                                for (auto cc : cache) {
                                  if (getDistance(r->site, cc->site) < 200) {
                                    return false;
@@ -787,12 +771,9 @@ void MapGenerator::makeRivers() {
     }
   }
 
-  std::cout << "Before Making rivers" << std::endl << std::flush;
   for (auto lm : localMaximums) {
     makeRiver(lm);
   }
-
-  std::cout << "Finish Making rivers" << std::endl << std::flush;
 }
 
 void MapGenerator::makeFinalRegions() {
