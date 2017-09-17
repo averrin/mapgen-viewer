@@ -64,7 +64,8 @@ public:
     ImGuiIO &io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("./font.ttf", 15.0f);
 
-    window = new sf::RenderWindow(sf::VideoMode(1026,768), "",
+    // window = new sf::RenderWindow(sf::VideoMode(1026,768), "",
+    window = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), "",
                                   sf::Style::Default, settings);
     window->setVerticalSyncEnabled(true);
     ImGui::SFML::Init(*window);
