@@ -46,7 +46,7 @@ add_executable(${EXECUTABLE_NAME}
   ${BACKWARD_ENABLE}
 )
 
-add_backward(mapgen)
+#add_backward(mapgen)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

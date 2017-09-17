@@ -49,7 +49,7 @@ class Application {
   bool hum = false;
   bool simplifyRivers;
   int t = 0;
-  float color[3] = {0.12, 0.12, 0.12};
+  float color[3] = {0.12f, 0.12f, 0.12f};
   bool showUI = true;
   bool getScreenshot = false;
   float temperature;
@@ -66,7 +66,7 @@ public:
     ImGuiIO &io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("./font.ttf", 15.0f);
 
-    window = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), "",
+    window = new sf::RenderWindow(sf::VideoMode(1026,768), "",
                                   sf::Style::Default, settings);
     window->setVerticalSyncEnabled(true);
     ImGui::SFML::Init(*window);
