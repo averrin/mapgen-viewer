@@ -386,6 +386,17 @@ public:
     if (currentRegion == nullptr) {
       return;
     }
+
+    if (currentRegion->location != nullptr) {
+      for (auto r : mapgen->map->roads) {
+        if (r->regions[0] != currentRegion->location->region &&
+            r->regions.back() != currentRegion->location->region) {
+          continue;
+        }
+        drawRoad(r);
+      }
+    }
+
     sf::ConvexShape selectedPolygon;
 
     infoWindow(window, currentRegion);
@@ -498,32 +509,35 @@ public:
     }
   }
 
-  void drawRoads() {
-    int rn = 0;
-    for (auto r : mapgen->map->roads) {
-      sw::Spline road;
-      int i = 0;
-      for (auto reg : r->regions) {
-        if (reg == nullptr) {
-          continue;
-        }
-        Point p = reg->site;
-        road.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
-        if (reg->megaCluster->isLand) {
-          road.setColor(i, sf::Color(70, 50, 0, 40));
-        } else {
-          road.setColor(i, sf::Color(100, 100, 100, 60));
-          road.setThickness(r->weight - 1);
-        }
-        float w = std::min(4.f, 1.f + reg->traffic / 200.f);
-        road.setThickness(w);
+  void drawRoad(Road* r) {
+    sw::Spline road;
+    int i = 0;
+    for (auto reg : r->regions) {
+      if (reg == nullptr) {
+        continue;
       }
-      road.setBezierInterpolation();
-      road.setInterpolationSteps(10);
-      road.smoothHandles();
-      road.update();
-      window->draw(road);
-      rn++;
+      Point p = reg->site;
+      road.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
+      if (reg->megaCluster->isLand) {
+        road.setColor(i, sf::Color(70, 50, 0, 40));
+      } else {
+        road.setColor(i, sf::Color(100, 100, 100, 60));
+        road.setThickness(r->weight - 1);
+      }
+      float w = std::min(4.f, 1.f + reg->traffic / 200.f);
+      road.setThickness(w);
+    }
+    road.setBezierInterpolation();
+    road.setInterpolationSteps(10);
+    road.smoothHandles();
+    road.update();
+    window->draw(road);
+
+  }
+
+  void drawRoads() {
+    for (auto r : mapgen->map->roads) {
+      drawRoad(r);
     }
   }
 
