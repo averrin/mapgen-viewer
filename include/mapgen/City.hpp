@@ -2,23 +2,12 @@
 #define CITY_H_
 
 #include "Region.hpp"
+#include "Location.hpp"
 
-enum CityType {
-  CAPITAL,
-  PORT,
-  MINE,
-  AGRO,
-  TRADE,
-  LIGHTHOUSE,
-};
-
-class City {
+class City : public Location {
 public:
-  City(Region* r, std::string n, CityType t);
-  Region* region;
-  std::string name;
+  City(Region* r, std::string n, LocationType t);
   bool isCapital;
-  CityType type;
 };
 
 #endif

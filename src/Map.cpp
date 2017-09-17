@@ -4,7 +4,8 @@
 #include "mapgen/Region.hpp"
 #include "mapgen/River.hpp"
 #include "mapgen/City.hpp"
-// #include "Biom.cpp"
+#include "mapgen/Location.hpp"
+#include "mapgen/Road.hpp"
 
 class Map: public micropather::Graph {
 public:
@@ -16,7 +17,8 @@ public:
   std::vector<Region*> regions;
   std::vector<River*> rivers;
   std::vector<City*> cities;
-  std::vector<std::vector<Region*>> roads;
+  std::vector<Location*> locations;
+  std::vector<Road*> roads;
 
   float getRegionDistance(Region* r, Region* r2) {
     Point p = r->site;

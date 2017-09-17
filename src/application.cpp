@@ -21,8 +21,7 @@ class Application {
   std::vector<sf::CircleShape> poi;
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::Sprite> sprites;
-  std::vector<sf::Vertex> verticies;
-  std::map<CityType, sf::Texture *> icons;
+  std::map<LocationType, sf::Texture *> icons;
   sf::Color bgColor;
   AppLog log;
   MapGenerator *mapgen;
@@ -40,7 +39,6 @@ class Application {
   float freq;
   int nPoints;
   bool borders = false;
-  bool sites = false;
   bool edges = false;
   bool info = false;
   bool verbose = true;
@@ -55,7 +53,7 @@ class Application {
   float temperature;
   bool temp = false;
   bool minerals = false;
-  bool roads = true;
+  bool roads = false;
   bool ready = false;
 
 public:
@@ -115,12 +113,17 @@ public:
     lhIcon->loadFromFile("images/lighthouse.png");
     lhIcon->setSmooth(true);
 
+    sf::Texture *caveIcon = new sf::Texture();
+    caveIcon->loadFromFile("images/cave.png");
+    caveIcon->setSmooth(true);
+
     icons.insert(std::make_pair(CAPITAL, capitalIcon));
     icons.insert(std::make_pair(PORT, anchorIcon));
     icons.insert(std::make_pair(MINE, mineIcon));
     icons.insert(std::make_pair(AGRO, agroIcon));
     icons.insert(std::make_pair(TRADE, tradeIcon));
     icons.insert(std::make_pair(LIGHTHOUSE, lhIcon));
+    icons.insert(std::make_pair(CAVE, caveIcon));
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
@@ -137,6 +140,17 @@ public:
       updateVisuals();
       ready = mapgen->ready;
     });
+  }
+
+  void simulate() {
+    if (generator.joinable()) generator.join();
+    generator = std::thread([&]() {
+        ready = false;
+        mapgen->startSimulation();
+        roads = true;
+        updateVisuals();
+        ready = mapgen->ready;
+      });
   }
 
   void initMapGen() {
@@ -165,6 +179,9 @@ public:
       case sf::Keyboard::Escape:
         window->close();
         break;
+      case sf::Keyboard::L:
+        simulate();
+        break;
       case sf::Keyboard::H:
         hum = !hum;
         updateVisuals();
@@ -183,6 +200,7 @@ public:
         break;
       case sf::Keyboard::I:
         info = !info;
+        needUpdate = true;
         break;
       case sf::Keyboard::V:
         verbose = !verbose;
@@ -261,9 +279,11 @@ public:
       updateVisuals();
     }
     ImGui::SameLine(100);
-    ImGui::Checkbox("Sites", &sites);
-    ImGui::SameLine(200);
     if (ImGui::Checkbox("Edges", &edges)) {
+      updateVisuals();
+    }
+    ImGui::SameLine(200);
+    if (ImGui::Checkbox("Roads", &roads)) {
       updateVisuals();
     }
     if (ImGui::Checkbox("Heights", &heights)) {
@@ -294,9 +314,6 @@ public:
       updateVisuals();
     }
 
-    if (ImGui::Checkbox("Roads", &roads)) {
-      updateVisuals();
-    }
 
     if (ImGui::InputInt("Seed", &seed)) {
       mapgen->setSeed(seed);
@@ -345,16 +362,8 @@ public:
     if (ImGui::Button("Update")) {
       regen();
     }
-    if (ImGui::Button("+1000")) {
-      nPoints += 1000;
-      mapgen->setPointCount(nPoints);
-      regen();
-    }
-    ImGui::SameLine(100);
-    if (ImGui::Button("-1000")) {
-      nPoints -= 1000;
-      mapgen->setPointCount(nPoints);
-      regen();
+    if (ImGui::Button("Start simulation")) {
+      simulate();
     }
 
     ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
@@ -499,9 +508,9 @@ public:
     int rn = 0;
     for (auto r : mapgen->map->roads) {
       sw::Spline road;
-      road.setThickness(2);
+      road.setThickness(r->weight);
       int i = 0;
-      for (auto reg : r) {
+      for (auto reg : r->regions) {
         if (reg == nullptr) {
           continue;
         }
@@ -608,12 +617,6 @@ public:
         if (info) {
           drawInfo();
         }
-
-        if (sites) {
-          for (auto v : verticies) {
-            window->draw(&v, 1, sf::PrimitiveType::Points);
-          }
-        }
       }
 
       ImGui::SFML::Render(*window);
@@ -648,7 +651,6 @@ public:
     log.AddLog("Update geometry\n");
     polygons.clear();
     poi.clear();
-    verticies.clear();
     sprites.clear();
 
     for (auto mc : mapgen->map->megaClusters) {
@@ -670,14 +672,11 @@ public:
       }
     }
 
-    int i = 0;
     std::vector<Region *> regions = mapgen->getRegions();
     polygons.reserve(regions.size());
-    verticies.reserve(regions.size());
-    for (std::vector<Region *>::iterator it = regions.begin();
-         it < regions.end(); it++, i++) {
-
-      Region *region = regions[i];
+    for (Region* region : regions) {
+      // std::cout<<"|"<<(region->location == nullptr ? "true" : "false")<<std::endl<<std::flush;
+      // std::cout<<"||"<<(region->city == nullptr ? "true" : "false")<<std::endl<<std::flush;
 
       sf::ConvexShape polygon;
       PointList points = region->getPoints();
@@ -697,9 +696,9 @@ public:
         }
         col.a = a;
       }
-      if (region->city != nullptr) {
+      if (region->location != nullptr) {
         sf::Sprite sprite;
-        auto texture = icons[region->city->type];
+        auto texture = icons[region->location->type];
         sprite.setTexture(*texture);
         auto p = region->site;
         // sprite.setScale(0.05, 0.05);
@@ -767,9 +766,6 @@ public:
         }
       }
       polygons.push_back(polygon);
-      verticies.push_back(
-          sf::Vertex(sf::Vector2f(region->site->x, region->site->y),
-                     sf::Color(100, 100, 100)));
     }
 
     needUpdate = true;

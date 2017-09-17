@@ -39,6 +39,7 @@ public:
   void seed();
   std::vector<Region*> getRegions();
   void setMapTemplate(const char* t);
+  void startSimulation();
 
   bool simpleRivers;
   bool ready;
@@ -65,6 +66,7 @@ private:
   void makeMinerals();
   void makeCities();
   void makeRoads();
+  void makeCaves();
   void simulation();
   std::vector<Region*> filterRegions(std::vector<Region*> regions, filterFunc filter, sortFunc sort);
   void getSea(std::vector<Region*> *seas, Region* base,Region* r);

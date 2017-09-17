@@ -1,6 +1,8 @@
 #include "mapgen/MapGenerator.hpp"
 #include "Biom.cpp"
 #include "City.cpp"
+#include "Location.cpp"
+#include "Road.cpp"
 #include "micropather.cpp"
 #include "names.cpp"
 #include <VoronoiDiagramGenerator.h>
@@ -164,11 +166,37 @@ void MapGenerator::update() {
   makeClusters();
 
   makeCities();
-  makeRoads();
-
-  simulation();
 
   ready = true;
+}
+
+void MapGenerator::startSimulation() {
+  ready = false;
+
+  makeRoads();
+  makeCaves();
+  simulation();
+  ready = true;
+}
+
+void MapGenerator::makeCaves() {
+  int i = 0;
+  for (auto c : map->clusters) {
+    if (c->biom.name != ROCK.name) {
+      continue;
+    }
+
+    int n = c->regions.size() % 50 + 1;
+
+    while (n != 0) {
+      Region *r = *select_randomly(c->regions.begin(), c->regions.end());
+      Location *l = new Location(r, generateCityName(), CAVE);
+      map->locations.push_back(l);
+      n--;
+      i++;
+    }
+  }
+  printf("%d caves\n", i);
 }
 
 void MapGenerator::simulation() {
@@ -181,37 +209,56 @@ void MapGenerator::simulation() {
   });
 
   map->cities[0]->type = CAPITAL;
+  printf("%s is capital\n", map->cities[0]->name.c_str());
   map->cities[1]->type = TRADE;
+  printf("%s is trade\n", map->cities[1]->name.c_str());
   map->cities[2]->type = TRADE;
+  printf("%s is trade\n", map->cities[2]->name.c_str());
   map->cities[3]->type = TRADE;
+  printf("%s is trade\n", map->cities[3]->name.c_str());
 
   std::vector<City *> cities;
+  int n = 0;
   std::copy_if(map->cities.begin(), map->cities.end(),
                std::back_inserter(cities), [&](City *c) {
                  bool badPort = c->type == PORT &&
                                 c->region->traffic <= map->cities.size();
                  if (badPort) {
                    c->region->city = nullptr;
+                   c->region->location = nullptr;
+
+                   auto cc = c->region->megaCluster->cities;
+                   cc.erase(std::remove(cc.begin(), cc.end(), c), cc.end());
+
+                   auto cl = map->locations;
+                   cl.erase(std::remove(cl.begin(), cl.end(), c), cl.end());
+                   n++;
                  }
                  return !badPort;
                });
+  printf("%d ports for remove\n", n);
   map->cities.clear();
   for (auto c : cities) {
     map->cities.push_back(c);
   }
 
-  std::vector<std::vector<Region *>> roads;
-  std::copy_if(
-      map->roads.begin(), map->roads.end(), std::back_inserter(roads),
-      [&](std::vector<Region *> r) { return r.back()->city != nullptr && r[0]->city != nullptr; });
+  std::vector<Road *> roads;
+  std::copy_if(map->roads.begin(), map->roads.end(), std::back_inserter(roads),
+               [&](Road *r) {
+                 return r->regions.back()->city != nullptr &&
+                        r->regions[0]->city != nullptr;
+               });
   map->roads.clear();
   for (auto r : roads) {
+    if (r->regions.back()->city->type == CAPITAL) {
+      r->weight = 3;
+    }
     map->roads.push_back(r);
   }
 
   std::vector<Region *> cache;
   for (auto r : map->regions) {
-    if(r->city != nullptr) {
+    if (r->city != nullptr) {
       continue;
     }
     bool tc = false;
@@ -234,13 +281,42 @@ void MapGenerator::simulation() {
       }
     }
     if (i >= 3) {
-      City *c = new City(r, generateCityName(), LIGHTHOUSE);
-      map->cities.push_back(c);
-      cache.push_back(c->region);
+      Location *l = new Location(r, generateCityName(), LIGHTHOUSE);
+      map->locations.push_back(l);
+      cache.push_back(l->region);
       // mc->cities.push_back(c);
     }
   }
 
+  for (auto l : map->locations) {
+    auto mc = l->region->megaCluster;
+    if (mc->cities.size() == 0) {
+      continue;
+    }
+    std::sort(mc->cities.begin(), mc->cities.end(), [&](City *c, City *c2) {
+      if (getDistance(l->region->site, c->region->site) <
+          getDistance(l->region->site, c2->region->site)) {
+        return true;
+      }
+      return false;
+    });
+    int n = 0;
+    City *c = mc->cities[n];
+    while (c->region->city == nullptr) {
+      n++;
+      c = mc->cities[n];
+    }
+
+    micropather::MPVector<void *> path;
+    float totalCost = 0;
+    _pather->Reset();
+    int result = _pather->Solve(c->region, l->region, &path, &totalCost);
+    if (result != micropather::MicroPather::SOLVED) {
+      continue;
+    }
+    Road *road = new Road(&path, 1);
+    map->roads.push_back(road);
+  }
 }
 
 void MapGenerator::makeRoads() {
@@ -273,18 +349,7 @@ void MapGenerator::makeRoads() {
       if (result != micropather::MicroPather::SOLVED) {
         continue;
       }
-      // printf("Path [%d] length: %d with cost: %f", result,
-      // path.size(),totalCost);
-      // std::cout<<result<<std::endl<<std::flush;
-      std::vector<Region *> road;
-      unsigned size = path.size();
-      for (int k = 0; k < size; ++k) {
-        auto ptr = path[k];
-        Region *r = (Region *)ptr;
-        road.push_back(r);
-        r->hasRoad = true;
-        r->traffic += 1;
-      }
+      Road *road = new Road(&path, 2);
       map->roads.push_back(road);
     };
     n++;
@@ -320,16 +385,22 @@ void MapGenerator::makeCities() {
 
   std::vector<Region *> places;
 
+  std::vector<Region *> cache;
   for (auto mc : map->megaClusters) {
     if (!mc->isLand) {
       continue;
     }
     places = filterRegions(mc->regions,
                            [&](Region *r) {
-                             return r->city == nullptr && r->minerals > 1 &&
-                                    r->biom.name != LAKE.name &&
-                                    r->biom.name != SNOW.name &&
-                                    r->biom.name != ICE.name;
+                             bool cond = r->city == nullptr &&
+                                         r->minerals > 1 &&
+                                         r->biom.name != LAKE.name &&
+                                         r->biom.name != SNOW.name &&
+                                         r->biom.name != ICE.name;
+                             if (cond) {
+                               cache.push_back(r);
+                             }
+                             return cond;
                            },
                            [&](Region *r, Region *r2) {
                              if (r->minerals > r2->minerals) {
@@ -345,9 +416,16 @@ void MapGenerator::makeCities() {
           break;
         }
       }
+      // for (auto cc : cache) {
+      //   if (getDistance(r->site, cc->site) < 20) {
+      //     canPlace = false;
+      //   }
+      // }
+
       if (!canPlace) {
         continue;
       }
+      // TODO: decluster it.
       City *c = new City(r, generateCityName(), MINE);
       map->cities.push_back(c);
       mc->cities.push_back(c);
@@ -954,12 +1032,10 @@ void MapGenerator::makeMegaClusters() {
       map->megaClusters.push_back(cluster);
     }
   }
-  printf("Map->Clusters: %zu\n", map->megaClusters.size());
   map->megaClusters.erase(std::remove_if(map->megaClusters.begin(),
                                          map->megaClusters.end(), isDiscard),
                           map->megaClusters.end());
   std::sort(map->megaClusters.begin(), map->megaClusters.end(), clusterOrdered);
-  printf("Map->Clusters: %zu\n", map->megaClusters.size());
 }
 
 void MapGenerator::makeClusters() {
@@ -1021,7 +1097,6 @@ void MapGenerator::makeClusters() {
       map->clusters.push_back(cluster);
     }
   }
-  printf("Map->Clusters: %zu\n", map->clusters.size());
   map->clusters.erase(
       std::remove_if(map->clusters.begin(), map->clusters.end(), isDiscard),
       map->clusters.end());
@@ -1029,7 +1104,6 @@ void MapGenerator::makeClusters() {
   for (auto c : map->clusters) {
     c->megaCluster = c->regions[0]->megaCluster;
   }
-  printf("Map->Clusters: %zu\n", map->clusters.size());
 }
 
 Region *MapGenerator::getRegion(sf::Vector2f pos) {
