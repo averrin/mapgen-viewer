@@ -3,8 +3,9 @@
 
 #include <SFML/Graphics.hpp>
 #include <VoronoiDiagramGenerator.h>
-#include <libnoise/noise.h>
+#include "noise/noise.h"
 #include "noise/noiseutils.h"
+#include <memory>
 #include <functional>
 
 //TODO: fix it and use header
