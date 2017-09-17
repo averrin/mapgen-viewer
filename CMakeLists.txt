@@ -7,7 +7,8 @@ endif()
 
 project(mapgen)
 set (mapgen_VERSION_MAJOR 0)
-set (mapgen_VERSION_MINOR 1)
+set (mapgen_VERSION_MINOR 4)
+set (mapgen_VERSION_PATCH 1)
 
 file(GLOB SOURCE "src/*.cpp" "include/mapgen/*.h")
 file(COPY "font.ttf" DESTINATION "bin")

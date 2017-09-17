@@ -17,6 +17,7 @@
 #include "objectsWindow.cpp"
 
 class Application {
+  std::string VERSION;
   std::vector<sf::ConvexShape> polygons;
   std::vector<sf::CircleShape> poi;
   std::vector<sf::ConvexShape> infoPolygons;
@@ -59,7 +60,7 @@ class Application {
   bool lock = false;
 
 public:
-  Application() {
+  Application(std::string v) : VERSION(v) {
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
 
@@ -137,6 +138,8 @@ public:
     if (generator.joinable())
       generator.join();
     generator = std::thread([&]() {
+      lockedRegion = nullptr;
+      lock = false;
       ready = false;
       mapgen->update();
       seed = mapgen->getSeed();
@@ -387,7 +390,7 @@ public:
       return;
     }
 
-    if (currentRegion->location != nullptr) {
+    if (currentRegion->location != nullptr && !roads) {
       for (auto r : mapgen->map->roads) {
         if (r->regions[0] != currentRegion->location->region &&
             r->regions.back() != currentRegion->location->region) {
@@ -612,10 +615,12 @@ public:
       drawMap();
 
       sf::Vector2u windowSize = window->getSize();
-      sf::Text mark("Mapgen by Averrin", sffont);
+      char mt[40];
+      sprintf(mt, "Mapgen [%s] by Averrin", VERSION.c_str());
+      sf::Text mark(mt, sffont);
       mark.setCharacterSize(15);
       mark.setColor(sf::Color::White);
-      mark.setPosition(sf::Vector2f(windowSize.x - 160, windowSize.y - 25));
+      mark.setPosition(sf::Vector2f(windowSize.x - 240, windowSize.y - 25));
       window->draw(mark);
 
       if (showUI) {
