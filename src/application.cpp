@@ -67,9 +67,14 @@ public:
     ImGuiIO &io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("./font.ttf", 15.0f);
 
-    // window = new sf::RenderWindow(sf::VideoMode(1026,768), "",
+#ifdef _WIN32
+    window = new sf::RenderWindow(sf::VideoMode(1600,900), "",
+                                  sf::Style::Default, settings);
+#else
     window = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), "",
                                   sf::Style::Default, settings);
+#endif
+
     window->setVerticalSyncEnabled(true);
     ImGui::SFML::Init(*window);
     char windowTitle[255] = "MapGen";
