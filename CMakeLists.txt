@@ -93,7 +93,11 @@ if (OPENGL_FOUND)
   target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES})
 endif()
 
-target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw Threads::Threads)
+IF(NOT WIN32)
+	target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw Threads::Threads)
+else()
+	target_link_libraries(${EXECUTABLE_NAME} voronoi "${PROJECT_BINARY_DIR}/include/libnoise.lib" imgui sw Threads::Threads)
+endif()
 
 target_compile_features(mapgen PRIVATE cxx_delegating_constructors)
 
