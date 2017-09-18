@@ -512,7 +512,7 @@ public:
     }
   }
 
-  void drawRoad(Road* r) {
+  void drawRoad(Road *r) {
     sw::Spline road;
     int i = 0;
     for (auto reg : r->regions) {
@@ -535,7 +535,6 @@ public:
     road.smoothHandles();
     road.update();
     window->draw(road);
-
   }
 
   void drawRoads() {
@@ -701,6 +700,25 @@ public:
       }
 
       sf::Color col(region->biom.color);
+
+      if (region->border && !region->megaCluster->isLand) {
+        int r = col.r;
+        int g = col.g;
+        int b = col.b;
+        int s = 1;
+        for (auto n : region->neighbors) {
+          // if (n->biom.name==region->biom.name) {
+          //   continue;
+          // }
+          r += n->biom.color.r;
+          g += n->biom.color.g;
+          b += n->biom.color.b;
+          s++;
+        }
+        col.r = r / s;
+        col.g = g / s;
+        col.b = b / s;
+      }
       if (!flat) {
         int a = 255 * (region->getHeight(region->site) + 1.6) / 3;
         if (a > 255) {
@@ -718,13 +736,17 @@ public:
             sf::Vector2f(p->x - size.x / 2.f, p->y - size.y / 2.f));
         sprites.push_back(sprite);
 
-        float rad = (region->traffic - 50) / 100 * 3 + 2;
-        sf::CircleShape poiShape(rad);
-        poiShape.setFillColor(sf::Color::Green);
-        poiShape.setPosition(sf::Vector2f(region->site->x - rad / 2.f,
-                                          region->site->y - rad / 2.f));
-        poi.push_back(poiShape);
+
+        if (region->state != nullptr && region->city != nullptr) {
+          col = region->state->color;
+        }
       }
+
+      if (region->state != nullptr && region->stateBorder) {
+        polygon.setOutlineColor(region->state->color);
+        polygon.setOutlineThickness(1);
+      }
+
       polygon.setFillColor(col);
 
       if (edges) {
@@ -779,5 +801,60 @@ public:
     }
 
     needUpdate = true;
+  }
+
+  sf::Color adjustLightness(sf::Color color, float d) {
+    // R, G and B input range = 0 ÷ 255
+    // H, S and L output range = 0 ÷ 1.0
+
+    float var_R = (color.r / 255);
+    float var_G = (color.g / 255);
+    float var_B = (color.b / 255);
+
+    float del_R;
+    float del_G;
+    float del_B;
+
+    float var_Min = std::min(std::min(var_R, var_G), var_B); // Min. value of RGB
+    float var_Max = std::min(std::max(var_R, var_G), var_B); // Max. value of RGB
+    float del_Max = var_Max - var_Min;        // Delta RGB value
+
+    float H;
+    float S;
+    float L = (var_Max + var_Min) / 2;
+
+    if (del_Max == 0) // This is a gray, no chroma...
+    {
+      H = 0;
+      S = 0;
+    } else // Chromatic data...
+    {
+      if (L < 0.5) {
+        S = del_Max / (var_Max + var_Min);
+      } else {
+        S = del_Max / (2 - var_Max - var_Min);
+      }
+
+      del_R = (((var_Max - var_R) / 6) + (del_Max / 2)) / del_Max;
+      del_G = (((var_Max - var_G) / 6) + (del_Max / 2)) / del_Max;
+      del_B = (((var_Max - var_B) / 6) + (del_Max / 2)) / del_Max;
+
+      if (var_R == var_Max) {
+        H = del_B - del_G;
+      } else if (var_G == var_Max) {
+        H = (1 / 3) + del_R - del_B;
+      } else if (var_B == var_Max) {
+        H = (2 / 3) + del_G - del_R;
+      }
+
+      if (H < 0) {
+        H += 1;
+      }
+      if (H > 1) {
+        H -= 1;
+      }
+    }
+    L+=d;
+    return color;
   }
 };

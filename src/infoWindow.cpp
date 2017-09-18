@@ -57,6 +57,10 @@ void infoWindow(sf::RenderWindow *window, Region *currentRegion) {
     ImGui::Text("Traffic: %d", currentRegion->traffic);
     ImGui::Text("Minerals: %f", currentRegion->minerals);
     ImGui::Text("Goodness: %f", currentRegion->nice);
+    if (currentRegion->state != nullptr) {
+      ImGui::Text("State: %s", currentRegion->state->name.c_str());
+      ImGui::Text("State border: %s", currentRegion->stateBorder ? "true" : "false");
+    }
     ImGui::TreePop();
   }
 

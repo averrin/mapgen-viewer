@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include "Biom.hpp"
+#include "State.hpp"
 #include <VoronoiDiagramGenerator.h>
 
 typedef sf::Vector2<double>* Point;
@@ -38,6 +39,8 @@ public:
   bool hasRoad = false;
   int traffic = 0;
   Location* location = nullptr;
+  State* state = nullptr;
+  bool stateBorder = false;
 private:
 	PointList _verticies;
   HeightMap _heights;

@@ -12,6 +12,7 @@
 #include "../../src/Map.cpp"
 
 #include "Region.hpp"
+#include "State.hpp"
 #include "micropather.h"
 
 typedef std::function<bool (Region*)> filterFunc;
@@ -33,7 +34,7 @@ public:
   int  getPointCount();
   int  getOctaveCount();
   int  getRelax();
-  float  getFrequency();
+  float getFrequency();
   int getSeed();
   Region* getRegion(sf::Vector2f pos);
   std::vector<sf::ConvexShape>* getPolygons();
@@ -47,6 +48,7 @@ public:
   std::string currentOperation;
   float temperature;
   Map* map;
+  std::vector<State*> states;
 
 private:
   void makeHeights();
@@ -68,6 +70,7 @@ private:
   void makeCities();
   void makeRoads();
   void makeCaves();
+  void makeStates();
   void simulation();
   std::vector<Region*> filterRegions(std::vector<Region*> regions, filterFunc filter, sortFunc sort);
   void getSea(std::vector<Region*> *seas, Region* base,Region* r);

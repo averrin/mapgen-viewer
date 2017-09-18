@@ -1,6 +1,7 @@
 #include "mapgen/MapGenerator.hpp"
 #include "Biom.cpp"
 #include "City.cpp"
+#include "State.cpp"
 #include "Location.cpp"
 #include "Road.cpp"
 #include "micropather.cpp"
@@ -66,6 +67,53 @@ double getDistance(Point p, Point p2) {
   double distancey = (p2->y - p->y);
 
   return std::sqrt(distancex * distancex + distancey * distancey);
+}
+
+
+void MapGenerator::makeStates() {
+  currentOperation = "Making states...";
+  _bbox = sf::Rect<double>(0, 0, _w, _h);
+  VoronoiDiagramGenerator vdg;
+  auto sites = new std::vector<sf::Vector2<double>>();
+  genRandomSites(*sites, _bbox, _w, _h, 2);
+	std::unique_ptr<Diagram> diagram;
+  diagram.reset(vdg.compute(*sites, _bbox));
+  // for (int n = 0; n < _relax; n++) {
+  //   makeRelax();
+  // }
+  int n = 0;
+  for (auto c : diagram->cells) {
+    State* s = new State(
+      (n == 0 ? "Blue empire" : "Red lands"),
+      (n == 0 ? sf::Color::Blue : sf::Color::Red),
+      c);
+    map->states.push_back(s);
+    n++;
+  }
+
+  for (auto r : map->regions) {
+    if (!r->megaCluster->isLand) {
+      continue;
+    }
+    for (auto s : map->states) {
+      if (s->cell->pointIntersection(r->site->x, r->site->y) == 1) {
+        r->state = s;
+        break;
+      }
+    }
+  }
+
+  for (auto r : map->regions) {
+    if (!r->megaCluster->isLand) {
+      continue;
+    }
+    for (auto n : r->neighbors) {
+      if (n->state != r->state) {
+        r->stateBorder = true;
+        break;
+      }
+    }
+  }
 }
 
 void MapGenerator::simplifyRivers() {
@@ -175,6 +223,7 @@ void MapGenerator::startSimulation() {
 
   makeRoads();
   makeCaves();
+  makeStates();
   simulation();
   ready = true;
 }
@@ -186,7 +235,7 @@ void MapGenerator::makeCaves() {
       continue;
     }
 
-    int n = c->regions.size() % 50 + 1;
+    int n = c->regions.size() / 50 + 1;
 
     while (n != 0) {
       Region *r = *select_randomly(c->regions.begin(), c->regions.end());
@@ -765,7 +814,7 @@ void MapGenerator::makeRivers() {
                           return reg->getHeight(reg->site) >
                                  r->getHeight(r->site);
                         }) == 0 &&
-          r->getHeight(r->site) > 0.7) {
+          r->getHeight(r->site) > 0.66) {
         localMaximums.push_back(r);
       }
     }

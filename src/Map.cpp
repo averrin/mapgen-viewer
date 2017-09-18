@@ -14,6 +14,7 @@ public:
   std::vector<MegaCluster *> megaClusters;
   std::vector<Cluster *> clusters;
 
+  std::vector<State*> states;
   std::vector<Region *> regions;
   std::vector<River *> rivers;
   std::vector<City *> cities;
