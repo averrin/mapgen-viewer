@@ -1,9 +1,9 @@
 #include "mapgen/MapGenerator.hpp"
 #include "Biom.cpp"
 #include "City.cpp"
-#include "State.cpp"
 #include "Location.cpp"
 #include "Road.cpp"
+#include "State.cpp"
 #include "micropather.cpp"
 #include "names.cpp"
 #include <VoronoiDiagramGenerator.h>
@@ -69,24 +69,21 @@ double getDistance(Point p, Point p2) {
   return std::sqrt(distancex * distancex + distancey * distancey);
 }
 
-
 void MapGenerator::makeStates() {
   currentOperation = "Making states...";
   _bbox = sf::Rect<double>(0, 0, _w, _h);
   VoronoiDiagramGenerator vdg;
   auto sites = new std::vector<sf::Vector2<double>>();
   genRandomSites(*sites, _bbox, _w, _h, 2);
-	std::unique_ptr<Diagram> diagram;
+  std::unique_ptr<Diagram> diagram;
   diagram.reset(vdg.compute(*sites, _bbox));
   // for (int n = 0; n < _relax; n++) {
   //   makeRelax();
   // }
   int n = 0;
   for (auto c : diagram->cells) {
-    State* s = new State(
-      (n == 0 ? "Blue empire" : "Red lands"),
-      (n == 0 ? sf::Color::Blue : sf::Color::Red),
-      c);
+    State *s = new State((n == 0 ? "Blue empire" : "Red lands"),
+                         (n == 0 ? sf::Color::Blue : sf::Color::Red), c);
     map->states.push_back(s);
     n++;
   }
@@ -107,11 +104,20 @@ void MapGenerator::makeStates() {
     if (!r->megaCluster->isLand) {
       continue;
     }
+
+    int sn = 0;
+    int en = 0;
     for (auto n : r->neighbors) {
       if (n->state != r->state) {
         r->stateBorder = true;
-        break;
+        en++;
+        if (!n->megaCluster->isLand) {
+          sn++;
+        }
       }
+    }
+    if (sn == en) {
+      r->seaBorder = true;
     }
   }
 }
@@ -214,6 +220,7 @@ void MapGenerator::update() {
   makeClusters();
 
   makeCities();
+  makeStates();
 
   ready = true;
 }
@@ -223,7 +230,6 @@ void MapGenerator::startSimulation() {
 
   makeRoads();
   makeCaves();
-  makeStates();
   simulation();
   ready = true;
 }
@@ -250,21 +256,28 @@ void MapGenerator::makeCaves() {
 
 void MapGenerator::simulation() {
   currentOperation = "Simulate some life...";
-  std::sort(map->cities.begin(), map->cities.end(), [&](City *c, City *c2) {
-    if (c->region->traffic > c2->region->traffic) {
-      return true;
-    }
-    return false;
-  });
 
-  map->cities[0]->type = CAPITAL;
-  printf("%s is capital\n", map->cities[0]->name.c_str());
-  map->cities[1]->type = TRADE;
-  printf("%s is trade\n", map->cities[1]->name.c_str());
-  map->cities[2]->type = TRADE;
-  printf("%s is trade\n", map->cities[2]->name.c_str());
-  map->cities[3]->type = TRADE;
-  printf("%s is trade\n", map->cities[3]->name.c_str());
+  std::vector<City *> _cities;
+  for (auto state : map->states) {
+    _cities = filterObjects(
+        map->cities,
+        (filterFunc<City>)[&](City * c) { return c->region->state == state; },
+        (sortFunc<City>)[&](City * c, City * c2) {
+          if (c->region->traffic > c2->region->traffic) {
+            return true;
+          }
+          return false;
+        });
+
+    _cities[0]->type = CAPITAL;
+    printf("%s is capital\n", _cities[0]->name.c_str());
+    _cities[1]->type = TRADE;
+    printf("%s is trade\n", _cities[1]->name.c_str());
+    _cities[2]->type = TRADE;
+    printf("%s is trade\n", _cities[2]->name.c_str());
+    _cities[3]->type = TRADE;
+    printf("%s is trade\n", _cities[3]->name.c_str());
+  }
 
   std::vector<City *> cities;
   int n = 0;
@@ -435,8 +448,8 @@ void MapGenerator::makeCities() {
     if (!mc->isLand) {
       continue;
     }
-    places = filterRegions(mc->regions,
-                           [&](Region *r) {
+    places = filterObjects(mc->regions,
+                           (filterFunc<Region>)[&](Region * r) {
                              bool cond = r->city == nullptr &&
                                          r->minerals > 1 &&
                                          r->biom.name != LAKE.name &&
@@ -447,7 +460,7 @@ void MapGenerator::makeCities() {
                              }
                              return cond;
                            },
-                           [&](Region *r, Region *r2) {
+                           (sortFunc<Region>)[&](Region * r, Region * r2) {
                              if (r->minerals > r2->minerals) {
                                return true;
                              }
@@ -475,13 +488,13 @@ void MapGenerator::makeCities() {
     if (!mc->isLand) {
       continue;
     }
-    places = filterRegions(
+    places = filterObjects(
         mc->regions,
-        [&](Region *r) {
+        (filterFunc<Region>)[&](Region * r) {
           return r->city == nullptr && r->nice > 0.8 &&
                  r->biom.feritlity > 0.7 && r->biom.name != LAKE.name;
         },
-        [&](Region *r, Region *r2) {
+        (sortFunc<Region>)[&](Region * r, Region * r2) {
           if (r->nice * r->biom.feritlity > r2->nice * r2->biom.feritlity) {
             return true;
           }
@@ -512,41 +525,42 @@ void MapGenerator::makeCities() {
     int b = 200;
 
     std::vector<Region *> cache;
-    places = filterRegions(mc->regions,
-                           [&](Region *r) {
-                             if (r->megaCluster->cities.size() == 0) {
-                               return false;
-                             }
+    places = filterObjects(
+        mc->regions,
+        (filterFunc<Region>)[&](Region * r) {
+          if (r->megaCluster->cities.size() == 0) {
+            return false;
+          }
 
-                             bool deep = false;
-                             for (auto n : r->neighbors) {
-                               if (n->getHeight(n->site) < 0.01) {
-                                 deep = true;
-                                 break;
-                               }
-                             }
-                             if (!deep || r->city != nullptr) {
-                               return false;
-                             }
-                             std::vector<Region *> seas;
-                             getSea(&seas, r, r);
-                             int sc = int(seas.size());
+          bool deep = false;
+          for (auto n : r->neighbors) {
+            if (n->getHeight(n->site) < 0.01) {
+              deep = true;
+              break;
+            }
+          }
+          if (!deep || r->city != nullptr) {
+            return false;
+          }
+          std::vector<Region *> seas;
+          getSea(&seas, r, r);
+          int sc = int(seas.size());
 
-                             bool cond = (int)sc < b;
+          bool cond = (int)sc < b;
 
-                             if (cond) {
-                               for (auto cc : cache) {
-                                 if (getDistance(r->site, cc->site) < 200) {
-                                   return false;
-                                 }
-                               }
+          if (cond) {
+            for (auto cc : cache) {
+              if (getDistance(r->site, cc->site) < 200) {
+                return false;
+              }
+            }
 
-                               cache.push_back(r);
-                             }
+            cache.push_back(r);
+          }
 
-                             return cond;
-                           },
-                           [&](Region *r, Region *r2) { return false; });
+          return cond;
+        },
+        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
 
     for (auto r : places) {
       bool canPlace = true;
@@ -569,22 +583,23 @@ void MapGenerator::makeCities() {
 
   for (auto mc : map->megaClusters) {
     if (!mc->hasPort && mc->cities.size() > 0) {
-      places = filterRegions(mc->regions,
-                             [&](Region *r) {
+      places = filterObjects(
+          mc->regions,
+          (filterFunc<Region>)[&](Region * r) {
 
-                               bool deep = false;
-                               for (auto n : r->neighbors) {
-                                 if (!n->megaCluster->isLand) {
-                                   deep = true;
-                                   break;
-                                 }
-                               }
-                               if (!deep || r->city != nullptr) {
-                                 return false;
-                               }
-                               return true;
-                             },
-                             [&](Region *r, Region *r2) { return false; });
+            bool deep = false;
+            for (auto n : r->neighbors) {
+              if (!n->megaCluster->isLand) {
+                deep = true;
+                break;
+              }
+            }
+            if (!deep || r->city != nullptr) {
+              return false;
+            }
+            return true;
+          },
+          (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
       std::cout << places.size() << std::endl << std::flush;
 
       if (places.size() == 0) {
@@ -601,10 +616,11 @@ void MapGenerator::makeCities() {
   }
 }
 
-std::vector<Region *> MapGenerator::filterRegions(std::vector<Region *> regions,
-                                                  filterFunc filter,
-                                                  sortFunc sort) {
-  std::vector<Region *> places;
+template <typename T>
+std::vector<T *> MapGenerator::filterObjects(std::vector<T *> regions,
+                                             filterFunc<T> filter,
+                                             sortFunc<T> sort) {
+  std::vector<T *> places;
 
   std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
                filter);

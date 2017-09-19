@@ -15,8 +15,10 @@
 #include "State.hpp"
 #include "micropather.h"
 
-typedef std::function<bool (Region*)> filterFunc;
-typedef std::function<bool (Region*, Region*)> sortFunc;
+template<typename T>
+using filterFunc = std::function<bool (T*)>;
+template<typename T>
+using sortFunc = std::function<bool (T*, T*)>;
 
 class MapGenerator {
 public:
@@ -72,7 +74,9 @@ private:
   void makeCaves();
   void makeStates();
   void simulation();
-  std::vector<Region*> filterRegions(std::vector<Region*> regions, filterFunc filter, sortFunc sort);
+
+  template <typename T>
+  std::vector<T*> filterObjects(std::vector<T*> regions, filterFunc<T> filter, sortFunc<T> sort);
   void getSea(std::vector<Region*> *seas, Region* base,Region* r);
   int _seed;
   VoronoiDiagramGenerator _vdg;

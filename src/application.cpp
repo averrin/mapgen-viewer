@@ -747,7 +747,7 @@ public:
         }
       }
 
-      if (region->state != nullptr && region->stateBorder) {
+      if (region->state != nullptr && region->stateBorder && !region->seaBorder) {
         polygon.setOutlineColor(region->state->color);
         polygon.setOutlineThickness(1);
       }

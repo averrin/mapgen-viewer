@@ -36,8 +36,11 @@ public:
           d -= 5000;
         }
       }
-      if (r->hasRiver) {
-        d *= 0.6;
+      if (r2->hasRiver) {
+        d *= 0.8;
+      }
+      if (r2->state != r->state) {
+        d *= 1.2;
       }
     } else {
       d *= 0.8;

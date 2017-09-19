@@ -8,5 +8,6 @@ imgui.ini
 CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
+backward-cpp/cmake_install.cmake
 compile_commands.json
 install_manifest*

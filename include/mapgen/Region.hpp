@@ -41,6 +41,7 @@ public:
   Location* location = nullptr;
   State* state = nullptr;
   bool stateBorder = false;
+  bool seaBorder = false;
 private:
 	PointList _verticies;
   HeightMap _heights;
