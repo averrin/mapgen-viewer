@@ -102,6 +102,9 @@ private:
   template<typename Iter>
   Iter select_randomly(Iter start, Iter end);
 
+  template<typename Iter>
+  Iter select_randomly_seed(Iter start, Iter end, int s);
+
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
 };
 

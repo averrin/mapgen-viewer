@@ -49,6 +49,14 @@ Iter MapGenerator::select_randomly(Iter start, Iter end) {
   return start;
 }
 
+template<typename Iter>
+Iter MapGenerator::select_randomly_seed(Iter start, Iter end, int s) {
+  std::mt19937 gen(s);
+  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+  std::advance(start, dis(gen));
+  return start;
+}
+
 MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   _vdg = VoronoiDiagramGenerator();
   _pointsCount = 10000;
@@ -244,7 +252,10 @@ void MapGenerator::makeCaves() {
     int n = c->regions.size() / 50 + 1;
 
     while (n != 0) {
-      Region *r = *select_randomly(c->regions.begin(), c->regions.end());
+      Region *r = *select_randomly_seed(c->regions.begin(), c->regions.end(), std::clock());
+      if (r->location != nullptr)  {
+        continue;
+      }
       Location *l = new Location(r, generateCityName(), CAVE);
       map->locations.push_back(l);
       n--;

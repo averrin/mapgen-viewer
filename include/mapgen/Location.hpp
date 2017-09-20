@@ -19,6 +19,7 @@ public:
   Region* region;
   std::string name;
   LocationType type;
+  std::string typeName;
 };
 
 #endif
