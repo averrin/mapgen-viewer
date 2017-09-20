@@ -49,7 +49,7 @@ Iter MapGenerator::select_randomly(Iter start, Iter end) {
   return start;
 }
 
-template<typename Iter>
+template <typename Iter>
 Iter MapGenerator::select_randomly_seed(Iter start, Iter end, int s) {
   std::mt19937 gen(s);
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
@@ -103,8 +103,32 @@ void MapGenerator::makeStates() {
     for (auto s : map->states) {
       if (s->cell->pointIntersection(r->site->x, r->site->y) == 1) {
         r->state = s;
+        auto ms = r->megaCluster->states;
+        if (std::count(ms.begin(), ms.end(), s) == 0) {
+          r->megaCluster->states.push_back(s);
+        }
+        auto cs = r->cluster->states;
+          if (std::count(cs.begin(), cs.end(), s) == 0) {
+          r->cluster->states.push_back(s);
+        }
         break;
       }
+    }
+  }
+
+  for (auto mc :  map->megaClusters) {
+    if (mc->states.size() < 2) {
+      continue;
+    }
+    int fsc = std::count_if(mc->regions.begin(), mc->regions.end(), [&](Region* r) {
+        return r->state == mc->states[0];
+      });
+    if (mc->regions.size() - fsc > 200) {
+      continue;
+    }
+    auto dominate = fsc >= mc->regions.size()*4.f/5.f ? mc->states[0] : mc->states[1];
+    for (auto region :  mc->regions) {
+      region->state = dominate;
     }
   }
 
@@ -128,6 +152,7 @@ void MapGenerator::makeStates() {
       r->seaBorder = true;
     }
   }
+
 }
 
 void MapGenerator::simplifyRivers() {
@@ -252,8 +277,9 @@ void MapGenerator::makeCaves() {
     int n = c->regions.size() / 50 + 1;
 
     while (n != 0) {
-      Region *r = *select_randomly_seed(c->regions.begin(), c->regions.end(), std::clock());
-      if (r->location != nullptr)  {
+      Region *r = *select_randomly_seed(c->regions.begin(), c->regions.end(),
+                                        std::clock());
+      if (r->location != nullptr) {
         continue;
       }
       Location *l = new Location(r, generateCityName(), CAVE);
@@ -282,12 +308,12 @@ void MapGenerator::simulation() {
 
     _cities[0]->type = CAPITAL;
     printf("%s is capital\n", _cities[0]->name.c_str());
-    _cities[1]->type = TRADE;
-    printf("%s is trade\n", _cities[1]->name.c_str());
-    _cities[2]->type = TRADE;
-    printf("%s is trade\n", _cities[2]->name.c_str());
-    _cities[3]->type = TRADE;
-    printf("%s is trade\n", _cities[3]->name.c_str());
+    int n = 1;
+    while (n < 4) {
+      _cities[n]->type = TRADE;
+      printf("%s is trade\n", _cities[n]->name.c_str());
+      n++;
+    }
   }
 
   std::vector<City *> cities;
@@ -389,6 +415,7 @@ void MapGenerator::simulation() {
     Road *road = new Road(&path, 1);
     map->roads.push_back(road);
   }
+
 }
 
 void MapGenerator::makeRoads() {

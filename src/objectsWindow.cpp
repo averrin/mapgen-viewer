@@ -118,6 +118,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window,
       },
       (openedFunc<MegaCluster>)[&](MegaCluster * cluster) {
         ImGui::Text("Regions: %zu", cluster->regions.size());
+        ImGui::Text("States: %zu", cluster->states.size());
         // ImGui::Text("Clusters: %zu", cluster->clusters.size());
         ImGui::Text("Is land: %s", cluster->isLand ? "true" : "false");
       },
@@ -136,6 +137,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window,
         }
         ImGui::Text("Biom: %s", cluster->biom.name.c_str());
         ImGui::Text("Regions: %zu", cluster->regions.size());
+        ImGui::Text("States: %zu", cluster->states.size());
         ImGui::Text("Neighbors: %zu", cluster->neighbors.size());
         ImGui::Text("Is land: %s", cluster->isLand ? "true" : "false");
         if (cluster->isLand) {
