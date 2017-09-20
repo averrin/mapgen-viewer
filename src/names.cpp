@@ -28,30 +28,30 @@ std::vector<std::string> city_first_names (_city_first_names, _city_first_names 
 std::vector<std::string> city_second_names (_city_second_names, _city_second_names + sizeof(_city_second_names) / sizeof(_city_second_names[0]) );
 
 
+std::mt19937 gen(std::clock());
 template<typename Iter>
-Iter select_randomly(Iter start, Iter end, int s) {
-  std::mt19937 gen(s);
+Iter select_randomly(Iter start, Iter end) {
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
   std::advance(start, dis(gen));
   return start;
 }
 
 std::string generateRiverName() {
-  std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end(), std::clock());
-  std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end(), std::clock());
+  std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end());
+  std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end());
   return fn+" "+sn;
 }
 
 std::string generateLandName() {
-  return *select_randomly(island_first_names.begin(), island_first_names.end(), std::clock()) + " " + *select_randomly(island_second_names.begin(), island_second_names.end(), std::clock());
+  return *select_randomly(island_first_names.begin(), island_first_names.end()) + " " + *select_randomly(island_second_names.begin(), island_second_names.end());
   }
 
 std::string generateSeaName() {
-  return *select_randomly(sea_first_names.begin(), sea_first_names.end(), std::clock()) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end(), std::clock());
+  return *select_randomly(sea_first_names.begin(), sea_first_names.end()) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end());
 }
 
 std::string generateCityName() {
-  auto name = *select_randomly(city_first_names.begin(), city_first_names.end(), std::clock())  + *select_randomly(city_second_names.begin(), city_second_names.end(), std::clock());
+  auto name = *select_randomly(city_first_names.begin(), city_first_names.end())  + *select_randomly(city_second_names.begin(), city_second_names.end());
   name[0] = toupper(name[0]);
   return name;
 }

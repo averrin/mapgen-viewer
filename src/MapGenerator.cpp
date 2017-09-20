@@ -43,15 +43,6 @@ bool clusterOrdered(Cluster *s1, Cluster *s2) {
 
 template <typename Iter>
 Iter MapGenerator::select_randomly(Iter start, Iter end) {
-  std::mt19937 gen(_seed);
-  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-  std::advance(start, dis(gen));
-  return start;
-}
-
-template <typename Iter>
-Iter MapGenerator::select_randomly_seed(Iter start, Iter end, int s) {
-  std::mt19937 gen(s);
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
   std::advance(start, dis(gen));
   return start;
@@ -68,6 +59,7 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   currentOperation = "";
   temperature = DEFAULT_TEMPERATURE;
   map = nullptr;
+  _gen = std::mt19937(_seed);
 }
 
 double getDistance(Point p, Point p2) {
@@ -277,8 +269,7 @@ void MapGenerator::makeCaves() {
     int n = c->regions.size() / 50 + 1;
 
     while (n != 0) {
-      Region *r = *select_randomly_seed(c->regions.begin(), c->regions.end(),
-                                        std::clock());
+      Region *r = *select_randomly(c->regions.begin(), c->regions.end());
       if (r->location != nullptr) {
         continue;
       }
