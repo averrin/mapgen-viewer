@@ -61,6 +61,7 @@ struct Cluster {
   std::vector<Region*> goodPoints;
   std::vector<City*> cities;
   bool hasPort = false;
+  std::vector<State*> states;
 };
 
 #endif

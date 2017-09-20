@@ -783,6 +783,7 @@ void MapGenerator::makeRiver(Region *r) {
       }
       if (f) {
         river->push_back(r->site);
+        rvr->regions.push_back(r);
         r->hasRiver = true;
         r->biom.feritlity += 0.2;
       }
@@ -792,6 +793,7 @@ void MapGenerator::makeRiver(Region *r) {
     if (count == 100) {
       r->biom = LAKE;
       river->push_back(r->site);
+      rvr->regions.push_back(r);
       r->humidity = 1;
 
       for (auto n : end->getNeighbors()) {

@@ -501,12 +501,7 @@ public:
                         {static_cast<float>(p->x), static_cast<float>(p->y)});
         float t = float(i) / c * 2.f;
         river.setThickness(i, t);
-        if (rivers_selection_mask.size() >= mapgen->map->rivers.size() &&
-            rivers_selection_mask[rn]) {
-          river.setColor(sf::Color(255, 70, 0));
-        } else {
-          river.setColor(sf::Color(46, 46, 76, float(i) / c * 255.f));
-        }
+        river.setColor(sf::Color(46, 46, 76, float(i) / c * 255.f));
       }
       river.setBezierInterpolation();
       river.setInterpolationSteps(10);
