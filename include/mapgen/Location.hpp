@@ -11,6 +11,7 @@ enum LocationType {
   TRADE,
   LIGHTHOUSE,
   CAVE,
+  FORT
 };
 
 class Location {

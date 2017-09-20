@@ -122,6 +122,8 @@ void MapGenerator::makeStates() {
     for (auto region :  mc->regions) {
       region->state = dominate;
     }
+	mc->states.clear();
+	mc->states.push_back(dominate);
   }
 
   for (auto r : map->regions) {
@@ -407,6 +409,36 @@ void MapGenerator::simulation() {
     map->roads.push_back(road);
   }
 
+  //TODO: uncluster it too
+  std::vector<Region*> regions;
+  for (auto mc : map->megaClusters) {
+	  if (mc->states.size() < 2) {
+		  continue;
+	  }
+
+	  for (auto state : mc->states) {
+		  regions = filterObjects(
+			  mc->regions,
+			  (filterFunc<Region>)[&](Region * region) {
+				  return region->stateBorder && !region->seaBorder && region->state == state;
+			  },
+			  (sortFunc<Region>)[&](Region * r, Region * r2) {
+				  if (r->traffic > r2->traffic) {
+					  return true;
+				  }
+				  return false;
+			  });
+
+
+		  int n = 0;
+		  while (n < 2) {
+			  City* c = new City(regions[n], generateCityName(), FORT);
+			  map->cities.push_back(c);
+			  mc->cities.push_back(c);
+			  n++;
+		  }
+	  }
+  }
 }
 
 void MapGenerator::makeRoads() {

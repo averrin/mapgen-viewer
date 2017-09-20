@@ -67,33 +67,8 @@ void infoWindow(sf::RenderWindow *window, Region *currentRegion) {
   if (ImGui::TreeNode("Location")) {
     if (currentRegion->location != nullptr) {
 
-      std::string type = "";
-      switch (currentRegion->location->type) {
-      case CAPITAL:
-        type = "Capital";
-        break;
-      case PORT:
-        type = "Port";
-        break;
-      case MINE:
-        type = "Mine";
-        break;
-      case AGRO:
-        type = "Agro";
-        break;
-      case TRADE:
-        type = "Trade post";
-        break;
-      case LIGHTHOUSE:
-        type = "Lighthouse";
-        break;
-      case CAVE:
-        type = "Cave";
-        break;
-      }
-
       ImGui::Text("Name: %s", currentRegion->location->name.c_str());
-      ImGui::Text("Type: %s", type.c_str());
+      ImGui::Text("Type: %s", currentRegion->location->typeName.c_str());
 
       if (currentRegion->city != nullptr) {
         ImGui::Text("Trade: %d", currentRegion->city->region->traffic);

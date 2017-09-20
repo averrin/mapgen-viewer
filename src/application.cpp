@@ -126,6 +126,10 @@ public:
     caveIcon->loadFromFile("images/cave.png");
     caveIcon->setSmooth(true);
 
+    sf::Texture *fortIcon = new sf::Texture();
+    fortIcon->loadFromFile("images/fort.png");
+    fortIcon->setSmooth(true);
+
     icons.insert(std::make_pair(CAPITAL, capitalIcon));
     icons.insert(std::make_pair(PORT, anchorIcon));
     icons.insert(std::make_pair(MINE, mineIcon));
@@ -133,6 +137,7 @@ public:
     icons.insert(std::make_pair(TRADE, tradeIcon));
     icons.insert(std::make_pair(LIGHTHOUSE, lhIcon));
     icons.insert(std::make_pair(CAVE, caveIcon));
+    icons.insert(std::make_pair(FORT, fortIcon));
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);

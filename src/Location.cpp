@@ -26,6 +26,9 @@ Location::Location(Region *r, std::string n, LocationType t) : region(r), name(n
   case CAVE:
     typeName = "Cave";
     break;
+  case FORT:
+    typeName = "Fort";
+    break;
   }
 
 }
