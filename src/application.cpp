@@ -53,10 +53,13 @@ class Application {
   float temperature;
   bool temp = false;
   bool minerals = false;
-  bool roads = false;
+  bool roads = true;
   bool ready = false;
   Region *lockedRegion = nullptr;
   bool lock = false;
+  bool cities = true;
+  bool locations = true;
+  bool states = true;
 
 public:
   Application(std::string v) : VERSION(v) {
@@ -67,7 +70,7 @@ public:
     io.Fonts->AddFontFromFileTTF("./font.ttf", 15.0f);
 
 #ifdef _WIN32
-    window = new sf::RenderWindow(sf::VideoMode(1600,900), "",
+    window = new sf::RenderWindow(sf::VideoMode(1600, 900), "",
                                   sf::Style::Default, settings);
 #else
     window = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), "",
@@ -96,47 +99,18 @@ public:
 
     sffont.loadFromFile("./font.ttf");
 
-    // TODO: automate it
-    sf::Texture *capitalIcon = new sf::Texture();
-    capitalIcon->loadFromFile("images/castle.png");
-    capitalIcon->setSmooth(true);
+    std::map<LocationType, std::string> iconMap = {
+        {CAPITAL, "images/castle.png"}, {PORT, "images/docks.png"},
+        {MINE, "images/mine.png"},      {AGRO, "images/farm.png"},
+        {TRADE, "images/trade.png"},    {LIGHTHOUSE, "images/lighthouse.png"},
+        {CAVE, "images/cave.png"},      {FORT, "images/fort.png"}};
 
-    sf::Texture *anchorIcon = new sf::Texture();
-    anchorIcon->loadFromFile("images/docks.png");
-    anchorIcon->setSmooth(true);
-
-    sf::Texture *mineIcon = new sf::Texture();
-    mineIcon->loadFromFile("images/mine.png");
-    mineIcon->setSmooth(true);
-
-    sf::Texture *agroIcon = new sf::Texture();
-    agroIcon->loadFromFile("images/farm.png");
-    agroIcon->setSmooth(true);
-
-    sf::Texture *tradeIcon = new sf::Texture();
-    tradeIcon->loadFromFile("images/trade.png");
-    tradeIcon->setSmooth(true);
-
-    sf::Texture *lhIcon = new sf::Texture();
-    lhIcon->loadFromFile("images/lighthouse.png");
-    lhIcon->setSmooth(true);
-
-    sf::Texture *caveIcon = new sf::Texture();
-    caveIcon->loadFromFile("images/cave.png");
-    caveIcon->setSmooth(true);
-
-    sf::Texture *fortIcon = new sf::Texture();
-    fortIcon->loadFromFile("images/fort.png");
-    fortIcon->setSmooth(true);
-
-    icons.insert(std::make_pair(CAPITAL, capitalIcon));
-    icons.insert(std::make_pair(PORT, anchorIcon));
-    icons.insert(std::make_pair(MINE, mineIcon));
-    icons.insert(std::make_pair(AGRO, agroIcon));
-    icons.insert(std::make_pair(TRADE, tradeIcon));
-    icons.insert(std::make_pair(LIGHTHOUSE, lhIcon));
-    icons.insert(std::make_pair(CAVE, caveIcon));
-    icons.insert(std::make_pair(FORT, fortIcon));
+    for (auto pair : iconMap) {
+      sf::Texture *icon = new sf::Texture();
+      icon->loadFromFile(pair.second);
+      icon->setSmooth(true);
+      icons.insert(std::make_pair(pair.first, icon));
+    }
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
@@ -159,12 +133,12 @@ public:
   }
 
   void simulate() {
-    if (generator.joinable())
+    if (generator.joinable()) {
       generator.join();
+    }
     generator = std::thread([&]() {
       ready = false;
       mapgen->startSimulation();
-      roads = true;
       updateVisuals();
       ready = mapgen->ready;
     });
@@ -267,7 +241,10 @@ public:
     else if (target > 1.f)
       isIncreasing = false;
     progressBar.setRatio(target);
-    sf::Text operation(mapgen->currentOperation != "" ? mapgen->currentOperation : mapgen->simulator->currentOperation, sffont);
+    sf::Text operation(mapgen->currentOperation != ""
+                           ? mapgen->currentOperation
+                           : mapgen->simulator->currentOperation,
+                       sffont);
     operation.setCharacterSize(20);
     operation.setColor(sf::Color::White);
 
@@ -343,33 +320,46 @@ public:
         updateVisuals();
       }
       ImGui::SameLine(120);
-      if (ImGui::Checkbox("Roads", &roads)) {
-        updateVisuals();
-      }
-      ImGui::SameLine(200);
       if (ImGui::Checkbox("Heights", &heights)) {
         updateVisuals();
       }
 
+      ImGui::SameLine(200);
       if (ImGui::Checkbox("Humidity", &hum)) {
         infoPolygons.clear();
         updateVisuals();
       }
-      ImGui::SameLine(120);
       if (ImGui::Checkbox("Temp", &temp)) {
         infoPolygons.clear();
         updateVisuals();
       }
-      ImGui::SameLine(200);
+      ImGui::SameLine(120);
       if (ImGui::Checkbox("Minerals", &minerals)) {
         infoPolygons.clear();
+        updateVisuals();
+      }
+      ImGui::SameLine(200);
+      ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("Info toggles")) {
+      if (ImGui::Checkbox("Cities", &cities)) {
+        updateVisuals();
+      }
+      if (ImGui::Checkbox("Locations*", &locations)) {
+        updateVisuals();
+      }
+      if (ImGui::Checkbox("States", &states)) {
+        updateVisuals();
+      }
+      if (ImGui::Checkbox("Roads and sea pathes*", &roads)) {
         updateVisuals();
       }
       ImGui::TreePop();
     }
     ImGui::Text("\n");
 
-    if (ImGui::Checkbox("Show info", &info)) {
+    if (ImGui::Checkbox("Show verbose info", &info)) {
       infoPolygons.clear();
       updateVisuals();
     }
@@ -565,11 +555,11 @@ public:
         window->draw(sprite);
       }
 
-      if (info) {
-        for (auto p : poi) {
-          window->draw(p);
-        }
-      }
+      // if (info) {
+      //   for (auto p : poi) {
+      //     window->draw(p);
+      //   }
+      // }
 
       sf::Vector2u windowSize = window->getSize();
       cachedMap.create(windowSize.x, windowSize.y);
@@ -727,28 +717,31 @@ public:
         col.g = g / s;
         col.b = b / s;
       }
-        int a = 255 * (region->getHeight(region->site) + 1.6) / 3;
-        if (a > 255) {
-          a = 255;
-        }
-        col.a = a;
+      int a = 255 * (region->getHeight(region->site) + 1.6) / 3;
+      if (a > 255) {
+        a = 255;
+      }
+      col.a = a;
       if (region->location != nullptr) {
         sf::Sprite sprite;
-        auto texture = icons[region->location->type];
-        sprite.setTexture(*texture);
-        auto p = region->site;
-        auto size = texture->getSize();
-        sprite.setPosition(
-            sf::Vector2f(p->x - size.x / 2.f, p->y - size.y / 2.f));
-        sprites.push_back(sprite);
 
+        if ((region->city != nullptr && cities) || (region->city == nullptr && locations)) {
+          auto texture = icons[region->location->type];
+          sprite.setTexture(*texture);
+          auto p = region->site;
+          auto size = texture->getSize();
+          sprite.setPosition(
+              sf::Vector2f(p->x - size.x / 2.f, p->y - size.y / 2.f));
+          sprites.push_back(sprite);
+        }
 
-        if (region->state != nullptr && region->city != nullptr) {
+        if (states && region->state != nullptr && region->city != nullptr) {
           col = region->state->color;
         }
       }
 
-      if (region->state != nullptr && region->stateBorder && !region->seaBorder) {
+      if (states && region->state != nullptr && region->stateBorder &&
+          !region->seaBorder) {
         polygon.setOutlineColor(region->state->color);
         polygon.setOutlineThickness(1);
       }
@@ -815,9 +808,11 @@ public:
     float del_G;
     float del_B;
 
-    float var_Min = std::min(std::min(var_R, var_G), var_B); // Min. value of RGB
-    float var_Max = std::min(std::max(var_R, var_G), var_B); // Max. value of RGB
-    float del_Max = var_Max - var_Min;        // Delta RGB value
+    float var_Min =
+        std::min(std::min(var_R, var_G), var_B); // Min. value of RGB
+    float var_Max =
+        std::min(std::max(var_R, var_G), var_B); // Max. value of RGB
+    float del_Max = var_Max - var_Min;           // Delta RGB value
 
     float H;
     float S;
@@ -854,7 +849,7 @@ public:
         H -= 1;
       }
     }
-    L+=d;
+    L += d;
     return color;
   }
 };
