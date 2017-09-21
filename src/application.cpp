@@ -598,7 +598,9 @@ public:
     for (auto r : ends) {
       if (std::count(used.begin(), used.end(), r) == 0) {
         sw::Spline line;
-        line.setColor(r->state->color);
+		sf::Color col = r->state->color;
+		col.a = 150;
+        line.setColor(col);
         line.setThickness(4);
         nextBorder(r, &used, &line, &ends);
 
@@ -783,7 +785,7 @@ public:
         col.g = g / s;
         col.b = b / s;
       }
-      int a = 255 * (region->getHeight(region->site) + 1.6) / 3;
+      int a = 255 * (region->getHeight(region->site) + 1.6) / 3 + (rand() % 8 - 4);
       if (a > 255) {
         a = 255;
       }
