@@ -582,7 +582,7 @@ public:
   }
 
   void drawObjects() {
-    auto op = objectsWindow(window, mapgen);
+    auto op = objectsWindow(window, mapgen->map);
 
     int i = 0;
     for (std::vector<sf::ConvexShape>::iterator it = op.begin(); it < op.end();

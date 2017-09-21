@@ -7,6 +7,12 @@
 #include "mapgen/Road.hpp"
 #include "micropather.h"
 
+template<typename T>
+using filterFunc = std::function<bool (T*)>;
+template<typename T>
+using sortFunc = std::function<bool (T*, T*)>;
+
+
 class Map : public micropather::Graph {
 public:
   ~Map(){};
@@ -79,6 +85,18 @@ public:
     }
   };
   void PrintStateInfo(void *state){};
+
+  template <typename T>
+  std::vector<T *> filterObjects(std::vector<T *> regions,
+                                               filterFunc<T> filter,
+                                               sortFunc<T> sort) {
+    std::vector<T *> places;
+
+    std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
+                 filter);
+    std::sort(places.begin(), places.end(), sort);
+    return places;
+  }
 };
 
 #endif

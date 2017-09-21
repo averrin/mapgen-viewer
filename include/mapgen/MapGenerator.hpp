@@ -14,12 +14,8 @@
 
 #include "Region.hpp"
 #include "State.hpp"
+#include "Simulator.hpp"
 #include "micropather.h"
-
-template<typename T>
-using filterFunc = std::function<bool (T*)>;
-template<typename T>
-using sortFunc = std::function<bool (T*, T*)>;
 
 class MapGenerator {
 public:
@@ -58,11 +54,9 @@ private:
   void makeDiagram();
   void makeRegions();
   void makeFinalRegions();
-  void makeRegions_old();
   void makeRivers();
   void makeClusters();
   void makeMegaClusters();
-  void makeMegaClusters_old();
   void makeRelax();
   void makeRiver(Region* r);
   void calcHumidity();
@@ -71,13 +65,8 @@ private:
   void makeBorders();
   void makeMinerals();
   void makeCities();
-  void makeRoads();
-  void makeCaves();
   void makeStates();
-  void simulation();
 
-  template <typename T>
-  std::vector<T*> filterObjects(std::vector<T*> regions, filterFunc<T> filter, sortFunc<T> sort);
   void getSea(std::vector<Region*> *seas, Region* base,Region* r);
   int _seed;
   VoronoiDiagramGenerator _vdg;
@@ -105,6 +94,7 @@ private:
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
   std::mt19937 _gen;
+  Simulator* simulator;
 };
 
 #endif

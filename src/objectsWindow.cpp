@@ -106,13 +106,12 @@ void higlightLocation(std::vector<sf::ConvexShape> *objectPolygons,
   }
 }
 
-std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window,
-                                           MapGenerator *mapgen) {
+std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window, Map *map) {
   std::vector<sf::ConvexShape> objectPolygons;
 
   ImGui::Begin("Objects");
   listObjects<MegaCluster>(
-      mapgen->map->megaClusters, &mega_selection_mask, "MegaClusters",
+      map->megaClusters, &mega_selection_mask, "MegaClusters",
       (selectedFunc<MegaCluster>)[&](MegaCluster * cluster) {
         higlightCluster(&objectPolygons, cluster);
       },
@@ -127,7 +126,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window,
       });
 
   listObjects<Cluster>(
-      mapgen->map->clusters, &selection_mask, "Clusters",
+      map->clusters, &selection_mask, "Clusters",
       (selectedFunc<Cluster>)[&](Cluster * cluster) {
         higlightCluster(&objectPolygons, cluster);
       },
@@ -154,7 +153,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window,
       });
 
   // TODO: fix river edition
-  listObjects<River>(mapgen->map->rivers, &rivers_selection_mask, "Rivers",
+  listObjects<River>(map->rivers, &rivers_selection_mask, "Rivers",
                      (selectedFunc<River>)[&](River * river) {
                        for (auto region : river->regions) {
                          sf::ConvexShape polygon;
@@ -210,7 +209,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window,
                        return std::string(t);
                      });
 
-  listObjects<City>(mapgen->map->cities, &cities_selection_mask, "Cities",
+  listObjects<City>(map->cities, &cities_selection_mask, "Cities",
                     (selectedFunc<City>)[&](City * city) {
                       higlightLocation(&objectPolygons, city);
                     },
@@ -227,7 +226,7 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window,
                     });
 
   listObjects<Location>(
-      mapgen->map->locations, &location_selection_mask, "Locations",
+      map->locations, &location_selection_mask, "Locations",
       (selectedFunc<Location>)[&](Location * city) {
         higlightLocation(&objectPolygons, city);
       },
