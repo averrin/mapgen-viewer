@@ -15,6 +15,7 @@
 #include "infoWindow.cpp"
 #include "logger.cpp"
 #include "objectsWindow.cpp"
+#include "utils.cpp"
 
 class Application {
   std::string VERSION;
@@ -147,7 +148,7 @@ public:
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    // mapgen.setSeed(/*111629613*/ 81238299);
+    mapgen->setSeed(8701368);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -282,7 +283,7 @@ public:
         mapgen->setSeed(seed);
         log.AddLog("Update map\n");
       }
-      ImGui::SameLine(300);
+      ImGui::SameLine(320);
 
       if (ImGui::Button("Random")) {
         mapgen->seed();
@@ -324,7 +325,7 @@ public:
         updateVisuals();
       }
 
-      ImGui::SameLine(200);
+      ImGui::SameLine(220);
       if (ImGui::Checkbox("Humidity", &hum)) {
         infoPolygons.clear();
         updateVisuals();
@@ -338,7 +339,6 @@ public:
         infoPolygons.clear();
         updateVisuals();
       }
-      ImGui::SameLine(200);
       ImGui::TreePop();
     }
 
@@ -526,6 +526,7 @@ public:
         road.setThickness(r->weight - 1);
       }
       float w = std::min(4.f, 1.f + reg->traffic / 200.f);
+      // road.setThickness(i, w);
       road.setThickness(w);
     }
     road.setBezierInterpolation();
@@ -560,6 +561,9 @@ public:
       //     window->draw(p);
       //   }
       // }
+      if (states) {
+        drawBorders();
+      }
 
       sf::Vector2u windowSize = window->getSize();
       cachedMap.create(windowSize.x, windowSize.y);
@@ -571,6 +575,68 @@ public:
       rectangle.setPosition(0, 0);
       rectangle.setTexture(&cachedMap);
       window->draw(rectangle);
+    }
+  }
+
+  void drawBorders() {
+    auto ends = mapgen->map->filterObjects(
+        mapgen->map->regions,
+        (filterFunc<Region>)[&](Region * r) {
+          if (r->stateBorder && !r->seaBorder &&
+              std::count_if(r->neighbors.begin(), r->neighbors.end(),
+                            [&](Region *n) {
+                              return n->stateBorder && !n->seaBorder &&
+                                     n->state == r->state;
+                            }) == 1) {
+            return true;
+          }
+          return false;
+        },
+        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+
+    std::vector<Region *> used;
+    for (auto r : ends) {
+      if (std::count(used.begin(), used.end(), r) == 0) {
+        sw::Spline line;
+        line.setColor(r->state->color);
+        line.setThickness(4);
+        nextBorder(r, &used, &line, &ends);
+
+        line.setBezierInterpolation();
+        line.setInterpolationSteps(20);
+        line.smoothHandles();
+        line.update();
+        window->draw(line);
+      }
+    }
+  }
+
+  void nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
+                  std::vector<Region *> *ends) {
+
+    if (std::count(used->begin(), used->end(), r) == 0) {
+      int i = line->getVertexCount();
+      line->addVertex(
+          i, {static_cast<float>(r->site->x), static_cast<float>(r->site->y)});
+      used->push_back(r);
+    }
+
+    auto ns = mapgen->map->filterObjects(
+        r->neighbors,
+        (filterFunc<Region>)[&](Region * n) {
+          if (n->stateBorder && !n->seaBorder &&
+              std::count(used->begin(), used->end(), n) == 0 &&
+              n->state == r->state) {
+            return true;
+          }
+          return false;
+        },
+        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+
+    if (ns.size() > 0) {
+      nextBorder(ns[0], used, line, ends);
+    } else if (std::count(ends->begin(), ends->end(), r) == 0) {
+      nextBorder(used->end()[-2], used, line, ends);
     }
   }
 
@@ -725,7 +791,8 @@ public:
       if (region->location != nullptr) {
         sf::Sprite sprite;
 
-        if ((region->city != nullptr && cities) || (region->city == nullptr && locations)) {
+        if ((region->city != nullptr && cities) ||
+            (region->city == nullptr && locations)) {
           auto texture = icons[region->location->type];
           sprite.setTexture(*texture);
           auto p = region->site;
@@ -738,12 +805,6 @@ public:
         if (states && region->state != nullptr && region->city != nullptr) {
           col = region->state->color;
         }
-      }
-
-      if (states && region->state != nullptr && region->stateBorder &&
-          !region->seaBorder) {
-        polygon.setOutlineColor(region->state->color);
-        polygon.setOutlineThickness(1);
       }
 
       polygon.setFillColor(col);

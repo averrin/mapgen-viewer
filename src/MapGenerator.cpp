@@ -3,10 +3,9 @@
 #include "City.cpp"
 #include "Location.cpp"
 #include "Road.cpp"
+#include "Simulator.cpp"
 #include "State.cpp"
 #include "micropather.cpp"
-#include "names.cpp"
-#include "Simulator.cpp"
 #include <VoronoiDiagramGenerator.h>
 #include <iterator>
 #include <random>
@@ -93,7 +92,7 @@ void MapGenerator::makeStates() {
           r->megaCluster->states.push_back(s);
         }
         auto cs = r->cluster->states;
-          if (std::count(cs.begin(), cs.end(), s) == 0) {
+        if (std::count(cs.begin(), cs.end(), s) == 0) {
           r->cluster->states.push_back(s);
         }
         break;
@@ -101,22 +100,26 @@ void MapGenerator::makeStates() {
     }
   }
 
-  for (auto mc :  map->megaClusters) {
+  //TODO: iterate over state clusters not megaClusters
+  for (auto mc : map->megaClusters) {
     if (mc->states.size() < 2) {
       continue;
     }
-    int fsc = std::count_if(mc->regions.begin(), mc->regions.end(), [&](Region* r) {
-        return r->state == mc->states[0];
-      });
-    if (mc->regions.size() - fsc > 200) {
+    int fsc =
+        std::count_if(mc->regions.begin(), mc->regions.end(),
+                      [&](Region *r) { return r->state == mc->states[0]; });
+    if (mc->regions.size() - fsc > 200 || std::count_if(mc->cities.begin(), mc->cities.end(), [&](City* c){
+          return c->region->state == mc->states[1];
+        }) >= 2) {
       continue;
     }
-    auto dominate = fsc >= mc->regions.size()*4.f/5.f ? mc->states[0] : mc->states[1];
-    for (auto region :  mc->regions) {
+    auto dominate =
+        fsc >= mc->regions.size() * 4 / 5 ? mc->states[0] : mc->states[1];
+    for (auto region : mc->regions) {
       region->state = dominate;
     }
-	mc->states.clear();
-	mc->states.push_back(dominate);
+    mc->states.clear();
+    mc->states.push_back(dominate);
   }
 
   for (auto r : map->regions) {
@@ -139,7 +142,6 @@ void MapGenerator::makeStates() {
       r->seaBorder = true;
     }
   }
-
 }
 
 void MapGenerator::simplifyRivers() {
@@ -160,8 +162,8 @@ void MapGenerator::simplifyRivers() {
       Point p3 = (*rvr)[i + 2];
       Point sp;
 
-      double d1 = getDistance(p, p2);
-      double d2 = getDistance(p, p3);
+      double d1 = mg::getDistance(p, p2);
+      double d2 = mg::getDistance(p, p3);
 
       if (d2 < d1) {
         sp = p2;
@@ -260,7 +262,7 @@ void MapGenerator::getSea(std::vector<Region *> *seas, Region *base,
     if (!n->megaCluster->isLand &&
         std::find(seas->begin(), seas->end(), n) == seas->end()) {
       seas->push_back(n);
-      float d = getDistance(base->site, n->site);
+      float d = mg::getDistance(base->site, n->site);
       if (d < 100) {
         getSea(seas, base, n);
       }
@@ -286,23 +288,23 @@ void MapGenerator::makeCities() {
       continue;
     }
     places = map->filterObjects(mc->regions,
-                           (filterFunc<Region>)[&](Region * r) {
-                             bool cond = r->city == nullptr &&
-                                         r->minerals > 1 &&
-                                         r->biom.name != LAKE.name &&
-                                         r->biom.name != SNOW.name &&
-                                         r->biom.name != ICE.name;
-                             if (cond) {
-                               cache.push_back(r);
-                             }
-                             return cond;
-                           },
-                           (sortFunc<Region>)[&](Region * r, Region * r2) {
-                             if (r->minerals > r2->minerals) {
-                               return true;
-                             }
-                             return false;
-                           });
+                                (filterFunc<Region>)[&](Region * r) {
+                                  bool cond = r->city == nullptr &&
+                                              r->minerals > 1 &&
+                                              r->biom.name != LAKE.name &&
+                                              r->biom.name != SNOW.name &&
+                                              r->biom.name != ICE.name;
+                                  if (cond) {
+                                    cache.push_back(r);
+                                  }
+                                  return cond;
+                                },
+                                (sortFunc<Region>)[&](Region * r, Region * r2) {
+                                  if (r->minerals > r2->minerals) {
+                                    return true;
+                                  }
+                                  return false;
+                                });
     for (auto r : places) {
       bool canPlace = true;
       for (auto n : r->neighbors) {
@@ -387,7 +389,7 @@ void MapGenerator::makeCities() {
 
           if (cond) {
             for (auto cc : cache) {
-              if (getDistance(r->site, cc->site) < 200) {
+              if (mg::getDistance(r->site, cc->site) < 200) {
                 return false;
               }
             }

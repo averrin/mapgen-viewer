@@ -1,12 +1,6 @@
 #include "mapgen/Simulator.hpp"
-
-//TODO: move it to some utils.cpp
-double getDistance(Point p, Point p2) {
-  double distancex = (p2->x - p->x);
-  double distancey = (p2->y - p->y);
-
-  return std::sqrt(distancex * distancex + distancey * distancey);
-}
+#include "names.cpp"
+#include "mapgen/utils.hpp"
 
 Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {}
 
@@ -157,7 +151,7 @@ void Simulator::makeLighthouses() {
     }
     bool tc = false;
     for (auto cc : cache) {
-      if (getDistance(r->site, cc->site) < 100) {
+      if (mg::getDistance(r->site, cc->site) < 100) {
         tc = true;
       }
     }
@@ -190,8 +184,8 @@ void Simulator::makeLocationRoads() {
       continue;
     }
     std::sort(mc->cities.begin(), mc->cities.end(), [&](City *c, City *c2) {
-      if (getDistance(l->region->site, c->region->site) <
-          getDistance(l->region->site, c2->region->site)) {
+        if (mg::getDistance(l->region->site, c->region->site) <
+            mg::getDistance(l->region->site, c2->region->site)) {
         return true;
       }
       return false;
