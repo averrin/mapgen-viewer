@@ -44,7 +44,6 @@ class Application {
   bool info = false;
   bool verbose = true;
   bool heights = false;
-  bool flat = false;
   bool hum = false;
   bool simplifyRivers;
   int t = 0;
@@ -268,7 +267,7 @@ public:
     else if (target > 1.f)
       isIncreasing = false;
     progressBar.setRatio(target);
-    sf::Text operation(mapgen->currentOperation, sffont);
+    sf::Text operation(mapgen->currentOperation != "" ? mapgen->currentOperation : mapgen->simulator->currentOperation, sffont);
     operation.setCharacterSize(20);
     operation.setColor(sf::Color::White);
 
@@ -298,79 +297,83 @@ public:
     ImGui::Text("Window size: w:%d h:%d", window->getSize().x,
                 window->getSize().y);
 
-    if (ImGui::Checkbox("Borders", &borders)) {
-      updateVisuals();
-    }
-    ImGui::SameLine(100);
-    if (ImGui::Checkbox("Edges", &edges)) {
-      updateVisuals();
-    }
-    ImGui::SameLine(200);
-    if (ImGui::Checkbox("Roads", &roads)) {
-      updateVisuals();
-    }
-    if (ImGui::Checkbox("Heights", &heights)) {
-      updateVisuals();
-    }
-    ImGui::SameLine(100);
-    if (ImGui::Checkbox("Flat", &flat)) {
-      updateVisuals();
-    }
-    ImGui::SameLine(200);
-    if (ImGui::Checkbox("Info", &info)) {
-      infoPolygons.clear();
-      updateVisuals();
-    }
+    ImGui::Text("\n");
+    ImGui::Text("Controls:");
+    if (ImGui::TreeNode("Settings")) {
 
-    if (ImGui::Checkbox("Humidity", &hum)) {
-      infoPolygons.clear();
-      updateVisuals();
-    }
-    ImGui::SameLine(100);
-    if (ImGui::Checkbox("Temp", &temp)) {
-      infoPolygons.clear();
-      updateVisuals();
-    }
-    ImGui::SameLine(200);
-    if (ImGui::Checkbox("Minerals", &minerals)) {
-      infoPolygons.clear();
-      updateVisuals();
-    }
-
-    if (ImGui::InputInt("Seed", &seed)) {
-      mapgen->setSeed(seed);
-      log.AddLog("Update map\n");
-    }
-    ImGui::SameLine(300);
-
-    if (ImGui::Button("Random")) {
-      mapgen->seed();
-      regen();
-    }
-
-    const char *templates[] = {"basic", "archipelago", "new"};
-    if (ImGui::Combo("Map template", &t, templates, 3)) {
-      mapgen->setMapTemplate(templates[t]);
-    }
-
-    if (ImGui::SliderInt("Height octaves", &octaves, 1, 10)) {
-      mapgen->setOctaveCount(octaves);
-    }
-
-    if (ImGui::SliderFloat("Height freq", &freq, 0.001, 2.f)) {
-      mapgen->setFrequency(freq);
-    }
-
-    if (ImGui::InputInt("Points", &nPoints)) {
-      if (nPoints < 5) {
-        nPoints = 5;
+      if (ImGui::InputInt("Seed", &seed)) {
+        mapgen->setSeed(seed);
+        log.AddLog("Update map\n");
       }
-      mapgen->setPointCount(nPoints);
+      ImGui::SameLine(300);
+
+      if (ImGui::Button("Random")) {
+        mapgen->seed();
+        regen();
+      }
+
+      const char *templates[] = {"basic", "archipelago", "new"};
+      if (ImGui::Combo("Map template", &t, templates, 3)) {
+        mapgen->setMapTemplate(templates[t]);
+      }
+
+      if (ImGui::SliderInt("Height octaves", &octaves, 1, 10)) {
+        mapgen->setOctaveCount(octaves);
+      }
+
+      if (ImGui::SliderFloat("Height freq", &freq, 0.001, 2.f)) {
+        mapgen->setFrequency(freq);
+      }
+
+      if (ImGui::InputInt("Points", &nPoints)) {
+        if (nPoints < 5) {
+          nPoints = 5;
+        }
+        mapgen->setPointCount(nPoints);
+      }
+
+      if (ImGui::Button("Update")) {
+        regen();
+      }
+
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Special layers")) {
+      if (ImGui::Checkbox("Edges", &edges)) {
+        updateVisuals();
+      }
+      ImGui::SameLine(120);
+      if (ImGui::Checkbox("Roads", &roads)) {
+        updateVisuals();
+      }
+      ImGui::SameLine(200);
+      if (ImGui::Checkbox("Heights", &heights)) {
+        updateVisuals();
+      }
+
+      if (ImGui::Checkbox("Humidity", &hum)) {
+        infoPolygons.clear();
+        updateVisuals();
+      }
+      ImGui::SameLine(120);
+      if (ImGui::Checkbox("Temp", &temp)) {
+        infoPolygons.clear();
+        updateVisuals();
+      }
+      ImGui::SameLine(200);
+      if (ImGui::Checkbox("Minerals", &minerals)) {
+        infoPolygons.clear();
+        updateVisuals();
+      }
+      ImGui::TreePop();
+    }
+    ImGui::Text("\n");
+
+    if (ImGui::Checkbox("Show info", &info)) {
+      infoPolygons.clear();
+      updateVisuals();
     }
 
-    if (ImGui::Button("Update")) {
-      regen();
-    }
     if (ImGui::Button("Start simulation")) {
       simulate();
     }
@@ -691,7 +694,7 @@ public:
       }
     }
 
-    std::vector<Region *> regions = mapgen->getRegions();
+    std::vector<Region *> regions = mapgen->map->regions;
     polygons.reserve(regions.size());
     for (Region *region : regions) {
       sf::ConvexShape polygon;
@@ -724,13 +727,11 @@ public:
         col.g = g / s;
         col.b = b / s;
       }
-      if (!flat) {
         int a = 255 * (region->getHeight(region->site) + 1.6) / 3;
         if (a > 255) {
           a = 255;
         }
         col.a = a;
-      }
       if (region->location != nullptr) {
         sf::Sprite sprite;
         auto texture = icons[region->location->type];
@@ -757,12 +758,6 @@ public:
       if (edges) {
         polygon.setOutlineColor(sf::Color(100, 100, 100));
         polygon.setOutlineThickness(1);
-      }
-      if (borders) {
-        if (region->border) {
-          polygon.setOutlineColor(sf::Color(100, 50, 50));
-          polygon.setOutlineThickness(1);
-        }
       }
       if (heights) {
         sf::Color col(region->biom.color);

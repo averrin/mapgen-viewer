@@ -72,9 +72,7 @@ void MapGenerator::makeStates() {
   genRandomSites(*sites, _bbox, _w, _h, 2);
   std::unique_ptr<Diagram> diagram;
   diagram.reset(vdg.compute(*sites, _bbox));
-  // for (int n = 0; n < _relax; n++) {
-  //   makeRelax();
-  // }
+
   int n = 0;
   for (auto c : diagram->cells) {
     State *s = new State((n == 0 ? "Blue empire" : "Red lands"),
@@ -220,6 +218,7 @@ void MapGenerator::update() {
   ready = false;
   if (map != nullptr) {
     delete map;
+    delete simulator;
   }
 
   map = new Map();
@@ -989,8 +988,6 @@ Region *MapGenerator::getRegion(sf::Vector2f pos) {
   }
   return nullptr;
 }
-
-std::vector<Region *> MapGenerator::getRegions() { return map->regions; }
 
 void MapGenerator::setSize(int w, int h) {
   _w = w;

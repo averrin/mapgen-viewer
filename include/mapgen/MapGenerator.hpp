@@ -47,7 +47,7 @@ public:
   std::string currentOperation;
   float temperature;
   Map* map;
-  std::vector<State*> states;
+  Simulator* simulator;
 
 private:
   void makeHeights();
@@ -82,6 +82,7 @@ private:
 	std::unique_ptr<Diagram> _diagram;
   Cell* _highestCell;
   std::map<Region*,Cell*> cellsMap;
+  std::vector<State*> states;
 
   micropather::MicroPather* _pather;
   module::Perlin _perlin;
@@ -94,7 +95,6 @@ private:
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
   std::mt19937 _gen;
-  Simulator* simulator;
 };
 
 #endif
