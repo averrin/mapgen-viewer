@@ -1,11 +1,8 @@
 #include "mapgen/MapGenerator.hpp"
-#include "Biom.cpp"
-#include "City.cpp"
-#include "Location.cpp"
-#include "Road.cpp"
-#include "Simulator.cpp"
-#include "State.cpp"
-#include "micropather.cpp"
+#include "mapgen/names.hpp"
+#include "mapgen/utils.hpp"
+#include "mapgen/Biom.hpp"
+#include "mapgen/Map.hpp"
 #include <VoronoiDiagramGenerator.h>
 #include <iterator>
 #include <random>
@@ -44,7 +41,7 @@ bool clusterOrdered(Cluster *s1, Cluster *s2) {
 template <typename Iter>
 Iter MapGenerator::select_randomly(Iter start, Iter end) {
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-  std::advance(start, dis(gen));
+  std::advance(start, dis(_gen));
   return start;
 }
 
@@ -57,7 +54,7 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   simpleRivers = true;
   _terrainType = "basic";
   map->status = "";
-  temperature = DEFAULT_TEMPERATURE;
+  temperature = biom::DEFAULT_TEMPERATURE;
   map = nullptr;
   simulator = nullptr;
   _gen = std::mt19937(_seed);
@@ -297,9 +294,9 @@ void MapGenerator::makeCities() {
                                 (filterFunc<Region>)[&](Region * r) {
                                   bool cond = r->city == nullptr &&
                                               r->minerals > 1 &&
-                                              r->biom.name != LAKE.name &&
-                                              r->biom.name != SNOW.name &&
-                                              r->biom.name != ICE.name;
+                                  r->biom.name != biom::LAKE.name &&
+                                  r->biom.name != biom::SNOW.name &&
+                                  r->biom.name != biom::ICE.name;
                                   if (cond) {
                                     cache.push_back(r);
                                   }
@@ -323,7 +320,7 @@ void MapGenerator::makeCities() {
         continue;
       }
       // TODO: decluster it.
-      City *c = new City(r, generateCityName(), MINE);
+      City *c = new City(r, names::generateCityName(_gen), MINE);
       map->cities.push_back(c);
       mc->cities.push_back(c);
     }
@@ -337,7 +334,7 @@ void MapGenerator::makeCities() {
         mc->regions,
         (filterFunc<Region>)[&](Region * r) {
           return r->city == nullptr && r->nice > 0.8 &&
-                 r->biom.feritlity > 0.7 && r->biom.name != LAKE.name;
+          r->biom.feritlity > 0.7 && r->biom.name != biom::LAKE.name;
         },
         (sortFunc<Region>)[&](Region * r, Region * r2) {
           if (r->nice * r->biom.feritlity > r2->nice * r2->biom.feritlity) {
@@ -356,7 +353,7 @@ void MapGenerator::makeCities() {
       if (!canPlace) {
         continue;
       }
-      City *c = new City(r, generateCityName(), AGRO);
+      City *c = new City(r, names::generateCityName(_gen), AGRO);
       map->cities.push_back(c);
       mc->cities.push_back(c);
     }
@@ -419,7 +416,7 @@ void MapGenerator::makeCities() {
         continue;
       }
 
-      City *c = new City(r, generateCityName(), PORT);
+      City *c = new City(r, names::generateCityName(_gen), PORT);
       map->cities.push_back(c);
       mc->cities.push_back(c);
       mc->hasPort = true;
@@ -453,7 +450,7 @@ void MapGenerator::makeCities() {
 
       auto r = *select_randomly(places.begin(), places.end());
 
-      City *c = new City(r, generateCityName(), PORT);
+      City *c = new City(r, names::generateCityName(_gen), PORT);
       map->cities.push_back(c);
       mc->cities.push_back(c);
       mc->hasPort = true;
@@ -578,7 +575,7 @@ void MapGenerator::makeRiver(Region *r) {
   float z = r->getHeight(r->site);
   River *rvr = new River();
 
-  rvr->name = generateRiverName();
+  rvr->name = names::generateRiverName(_gen);
   PointList *river = new PointList();
   rvr->points = river;
   map->rivers.push_back(rvr);
@@ -624,14 +621,14 @@ void MapGenerator::makeRiver(Region *r) {
     }
     count++;
     if (count == 100) {
-      r->biom = LAKE;
+      r->biom = biom::LAKE;
       river->push_back(r->site);
       rvr->regions.push_back(r);
       r->humidity = 1;
 
       for (auto n : end->getNeighbors()) {
         r = _cells[n];
-        r->biom = LAKE;
+        r->biom = biom::LAKE;
         r->humidity = 1;
       }
       break;
@@ -679,22 +676,22 @@ void MapGenerator::makeRivers() {
 void MapGenerator::makeFinalRegions() {
   map->status = "Making forrests and deserts...";
   for (auto r : map->regions) {
-    if (r->biom.name == LAKE.name) {
+    if (r->biom.name == biom::LAKE.name) {
       r->minerals = 0;
       continue;
     }
     r->minerals = _mineralsMap.GetValue(r->site->x, r->site->y);
     r->minerals = r->minerals > 0 ? r->minerals : 0;
     float ht = r->getHeight(r->site);
-    Biom b = BIOMS[0];
-    for (int i = 0; i < int(BIOMS.size()); i++) {
-      if (ht > BIOMS[i].border) {
-        int n = (BIOMS_BY_HEIGHT[i].size() - 1) -
-                r->humidity * (BIOMS_BY_HEIGHT[i].size() - 1);
-        b = BIOMS_BY_HEIGHT[i][n];
-        if (BIOMS_BY_TEMP.count(b.name) != 0) {
+    Biom b = biom::BIOMS[0];
+    for (int i = 0; i < int(biom::BIOMS.size()); i++) {
+      if (ht > biom::BIOMS[i].border) {
+        int n = (biom::BIOMS_BY_HEIGHT[i].size() - 1) -
+          r->humidity * (biom::BIOMS_BY_HEIGHT[i].size() - 1);
+        b = biom::BIOMS_BY_HEIGHT[i][n];
+        if (biom::BIOMS_BY_TEMP.count(b.name) != 0) {
           if (r->temperature > temperature * 4 / 5 && r->humidity < 0.2) {
-            b = BIOMS_BY_TEMP[b.name];
+            b = biom::BIOMS_BY_TEMP.at(b.name);
           }
         }
       }
@@ -734,7 +731,7 @@ void MapGenerator::makeFinalRegions() {
                           Region *reg = _cells[oc];
                           return reg->nice >= r->nice;
                         }) == 0 &&
-          r->biom.name != LAKE.name) {
+          r->biom.name != biom::LAKE.name) {
         cluster->goodPoints.push_back(r);
       }
     }
@@ -746,7 +743,7 @@ void MapGenerator::makeRegions() {
   _cells.clear();
   map->regions.clear();
   map->regions.reserve(_diagram->cells.size());
-  Biom lastBiom = BIOMS[0];
+  Biom lastBiom = biom::BIOMS[0];
   for (auto c : _diagram->cells) {
     if (c == nullptr) {
       continue;
@@ -769,12 +766,12 @@ void MapGenerator::makeRegions() {
     ht = ht / count;
     sf::Vector2<double> &p = c->site.p;
     h.insert(std::make_pair(&p, ht));
-    Biom b = ht < 0.0625 ? SEA : LAND;
+    Biom b = ht < 0.0625 ? biom::SEA : biom::LAND;
     Region *region = new Region(b, verts, h, &p);
     region->city = nullptr;
     region->coast = false;
     region->cell = c;
-    region->humidity = DEFAULT_HUMIDITY;
+    region->humidity = biom::DEFAULT_HUMIDITY;
     region->border = false;
     region->hasRiver = false;
     map->regions.push_back(region);
@@ -803,7 +800,7 @@ void MapGenerator::calcTemp() {
                      (temperature / 1.2 * r->getHeight(r->site));
     Cell *c = r->cell;
     for (auto n : c->getNeighbors()) {
-      if (_cells[n]->biom.name == LAKE.name) {
+      if (_cells[n]->biom.name == biom::LAKE.name) {
         r->temperature += 2;
         r->biom.feritlity += 0.2;
       }
@@ -834,7 +831,7 @@ void MapGenerator::calcHumidity() {
       }
       for (auto n : c->getNeighbors()) {
         Region *rn = _cells[n];
-        if (rn->hasRiver || rn->biom.name == LAKE.name) {
+        if (rn->hasRiver || rn->biom.name == biom::LAKE.name) {
           r->humidity += 0.05;
         }
         float hd = rn->getHeight(rn->site) - r->getHeight(r->site);
@@ -864,7 +861,7 @@ void MapGenerator::makeMegaClusters() {
       Region *rn = _cells[n];
       if (r->biom.name != rn->biom.name) {
         r->border = true;
-        r->coast = r->biom.name == LAND.name && rn->biom.name == SEA.name;
+        r->coast = r->biom.name == biom::LAND.name && rn->biom.name == biom::SEA.name;
       } else if (_megaClusters.count(rn) != 0) {
         cu = false;
         if (knownCluster == nullptr) {
@@ -900,12 +897,12 @@ void MapGenerator::makeMegaClusters() {
 
     if (cu) {
       Cluster *cluster = new MegaCluster();
-      cluster->isLand = r->biom.name == LAND.name;
+      cluster->isLand = r->biom.name == biom::LAND.name;
       cluster->megaCluster = cluster;
       if (cluster->isLand) {
-        cluster->name = generateLandName();
+        cluster->name = names::generateLandName(_gen);
       } else {
-        cluster->name = generateSeaName();
+        cluster->name = names::generateSeaName(_gen);
       }
       r->megaCluster = cluster;
       cluster->regions.push_back(r);

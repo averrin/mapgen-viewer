@@ -1,6 +1,15 @@
 #include "mapgen/Simulator.hpp"
-#include "names.cpp"
+#include "mapgen/Region.hpp"
+#include "mapgen/names.hpp"
 #include "mapgen/utils.hpp"
+#include "mapgen/Biom.hpp"
+#include <functional>
+#include <cstring>
+
+template<typename T>
+using filterFunc = std::function<bool (T*)>;
+template<typename T>
+using sortFunc = std::function<bool (T*, T*)>;
 
 Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {}
 
@@ -55,7 +64,7 @@ void Simulator::makeCaves() {
   map->status = "Digging caves...";
   int i = 0;
   for (auto c : map->clusters) {
-    if (c->biom.name != ROCK.name) {
+    if (c->biom.name != biom::ROCK.name) {
       continue;
     }
 
@@ -66,7 +75,7 @@ void Simulator::makeCaves() {
       if (r->location != nullptr) {
         continue;
       }
-      Location *l = new Location(r, generateCityName(), CAVE);
+      Location *l = new Location(r, names::generateCityName(_gen), CAVE);
       map->locations.push_back(l);
       n--;
       i++;
@@ -169,7 +178,7 @@ void Simulator::makeLighthouses() {
       }
     }
     if (i >= 3) {
-      Location *l = new Location(r, generateCityName(), LIGHTHOUSE);
+      Location *l = new Location(r, names::generateCityName(_gen), LIGHTHOUSE);
       map->locations.push_back(l);
       cache.push_back(l->region);
     }
@@ -234,11 +243,18 @@ void Simulator::makeForts() {
 
       int n = 0;
       while (n < 2) {
-        City *c = new City(regions[n], generateCityName(), FORT);
+        City *c = new City(regions[n], names::generateCityName(_gen), FORT);
         map->cities.push_back(c);
         mc->cities.push_back(c);
         n++;
       }
     }
   }
+}
+
+template <typename Iter>
+Iter Simulator::select_randomly(Iter start, Iter end) {
+  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+  std::advance(start, dis(_gen));
+  return start;
 }

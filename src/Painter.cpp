@@ -1,10 +1,21 @@
-#include "Map.cpp"
-#include "Biom.cpp"
+#include <map>
+#include <memory>
+#include <thread>
+#include <vector>
+
+#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/System/Clock.hpp>
+#include <SFML/Window/Event.hpp>
+
+#include "../MapgenConfig.h"
+#include "SelbaWard/SelbaWard.hpp"
 #include "mapgen/MapGenerator.hpp"
+#include "mapgen/Biom.hpp"
+
 
 class Painter {
 public:
-  std::string VERSION;
   Painter(sf::RenderWindow *w, Map *m, std::string v) : window(w), map(m), VERSION(v) {
     loadIcons();
     initProgressBar();
@@ -27,6 +38,7 @@ private:
   sf::Color bgColor;
   float color[3] = {0.12f, 0.12f, 0.12f};
   Map *map;
+  std::string VERSION;
   bool needUpdate = true;
 
   void initProgressBar() {
@@ -492,11 +504,11 @@ public:
       }
 
       if (temp) {
-        if (region->temperature < DEFAULT_TEMPERATURE) {
+        if (region->temperature < biom::DEFAULT_TEMPERATURE) {
           sf::Color col(255, 0, 255);
-          col.r = std::min(255.f, 255 * (DEFAULT_TEMPERATURE / region->temperature));
+          col.r = std::min(255.f, 255 * (biom::DEFAULT_TEMPERATURE / region->temperature));
           col.b = std::min(
-                           255.f, 255 * std::abs(1.f - (DEFAULT_TEMPERATURE / region->temperature)));
+                           255.f, 255 * std::abs(1.f - (biom::DEFAULT_TEMPERATURE / region->temperature)));
 
           polygon.setFillColor(col);
         }

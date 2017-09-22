@@ -1,24 +1,40 @@
-// #ifndef MAP_H_
-// #define MAP_H_
-// #include "micropather.h"
-// #include "Region.hpp"
-// #include "River.hpp"
-// #include "City.hpp"
+#ifndef MAP_H_
+#define MAP_H_
+#include "City.hpp"
+#include "Region.hpp"
+#include "River.hpp"
+#include "Road.hpp"
+#include "micropather.h"
+#include <cstring>
+#include <functional>
 
-// class Map: public micropather::Graph {
-// public:
-//   ~Map();
+template <typename T> using filterFunc = std::function<bool(T *)>;
+template <typename T> using sortFunc = std::function<bool(T *, T *)>;
 
-//   std::vector<MegaCluster*> megaClusters;
-//   std::vector<Cluster*> clusters;
+class Map : public micropather::Graph {
+public:
+  ~Map();
 
-//   std::vector<Region*> regions;
-//   std::vector<River*> rivers;
-//   std::vector<City*> cities;
+  std::vector<MegaCluster *> megaClusters;
+  std::vector<Cluster *> clusters;
 
-//   float LeastCostEstimate( void* stateStart, void* stateEnd );
-//   void AdjacentCost( void* state, MP_VECTOR< micropather::StateCost > *adjacent );
-//   void PrintStateInfo( void* state );
-// };
+  std::vector<State *> states;
+  std::vector<Region *> regions;
+  std::vector<River *> rivers;
+  std::vector<City *> cities;
+  std::vector<Location *> locations;
+  std::vector<Road *> roads;
 
-// #endif
+  std::string status;
+
+  float getRegionDistance(Region *r, Region *r2);
+  float LeastCostEstimate(void *stateStart, void *stateEnd);
+  void AdjacentCost(void *state, MP_VECTOR<micropather::StateCost> *adjacent);
+  void PrintStateInfo(void *state);
+
+  template <typename T>
+  std::vector<T *> filterObjects(std::vector<T *> regions,
+                                      filterFunc<T> filter, sortFunc<T> sort);
+};
+
+#endif

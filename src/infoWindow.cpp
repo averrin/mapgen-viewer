@@ -1,4 +1,5 @@
 #include "mapgen/MapGenerator.hpp"
+#include "mapgen/Region.hpp"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <imgui.h>
 

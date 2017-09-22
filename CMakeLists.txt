@@ -36,15 +36,32 @@ add_library(sw ${SWLIB_SOURCE})
 add_subdirectory(backward-cpp)
 
 set(EXECUTABLE_NAME "mapgen")
+file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 add_executable(${EXECUTABLE_NAME}
   include/imgui/imgui.cpp
   include/imgui/imgui_draw.cpp
   include/imgui/imgui-SFML.cpp
-  src/main.cpp
-  src/noiseutils.cpp
-  src/MapGenerator.cpp
-  src/Region.cpp
   ${BACKWARD_ENABLE}
+  src/names.cpp
+  src/utils.cpp
+  src/Biom.cpp
+  src/Region.cpp
+  src/Location.cpp
+  src/City.cpp
+  src/Road.cpp
+  src/State.cpp
+  src/Map.cpp
+
+  src/micropather.cpp
+  src/noiseutils.cpp
+  src/Simulator.cpp
+  src/MapGenerator.cpp
+  src/Painter.cpp
+  # src/objectsWindow.cpp
+  # src/infoWindow.cpp
+  # src/logger.cpp
+  src/application.cpp
+  src/main.cpp
 )
 
 add_backward(mapgen)

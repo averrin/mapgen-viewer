@@ -1,21 +1,8 @@
 #include <imgui-SFML.h>
 #include <imgui.h>
-#include <map>
-#include <memory>
-#include <thread>
-#include <vector>
-
-#include <SFML/Graphics.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/System/Clock.hpp>
-#include <SFML/Window/Event.hpp>
-
-#include "../MapgenConfig.h"
-#include "SelbaWard/SelbaWard.hpp"
-#include "infoWindow.cpp"
 #include "logger.cpp"
+#include "infoWindow.cpp"
 #include "objectsWindow.cpp"
-#include "utils.cpp"
 #include "Painter.cpp"
 
 class Application {

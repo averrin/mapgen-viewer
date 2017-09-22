@@ -1,3 +1,6 @@
+#ifndef RIVER_H_
+#define RIVER_H_
+
 #include "Region.hpp"
 
 struct River {
@@ -5,3 +8,5 @@ struct River {
   PointList* points;
   std::vector<Region*> regions;
 };
+
+#endif

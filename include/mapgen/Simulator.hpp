@@ -1,6 +1,6 @@
 #ifndef SIM_H_
 #define SIM_H_
-#include "../../src/Map.cpp"
+#include "mapgen/Map.hpp"
 
 class Simulator{
 public:
@@ -15,6 +15,9 @@ private:
   void makeLighthouses();
   void makeLocationRoads();
   void makeForts();
+
+  template<typename Iter>
+  Iter select_randomly(Iter start, Iter end);
 
   Map* map;
   std::mt19937 _gen;

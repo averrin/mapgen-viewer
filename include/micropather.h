@@ -80,6 +80,7 @@ distribution.
 	// Assume not 64 bit pointers. Get a new compiler.
 	typedef unsigned MP_UPTR;
 #endif
+#include <cstring>
 
 namespace micropather
 {

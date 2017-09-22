@@ -2,6 +2,7 @@
 #include <string>
 #include <random>
 #include <cctype>
+#include "mapgen/names.hpp"
 
 const std::string _river_first_names[] = {"Alligator","Amazon","Arching","Arctic","Arrowhead","Bamboo","Black","Bland","Blue","Bogbeast","Boundless","Brilliant","Bursting","Calm","Charmed","Choral","Climbing","Cobalt","Cold","Coral","Crocodile","Crystal","Cursed","Dancing","Dark","Darkest","Dead","Deep","Distant","Dragonfly","Dread","Dreaded","Eastern","Emerald","Empty","Enchanted","Ethereal","Ever Reaching","Fair","Flowing","Foaming","Forbidden","Frothy","Frozen","Glassy","Gleaming","Glistening","Gray","Green","Harmony","Heaving","Homeless","Hungry","Infernal","Infinite","Invisible","Iris","Isolated","Jade","Laughing","Lifeless","Lilypad","Lion's Tail","Living","Lonely","Lotus","Lucent","Majestic","Mesmerizing","Mighty","Mirrored","Misty","Moaning","Molten","Moon-lit","Motionless","Moving","Narrow","New","Northern","Peaceful","Perfumed","Pleasant","Quiet","Raging","Rainy","Red","Restless","Rippling","Rocking","Rolling","Rough","Rushing","Sandy","Sanguine","Savage","Serene","Serpent","Shimmering","Silent","Sleeping","Slumbrous","Soundless","Southern","Sparkling","Sterile","Stern","Straitened","Sunny","Surging","Tadpole","Teal","Throbbing","Thundering","Tinted","Tortoise","Tossing","Tranquil","Treacherous","Troubled","Turbulent","Turquoise","Turtle","Uncanny","Unknown","Violent","Waveless","Western","Whispering","White","Wild","Windy","Wondering","Wrinkled"};
 const std::string _river_second_names[] = {"Creek","River","Stream","Brook","Run","Tributary","Beck","Rill"};
@@ -27,31 +28,31 @@ const std::string _city_second_names[] = {"acre","band","barrow","bay","bell","b
 std::vector<std::string> city_first_names (_city_first_names, _city_first_names + sizeof(_city_first_names) / sizeof(_city_first_names[0]) );
 std::vector<std::string> city_second_names (_city_second_names, _city_second_names + sizeof(_city_second_names) / sizeof(_city_second_names[0]) );
 
-
-std::mt19937 gen(std::clock());
-template<typename Iter>
-Iter select_randomly(Iter start, Iter end) {
-  std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-  std::advance(start, dis(gen));
-  return start;
-}
-
-std::string generateRiverName() {
-  std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end());
-  std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end());
-  return fn+" "+sn;
-}
-
-std::string generateLandName() {
-  return *select_randomly(island_first_names.begin(), island_first_names.end()) + " " + *select_randomly(island_second_names.begin(), island_second_names.end());
+namespace names {
+  template<typename Iter>
+  Iter select_randomly(Iter start, Iter end, std::mt19937 gen) {
+    std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+    std::advance(start, dis(gen));
+    return start;
   }
 
-std::string generateSeaName() {
-  return *select_randomly(sea_first_names.begin(), sea_first_names.end()) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end());
-}
+  std::string generateRiverName(std::mt19937 gen) {
+    std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end(), gen);
+    std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end(), gen);
+    return fn+" "+sn;
+  }
 
-std::string generateCityName() {
-  auto name = *select_randomly(city_first_names.begin(), city_first_names.end())  + *select_randomly(city_second_names.begin(), city_second_names.end());
-  name[0] = toupper(name[0]);
-  return name;
+  std::string generateLandName(std::mt19937 gen) {
+    return *select_randomly(island_first_names.begin(), island_first_names.end(), gen) + " " + *select_randomly(island_second_names.begin(), island_second_names.end(), gen);
+    }
+
+  std::string generateSeaName(std::mt19937 gen) {
+    return *select_randomly(sea_first_names.begin(), sea_first_names.end(), gen) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end(), gen);
+  }
+
+  std::string generateCityName(std::mt19937 gen) {
+    auto name = *select_randomly(city_first_names.begin(), city_first_names.end(), gen)  + *select_randomly(city_second_names.begin(), city_second_names.end(), gen);
+    name[0] = toupper(name[0]);
+    return name;
+  }
 }

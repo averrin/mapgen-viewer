@@ -1,4 +1,7 @@
+#ifndef OBJW_CPP_
+#define OBJW_CPP_
 #include "mapgen/MapGenerator.hpp"
+#include "mapgen/Region.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <imgui.h>
@@ -245,3 +248,5 @@ std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window, Map *map) {
 
   return objectPolygons;
 }
+
+#endif

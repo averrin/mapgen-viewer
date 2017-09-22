@@ -9,9 +9,6 @@
 #include <functional>
 #include <random>
 
-//TODO: fix it and use header
-#include "../../src/Map.cpp"
-
 #include "Region.hpp"
 #include "State.hpp"
 #include "Simulator.hpp"
