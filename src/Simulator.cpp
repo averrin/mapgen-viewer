@@ -16,7 +16,7 @@ void Simulator::simulate() {
 
 void Simulator::makeRoads() {
   map->roads.clear();
-  currentOperation = "Making roads...";
+  map->status = "Making roads...";
   _pather = new micropather::MicroPather(map);
 
   MegaCluster *biggestCluster;
@@ -36,7 +36,7 @@ void Simulator::makeRoads() {
       k++;
       char op[100];
       sprintf(op, "Making roads [%d/%d]", k, tc);
-      currentOperation = op;
+      map->status = op;
       micropather::MPVector<void *> path;
       float totalCost = 0;
       _pather->Reset();
@@ -52,7 +52,7 @@ void Simulator::makeRoads() {
 }
 
 void Simulator::makeCaves() {
-  currentOperation = "Digging caves...";
+  map->status = "Digging caves...";
   int i = 0;
   for (auto c : map->clusters) {
     if (c->biom.name != ROCK.name) {
@@ -76,7 +76,7 @@ void Simulator::makeCaves() {
 }
 
 void Simulator::upgradeCities() {
-  currentOperation = "Upgrade cities...";
+  map->status = "Upgrade cities...";
   std::vector<City *> _cities;
   for (auto state : map->states) {
     _cities = map->filterObjects(
@@ -101,7 +101,7 @@ void Simulator::upgradeCities() {
 }
 
 void Simulator::removeBadPorts() {
-  currentOperation = "Abaddon ports...";
+  map->status = "Abaddon ports...";
   std::vector<City *> cities;
   int n = 0;
   std::copy_if(map->cities.begin(), map->cities.end(),
@@ -143,7 +143,7 @@ void Simulator::removeBadPorts() {
 }
 
 void Simulator::makeLighthouses() {
-  currentOperation = "Make lighthouses...";
+  map->status = "Make lighthouses...";
   std::vector<Region *> cache;
   for (auto r : map->regions) {
     if (r->city != nullptr) {
@@ -177,7 +177,7 @@ void Simulator::makeLighthouses() {
 }
 
 void Simulator::makeLocationRoads() {
-  currentOperation = "Make small roads...";
+  map->status = "Make small roads...";
   for (auto l : map->locations) {
     auto mc = l->region->megaCluster;
     if (mc->cities.size() == 0) {
@@ -210,7 +210,7 @@ void Simulator::makeLocationRoads() {
 }
 
 void Simulator::makeForts() {
-  currentOperation = "Make forts...";
+  map->status = "Make forts...";
   // TODO: uncluster it too
   std::vector<Region *> regions;
   for (auto mc : map->megaClusters) {

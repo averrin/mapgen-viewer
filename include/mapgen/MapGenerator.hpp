@@ -44,7 +44,6 @@ public:
 
   bool simpleRivers;
   bool ready;
-  std::string currentOperation;
   float temperature;
   Map* map;
   Simulator* simulator;

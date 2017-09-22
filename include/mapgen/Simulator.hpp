@@ -6,7 +6,6 @@ class Simulator{
 public:
   Simulator(Map* m, int s);
   void simulate();
-  std::string currentOperation;
 
 private:
   void makeRoads();

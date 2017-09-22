@@ -27,6 +27,8 @@ public:
   std::vector<Location *> locations;
   std::vector<Road *> roads;
 
+  std::string status;
+
   float getRegionDistance(Region *r, Region *r2) {
     Point p = r->site;
     Point p2 = r2->site;

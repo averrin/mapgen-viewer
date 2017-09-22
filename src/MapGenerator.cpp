@@ -56,7 +56,7 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   _relax = DEFAULT_RELAX;
   simpleRivers = true;
   _terrainType = "basic";
-  currentOperation = "";
+  map->status = "";
   temperature = DEFAULT_TEMPERATURE;
   map = nullptr;
   simulator = nullptr;
@@ -64,7 +64,7 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
 }
 
 void MapGenerator::makeStates() {
-  currentOperation = "Making states...";
+  map->status = "Making states...";
   _bbox = sf::Rect<double>(0, 0, _w, _h);
   VoronoiDiagramGenerator vdg;
   auto sites = new std::vector<sf::Vector2<double>>();
@@ -145,7 +145,7 @@ void MapGenerator::makeStates() {
 }
 
 void MapGenerator::simplifyRivers() {
-  currentOperation = "Simplify rivers...";
+  map->status = "Simplify rivers...";
   for (auto r : map->rivers) {
     PointList *rvr = r->points;
     PointList sr;
@@ -189,7 +189,13 @@ void MapGenerator::simplifyRivers() {
   std::cout << "end\n" << std::flush;
 }
 
-void MapGenerator::makeRelax() { _diagram.reset(_vdg.relax()); }
+void MapGenerator::makeRelax() {
+  try {
+    _diagram.reset(_vdg.relax());
+  } catch (const std::exception& e) {
+    std::cout<<"Relax failed"<<std::endl<<std::flush;
+  }
+}
 
 void MapGenerator::seed() {
   _seed = std::clock();
@@ -250,7 +256,7 @@ void MapGenerator::update() {
 }
 
 void MapGenerator::startSimulation() {
-  currentOperation = "";
+  map->status = "";
   ready = false;
   simulator->simulate();
   ready = true;
@@ -271,7 +277,7 @@ void MapGenerator::getSea(std::vector<Region *> *seas, Region *base,
 };
 
 void MapGenerator::makeCities() {
-  currentOperation = "Founding cities...";
+  map->status = "Founding cities...";
   MegaCluster *biggestCluster;
   for (auto c : map->megaClusters) {
     if (c->isLand) {
@@ -456,7 +462,7 @@ void MapGenerator::makeCities() {
 }
 
 void MapGenerator::makeMinerals() {
-  currentOperation = "Search for minerals...";
+  map->status = "Search for minerals...";
   utils::NoiseMapBuilderPlane heightMapBuilder;
   heightMapBuilder.SetDestNoiseMap(_mineralsMap);
 
@@ -502,7 +508,7 @@ void MapGenerator::setMapTemplate(const char *templateName) {
 }
 
 void MapGenerator::makeHeights() {
-  currentOperation = "Making mountains and seas...";
+  map->status = "Making mountains and seas...";
   utils::NoiseMapBuilderPlane heightMapBuilder;
   heightMapBuilder.SetDestNoiseMap(_heightMap);
 
@@ -566,7 +572,7 @@ void MapGenerator::makeHeights() {
 }
 
 void MapGenerator::makeRiver(Region *r) {
-  currentOperation = "Making rivers...";
+  map->status = "Making rivers...";
   std::vector<Cell *> visited;
   Cell *c = r->cell;
   float z = r->getHeight(r->site);
@@ -639,7 +645,7 @@ void MapGenerator::makeRiver(Region *r) {
 
 void MapGenerator::makeRivers() {
   // TODO: make more rivers
-  currentOperation = "Making rivers...";
+  map->status = "Making rivers...";
   map->rivers.clear();
 
   std::vector<Region *> localMaximums;
@@ -671,7 +677,7 @@ void MapGenerator::makeRivers() {
 }
 
 void MapGenerator::makeFinalRegions() {
-  currentOperation = "Making forrests and deserts...";
+  map->status = "Making forrests and deserts...";
   for (auto r : map->regions) {
     if (r->biom.name == LAKE.name) {
       r->minerals = 0;
@@ -736,7 +742,7 @@ void MapGenerator::makeFinalRegions() {
 }
 
 void MapGenerator::makeRegions() {
-  currentOperation = "Spliting land and sea...";
+  map->status = "Spliting land and sea...";
   _cells.clear();
   map->regions.clear();
   map->regions.reserve(_diagram->cells.size());
@@ -786,7 +792,7 @@ void MapGenerator::makeRegions() {
 bool isDiscard(const Cluster *c) { return c->regions.size() == 0; }
 
 void MapGenerator::calcTemp() {
-  currentOperation = "Making world cool...";
+  map->status = "Making world cool...";
   for (auto r : map->regions) {
     if (!r->megaCluster->isLand) {
       r->temperature = temperature + 5;
@@ -806,7 +812,7 @@ void MapGenerator::calcTemp() {
 }
 
 void MapGenerator::calcHumidity() {
-  currentOperation = "Making world moist...";
+  map->status = "Making world moist...";
   for (auto r : map->regions) {
     if (!r->megaCluster->isLand) {
       r->humidity = 1;
@@ -847,7 +853,7 @@ void MapGenerator::calcHumidity() {
 }
 
 void MapGenerator::makeMegaClusters() {
-  currentOperation = "Finding far lands...";
+  map->status = "Finding far lands...";
   map->megaClusters.clear();
   std::map<Region *, MegaCluster *> _megaClusters;
   for (auto r : map->regions) {
@@ -914,7 +920,7 @@ void MapGenerator::makeMegaClusters() {
 }
 
 void MapGenerator::makeClusters() {
-  currentOperation = "Meeting with neighbors...";
+  map->status = "Meeting with neighbors...";
   map->clusters.clear();
   cellsMap.clear();
   std::map<Cell *, Cluster *> _clusters;
@@ -1003,13 +1009,13 @@ bool damagedCell(Cell *c) {
 }
 
 void MapGenerator::makeDiagram() {
-  currentOperation = "Making nothing...";
+  map->status = "Making nothing...";
   _bbox = sf::Rect<double>(0, 0, _w, _h);
   _sites = new std::vector<sf::Vector2<double>>();
   genRandomSites(*_sites, _bbox, _w, _h, _pointsCount);
   _diagram.reset(_vdg.compute(*_sites, _bbox));
   for (int n = 0; n < _relax; n++) {
-    currentOperation = "Relaxing...";
+    map->status = "Relaxing...";
     makeRelax();
   }
 
