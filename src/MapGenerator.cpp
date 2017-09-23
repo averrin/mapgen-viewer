@@ -290,7 +290,7 @@ void MapGenerator::makeCities() {
     if (!mc->isLand) {
       continue;
     }
-    places = map->filterObjects(mc->regions,
+    places = mg::filterObjects(mc->regions,
                                 (filterFunc<Region>)[&](Region * r) {
                                   bool cond = r->city == nullptr &&
                                               r->minerals > 1 &&
@@ -330,7 +330,7 @@ void MapGenerator::makeCities() {
     if (!mc->isLand) {
       continue;
     }
-    places = map->filterObjects(
+    places = mg::filterObjects(
         mc->regions,
         (filterFunc<Region>)[&](Region * r) {
           return r->city == nullptr && r->nice > 0.8 &&
@@ -367,7 +367,7 @@ void MapGenerator::makeCities() {
     int b = 200;
 
     std::vector<Region *> cache;
-    places = map->filterObjects(
+    places = mg::filterObjects(
         mc->regions,
         (filterFunc<Region>)[&](Region * r) {
           if (r->megaCluster->cities.size() == 0) {
@@ -425,7 +425,7 @@ void MapGenerator::makeCities() {
 
   for (auto mc : map->megaClusters) {
     if (!mc->hasPort && mc->cities.size() > 0) {
-      places = map->filterObjects(
+      places = mg::filterObjects(
           mc->regions,
           (filterFunc<Region>)[&](Region * r) {
 

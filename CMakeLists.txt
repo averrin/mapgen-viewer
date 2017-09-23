@@ -57,8 +57,8 @@ add_executable(${EXECUTABLE_NAME}
   src/Simulator.cpp
   src/MapGenerator.cpp
   src/Painter.cpp
-  # src/objectsWindow.cpp
-  # src/infoWindow.cpp
+  src/objectsWindow.cpp
+  src/infoWindow.cpp
   # src/logger.cpp
   src/application.cpp
   src/main.cpp

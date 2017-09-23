@@ -6,10 +6,6 @@
 #include "Road.hpp"
 #include "micropather.h"
 #include <cstring>
-#include <functional>
-
-template <typename T> using filterFunc = std::function<bool(T *)>;
-template <typename T> using sortFunc = std::function<bool(T *, T *)>;
 
 class Map : public micropather::Graph {
 public:
@@ -32,9 +28,6 @@ public:
   void AdjacentCost(void *state, MP_VECTOR<micropather::StateCost> *adjacent);
   void PrintStateInfo(void *state);
 
-  template <typename T>
-  std::vector<T *> filterObjects(std::vector<T *> regions,
-                                      filterFunc<T> filter, sortFunc<T> sort);
 };
 
 #endif

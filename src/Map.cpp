@@ -62,13 +62,3 @@ void Map::AdjacentCost(void *state,
 };
 void Map::PrintStateInfo(void *state){};
 
-template <typename T>
-std::vector<T *> Map::filterObjects(std::vector<T *> regions,
-                                    filterFunc<T> filter, sortFunc<T> sort) {
-  std::vector<T *> places;
-
-  std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
-               filter);
-  std::sort(places.begin(), places.end(), sort);
-  return places;
-}

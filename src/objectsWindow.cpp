@@ -2,22 +2,15 @@
 #define OBJW_CPP_
 #include "mapgen/MapGenerator.hpp"
 #include "mapgen/Region.hpp"
+#include "mapgen/ObjectsWindow.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <imgui.h>
 
-std::vector<bool> selection_mask;
-std::vector<bool> mega_selection_mask;
-std::vector<bool> rivers_selection_mask;
-std::vector<bool> cities_selection_mask;
-std::vector<bool> location_selection_mask;
-
-template <typename T> using selectedFunc = std::function<void(T *)>;
-template <typename T> using openedFunc = std::function<void(T *)>;
-template <typename T> using titleFunc = std::function<std::string(T *)>;
+ObjectsWindow::ObjectsWindow(sf::RenderWindow * w, Map* m) : window(w), map(m){}
 
 template <typename T>
-void listObjects(std::vector<T *> objects, std::vector<bool> *mask,
+void ObjectsWindow::listObjects(std::vector<T *> objects, std::vector<bool> *mask,
                  std::string title, selectedFunc<T> selected,
                  openedFunc<T> opened, titleFunc<T> getTitle) {
   int n = int(objects.size());
@@ -66,7 +59,7 @@ void listObjects(std::vector<T *> objects, std::vector<bool> *mask,
   }
 }
 
-void higlightCluster(std::vector<sf::ConvexShape> *objectPolygons,
+void ObjectsWindow::higlightCluster(std::vector<sf::ConvexShape> *objectPolygons,
                      Cluster *cluster) {
   for (auto region : cluster->regions) {
     sf::ConvexShape polygon;
@@ -87,7 +80,7 @@ void higlightCluster(std::vector<sf::ConvexShape> *objectPolygons,
   }
 }
 
-void higlightLocation(std::vector<sf::ConvexShape> *objectPolygons,
+void ObjectsWindow::higlightLocation(std::vector<sf::ConvexShape> *objectPolygons,
                       Location *location) {
   auto regions = location->region->neighbors;
   for (auto region : regions) {
@@ -109,7 +102,7 @@ void higlightLocation(std::vector<sf::ConvexShape> *objectPolygons,
   }
 }
 
-std::vector<sf::ConvexShape> objectsWindow(sf::RenderWindow *window, Map *map) {
+std::vector<sf::ConvexShape> ObjectsWindow::draw() {
   std::vector<sf::ConvexShape> objectPolygons;
 
   ImGui::Begin("Objects");

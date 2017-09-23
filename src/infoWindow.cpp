@@ -1,9 +1,15 @@
 #include "mapgen/MapGenerator.hpp"
 #include "mapgen/Region.hpp"
+#include "mapgen/InfoWindow.hpp"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <imgui.h>
+#include <functional>
 
-void infoWindow(sf::RenderWindow *window, Region *currentRegion) {
+InfoWindow::InfoWindow(sf::RenderWindow *w) : window(w) {
+  
+}
+
+void InfoWindow::draw(Region *currentRegion) {
   ImGui::Begin("Region info");
 
   PointList points = currentRegion->getPoints();

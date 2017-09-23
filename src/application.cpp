@@ -1,8 +1,8 @@
 #include <imgui-SFML.h>
 #include <imgui.h>
 #include "logger.cpp"
-#include "infoWindow.cpp"
-#include "objectsWindow.cpp"
+#include "mapgen/InfoWindow.hpp"
+#include "mapgen/ObjectsWindow.hpp"
 #include "Painter.cpp"
 
 class Application {
@@ -12,6 +12,8 @@ class Application {
   std::thread generator;
   sf::RenderWindow *window;
   Painter* painter;
+  InfoWindow* infoWindow;
+  ObjectsWindow* objectsWindow;
 
   int relax = 0;
   int octaves;
@@ -53,6 +55,8 @@ public:
     generator = std::thread([&]() {});
     regen();
 
+    infoWindow = new InfoWindow(window);
+    objectsWindow = new ObjectsWindow(window, mapgen->map);
     log.AddLog("Welcome to Mapgen\n");
   }
 
@@ -68,6 +72,7 @@ public:
       relax = mapgen->getRelax();
       painter->update();
       ready = mapgen->ready;
+      objectsWindow = new ObjectsWindow(window, mapgen->map);
     });
   }
 
@@ -282,13 +287,14 @@ public:
       return;
     }
 
-    infoWindow(window, currentRegion);
+    infoWindow->draw(currentRegion);
+    objectsWindow->draw();
     painter->drawInfo(currentRegion);
   }
 
 
   void drawObjects() {
-    auto op = objectsWindow(window, mapgen->map);
+    auto op = objectsWindow->draw();
     painter->drawObjects(op);
   }
 

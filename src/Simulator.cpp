@@ -6,11 +6,6 @@
 #include <functional>
 #include <cstring>
 
-template<typename T>
-using filterFunc = std::function<bool (T*)>;
-template<typename T>
-using sortFunc = std::function<bool (T*, T*)>;
-
 Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {}
 
 void Simulator::simulate() {
@@ -88,7 +83,7 @@ void Simulator::upgradeCities() {
   map->status = "Upgrade cities...";
   std::vector<City *> _cities;
   for (auto state : map->states) {
-    _cities = map->filterObjects(
+    _cities = mg::filterObjects(
         map->cities,
         (filterFunc<City>)[&](City * c) { return c->region->state == state; },
         (sortFunc<City>)[&](City * c, City * c2) {
@@ -228,7 +223,7 @@ void Simulator::makeForts() {
     }
 
     for (auto state : mc->states) {
-      regions = map->filterObjects(mc->regions,
+      regions = mg::filterObjects(mc->regions,
                               (filterFunc<Region>)[&](Region * region) {
                                 return region->stateBorder &&
                                        !region->seaBorder &&

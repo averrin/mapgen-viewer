@@ -12,6 +12,7 @@
 #include "SelbaWard/SelbaWard.hpp"
 #include "mapgen/MapGenerator.hpp"
 #include "mapgen/Biom.hpp"
+#include "mapgen/utils.hpp"
 
 
 class Painter {
@@ -307,7 +308,7 @@ public:
   }
 
   void drawBorders() {
-    auto ends = map->filterObjects(
+    auto ends = mg::filterObjects(
         map->regions,
         (filterFunc<Region>)[&](Region * r) {
           if (r->stateBorder && !r->seaBorder &&
@@ -351,7 +352,7 @@ public:
       used->push_back(r);
     }
 
-    auto ns = map->filterObjects(
+    auto ns = mg::filterObjects(
         r->neighbors,
         (filterFunc<Region>)[&](Region * n) {
           if (n->stateBorder && !n->seaBorder &&
