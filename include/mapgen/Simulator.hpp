@@ -1,6 +1,7 @@
 #ifndef SIM_H_
 #define SIM_H_
 #include "mapgen/Map.hpp"
+#include <random>
 
 class Simulator{
 public:

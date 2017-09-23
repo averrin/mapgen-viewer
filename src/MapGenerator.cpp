@@ -7,6 +7,20 @@
 #include <iterator>
 #include <random>
 
+	template <typename T> using filterFunc = std::function<bool(T *)>;
+	template <typename T> using sortFunc = std::function<bool(T *, T *)>;
+
+  template <typename T>
+  std::vector<T *> filterObjects(std::vector<T *> regions,
+                                      filterFunc<T> filter, sortFunc<T> sort) {
+    std::vector<T *> places;
+
+    std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
+                 filter);
+    std::sort(places.begin(), places.end(), sort);
+    return places;
+  }
+
 const int DEFAULT_RELAX = 5;
 
 double normalize(double in, int dimension) {
@@ -290,7 +304,7 @@ void MapGenerator::makeCities() {
     if (!mc->isLand) {
       continue;
     }
-    places = mg::filterObjects(mc->regions,
+    places = filterObjects(mc->regions,
                                 (filterFunc<Region>)[&](Region * r) {
                                   bool cond = r->city == nullptr &&
                                               r->minerals > 1 &&
@@ -330,7 +344,7 @@ void MapGenerator::makeCities() {
     if (!mc->isLand) {
       continue;
     }
-    places = mg::filterObjects(
+    places = filterObjects(
         mc->regions,
         (filterFunc<Region>)[&](Region * r) {
           return r->city == nullptr && r->nice > 0.8 &&
@@ -367,7 +381,7 @@ void MapGenerator::makeCities() {
     int b = 200;
 
     std::vector<Region *> cache;
-    places = mg::filterObjects(
+    places = filterObjects(
         mc->regions,
         (filterFunc<Region>)[&](Region * r) {
           if (r->megaCluster->cities.size() == 0) {
@@ -425,7 +439,7 @@ void MapGenerator::makeCities() {
 
   for (auto mc : map->megaClusters) {
     if (!mc->hasPort && mc->cities.size() > 0) {
-      places = mg::filterObjects(
+      places = filterObjects(
           mc->regions,
           (filterFunc<Region>)[&](Region * r) {
 

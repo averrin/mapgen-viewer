@@ -310,7 +310,7 @@ public:
   void drawBorders() {
     auto ends = mg::filterObjects(
         map->regions,
-        (filterFunc<Region>)[&](Region * r) {
+        (mg::filterFunc<Region>)[&](Region * r) {
           if (r->stateBorder && !r->seaBorder &&
               std::count_if(r->neighbors.begin(), r->neighbors.end(),
                             [&](Region *n) {
@@ -321,7 +321,7 @@ public:
           }
           return false;
         },
-        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+        (mg::sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
 
     std::vector<Region *> used;
     for (auto r : ends) {
@@ -354,7 +354,7 @@ public:
 
     auto ns = mg::filterObjects(
         r->neighbors,
-        (filterFunc<Region>)[&](Region * n) {
+        (mg::filterFunc<Region>)[&](Region * n) {
           if (n->stateBorder && !n->seaBorder &&
               std::count(used->begin(), used->end(), n) == 0 &&
               n->state == r->state) {
@@ -362,7 +362,7 @@ public:
           }
           return false;
         },
-        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+        (mg::sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
 
     if (ns.size() > 0) {
       nextBorder(ns[0], used, line, ends);
