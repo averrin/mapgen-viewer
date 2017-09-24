@@ -14,6 +14,7 @@
 #include "mapgen/MapGenerator.hpp"
 #include "mapgen/utils.hpp"
 
+//TODO: move ints to utils.cpp
 template <typename T> using filterFunc = std::function<bool(T *)>;
 template <typename T> using sortFunc = std::function<bool(T *, T *)>;
 
@@ -30,10 +31,12 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 
 class Painter {
 public:
+  //TODO: use map instead mapgen
   Painter(sf::RenderWindow *w, MapGenerator *m, std::string v)
       : window(w), mapgen(m), VERSION(v) {
     loadIcons();
     initProgressBar();
+    //TODO: use whereami
     sffont.loadFromFile("./font.ttf");
 
     sf::Vector2u windowSize = window->getSize();

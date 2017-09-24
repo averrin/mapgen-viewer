@@ -23,10 +23,6 @@
 
 const int DEFAULT_RELAX = 5;
 
-double normalize(double in, int dimension) {
-  return in / (float)dimension * 1.8 - 0.9;
-}
-
 bool cellsOrdered(Cell *c1, Cell *c2) {
   sf::Vector2<double> s1 = c1->site.p;
   sf::Vector2<double> s2 = c2->site.p;

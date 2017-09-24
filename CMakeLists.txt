@@ -42,6 +42,9 @@ add_executable(${EXECUTABLE_NAME}
   include/imgui/imgui_draw.cpp
   include/imgui/imgui-SFML.cpp
   ${BACKWARD_ENABLE}
+  include/micropather.cpp
+  include/noiseutils.cpp
+
   src/names.cpp
   src/utils.cpp
   src/Biom.cpp
@@ -52,8 +55,6 @@ add_executable(${EXECUTABLE_NAME}
   src/State.cpp
   src/Map.cpp
 
-  src/micropather.cpp
-  src/noiseutils.cpp
   src/Simulator.cpp
   src/MapGenerator.cpp
   src/Painter.cpp
@@ -61,6 +62,7 @@ add_executable(${EXECUTABLE_NAME}
   src/infoWindow.cpp
   # src/logger.cpp
   src/application.cpp
+
   src/main.cpp
 )
 
