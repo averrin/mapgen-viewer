@@ -20,7 +20,9 @@
     return places;
   }
 
-Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {}
+Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {
+  _gen = new std::mt19937(_seed);
+}
 
 void Simulator::simulate() {
   makeRoads();
@@ -119,7 +121,7 @@ void Simulator::upgradeCities() {
 }
 
 void Simulator::removeBadPorts() {
-  map->status = "Abaddon ports...";
+  map->status = "Abandonning ports...";
   std::vector<City *> cities;
   int n = 0;
   std::copy_if(map->cities.begin(), map->cities.end(),
@@ -264,6 +266,6 @@ void Simulator::makeForts() {
 template <typename Iter>
 Iter Simulator::select_randomly(Iter start, Iter end) {
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-  std::advance(start, dis(_gen));
+  std::advance(start, dis(*_gen));
   return start;
 }

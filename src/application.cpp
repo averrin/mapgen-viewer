@@ -42,23 +42,19 @@ public:
 #endif
 
     window->setVerticalSyncEnabled(true);
-    window->clear(sf::Color::Green);
     ImGui::SFML::Init(*window);
     char windowTitle[255] = "MapGen";
 
     window->setTitle(windowTitle);
     window->resetGLStates();
 
-    std::cout << "before mg" << std::endl << std::flush;
     initMapGen();
-    std::cout << "before painter" << std::endl << std::flush;
-    painter = new Painter(window, mapgen->map, VERSION);
-    std::cout << "after painter" << std::endl << std::flush;
+    painter = new Painter(window, mapgen, VERSION);
     generator = std::thread([&]() {});
     regen();
 
     infoWindow = new InfoWindow(window);
-    objectsWindow = new ObjectsWindow(window, mapgen->map);
+    objectsWindow = new ObjectsWindow(window, mapgen);
   }
 
   void regen() {
@@ -73,7 +69,6 @@ public:
       relax = mapgen->getRelax();
       painter->update();
       ready = mapgen->ready;
-      objectsWindow = new ObjectsWindow(window, mapgen->map);
     });
   }
 
@@ -285,44 +280,37 @@ public:
     }
 
     infoWindow->draw(currentRegion);
-    objectsWindow->draw();
     painter->drawInfo(currentRegion);
   }
 
   void drawObjects() {
-    auto op = objectsWindow->draw();
-    painter->drawObjects(op);
+    objectsWindow->draw();
+    painter->drawObjects(objectsWindow->objectPolygons);
   }
 
   void serve() {
     sf::Clock deltaClock;
 
-    std::cout << "before serve" << std::endl << std::flush;
     bool faded = false;
     while (window->isOpen()) {
-      std::cout << "serve" << std::endl << std::flush;
       sf::Event event;
       while (window->pollEvent(event)) {
         processEvent(event);
       }
 
-      std::cout << "before loading" << std::endl << std::flush;
       if (!ready) {
         if (!faded) {
           painter->fade();
           faded = true;
         }
         painter->drawLoading();
-        std::cout << "after loading" << std::endl << std::flush;
         continue;
       }
       faded = false;
 
       ImGui::SFML::Update(*window, deltaClock.restart());
 
-      std::cout << "before draw" << std::endl << std::flush;
       painter->draw();
-      std::cout << "after draw" << std::endl << std::flush;
 
       if (showUI) {
         drawObjects();

@@ -21,7 +21,7 @@ private:
   Iter select_randomly(Iter start, Iter end);
 
   Map* map;
-  std::mt19937 _gen;
+  std::mt19937* _gen;
   int _seed;
   micropather::MicroPather* _pather;
 };

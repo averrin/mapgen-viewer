@@ -55,7 +55,7 @@ bool clusterOrdered(Cluster *s1, Cluster *s2) {
 template <typename Iter>
 Iter MapGenerator::select_randomly(Iter start, Iter end) {
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-  std::advance(start, dis(_gen));
+  std::advance(start, dis(*_gen));
   return start;
 }
 
@@ -70,7 +70,7 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   temperature = biom::DEFAULT_TEMPERATURE;
   map = nullptr;
   simulator = nullptr;
-  _gen = std::mt19937(_seed);
+  _gen = new std::mt19937(_seed);
 }
 
 void MapGenerator::makeStates() {

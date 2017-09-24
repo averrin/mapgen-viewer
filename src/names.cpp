@@ -30,27 +30,27 @@ std::vector<std::string> city_second_names (_city_second_names, _city_second_nam
 
 namespace names {
   template<typename Iter>
-  Iter select_randomly(Iter start, Iter end, std::mt19937 gen) {
+  Iter select_randomly(Iter start, Iter end, std::mt19937 *gen) {
     std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
-    std::advance(start, dis(gen));
+    std::advance(start, dis(*gen));
     return start;
   }
 
-  std::string generateRiverName(std::mt19937 gen) {
+  std::string generateRiverName(std::mt19937 *gen) {
     std::string fn = *select_randomly(river_first_names.begin(), river_first_names.end(), gen);
     std::string sn = *select_randomly(river_second_names.begin(), river_second_names.end(), gen);
     return fn+" "+sn;
   }
 
-  std::string generateLandName(std::mt19937 gen) {
+  std::string generateLandName(std::mt19937 *gen) {
     return *select_randomly(island_first_names.begin(), island_first_names.end(), gen) + " " + *select_randomly(island_second_names.begin(), island_second_names.end(), gen);
     }
 
-  std::string generateSeaName(std::mt19937 gen) {
+  std::string generateSeaName(std::mt19937 *gen) {
     return *select_randomly(sea_first_names.begin(), sea_first_names.end(), gen) + " " + *select_randomly(sea_second_names.begin(), sea_second_names.end(), gen);
   }
 
-  std::string generateCityName(std::mt19937 gen) {
+  std::string generateCityName(std::mt19937 *gen) {
     auto name = *select_randomly(city_first_names.begin(), city_first_names.end(), gen)  + *select_randomly(city_second_names.begin(), city_second_names.end(), gen);
     name[0] = toupper(name[0]);
     return name;

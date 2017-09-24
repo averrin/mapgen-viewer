@@ -30,13 +30,10 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 
 class Painter {
 public:
-  Painter(sf::RenderWindow *w, Map *m, std::string v)
-      : window(w), map(m), VERSION(v) {
-    std::cout << "before icons" << std::endl << std::flush;
+  Painter(sf::RenderWindow *w, MapGenerator *m, std::string v)
+      : window(w), mapgen(m), VERSION(v) {
     loadIcons();
-    std::cout << "before pb" << std::endl << std::flush;
     initProgressBar();
-    std::cout << "before font" << std::endl << std::flush;
     sffont.loadFromFile("./font.ttf");
 
     sf::Vector2u windowSize = window->getSize();
@@ -45,6 +42,7 @@ public:
     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
+    window->clear(bgColor);
   };
 
 private:
@@ -56,6 +54,7 @@ private:
   sf::Color bgColor;
   float color[3] = {0.12f, 0.12f, 0.12f};
   Map *map;
+  MapGenerator *mapgen;
   std::string VERSION;
   bool needUpdate = true;
   sf::Clock clock;
@@ -114,9 +113,7 @@ public:
     rectangle.setFillColor(color);
     rectangle.setPosition(0, 0);
 
-    std::cout << "before draw" << std::endl << std::flush;
     window->draw(rectangle);
-    std::cout << "after draw" << std::endl << std::flush;
   }
 
   void drawLoading() {
@@ -139,9 +136,8 @@ public:
     bg.setPosition(sf::Vector2f(middle.x, middle.y + 37.f));
     window->draw(bg);
 
-    if (map != nullptr) {
-      std::cout << map->status << std::endl << std::flush;
-      sf::Text operation(map->status, sffont);
+    if (mapgen->map != nullptr) {
+      sf::Text operation(mapgen->map->status, sffont);
       operation.setCharacterSize(20);
       operation.setColor(sf::Color::White);
 
@@ -154,10 +150,11 @@ public:
   }
 
   void drawInfo(Region *currentRegion) {
+    infoPolygons.clear();
     sf::ConvexShape selectedPolygon;
 
     if (currentRegion->location != nullptr && !roads) {
-      for (auto r : map->roads) {
+      for (auto r : mapgen->map->roads) {
         if (r->regions[0] != currentRegion->location->region &&
             r->regions.back() != currentRegion->location->region) {
           continue;
@@ -241,7 +238,7 @@ public:
 
   void drawRivers() {
     int rn = 0;
-    for (auto r : map->rivers) {
+    for (auto r : mapgen->map->rivers) {
       PointList *rvr = r->points;
       sw::Spline river;
       river.setThickness(3);
@@ -291,7 +288,7 @@ public:
   }
 
   void drawRoads() {
-    for (auto r : map->roads) {
+    for (auto r : mapgen->map->roads) {
       drawRoad(r);
     }
   }
@@ -334,7 +331,7 @@ public:
 
   void drawBorders() {
     auto ends = filterObjects(
-        map->regions,
+        mapgen->map->regions,
         (filterFunc<Region>)[&](Region * r) {
           if (r->stateBorder && !r->seaBorder &&
               std::count_if(r->neighbors.begin(), r->neighbors.end(),
@@ -349,6 +346,7 @@ public:
         (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
 
     std::vector<Region *> used;
+    std::vector<Region *> exclude;
     for (auto r : ends) {
       if (std::count(used.begin(), used.end(), r) == 0) {
         sw::Spline line;
@@ -356,7 +354,7 @@ public:
         col.a = 150;
         line.setColor(col);
         line.setThickness(4);
-        nextBorder(r, &used, &line, &ends);
+        nextBorder(r, &used, &line, &ends, &exclude);
 
         line.setBezierInterpolation();
         line.setInterpolationSteps(20);
@@ -368,7 +366,7 @@ public:
   }
 
   void nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
-                  std::vector<Region *> *ends) {
+                  std::vector<Region *> *ends, std::vector<Region *> *exclude) {
 
     if (std::count(used->begin(), used->end(), r) == 0) {
       int i = line->getVertexCount();
@@ -382,6 +380,7 @@ public:
         (filterFunc<Region>)[&](Region * n) {
           if (n->stateBorder && !n->seaBorder &&
               std::count(used->begin(), used->end(), n) == 0 &&
+              std::count(exclude->begin(), exclude->end(), n) == 0 &&
               n->state == r->state) {
             return true;
           }
@@ -390,9 +389,12 @@ public:
         (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
 
     if (ns.size() > 0) {
-      nextBorder(ns[0], used, line, ends);
+      nextBorder(ns[0], used, line, ends, exclude);
     } else if (std::count(ends->begin(), ends->end(), r) == 0) {
-      nextBorder(used->end()[-2], used, line, ends);
+      exclude->push_back(r);
+      used->pop_back();
+      line->removeVertex(line->getVertexCount()-1);
+        nextBorder(used->back(), used, line, ends, exclude);
     }
   }
 
@@ -414,11 +416,12 @@ public:
   }
 
   void update() {
+    infoPolygons.clear();
     polygons.clear();
     poi.clear();
     sprites.clear();
 
-    for (auto mc : map->megaClusters) {
+    for (auto mc : mapgen->map->megaClusters) {
       for (auto p : mc->resourcePoints) {
         float rad = p->minerals * 3 + 1;
         sf::CircleShape poiShape(rad);
@@ -437,7 +440,7 @@ public:
       }
     }
 
-    std::vector<Region *> regions = map->regions;
+    std::vector<Region *> regions = mapgen->map->regions;
     polygons.reserve(regions.size());
     for (Region *region : regions) {
       sf::ConvexShape polygon;

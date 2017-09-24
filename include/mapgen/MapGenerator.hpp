@@ -90,7 +90,7 @@ private:
   Iter select_randomly(Iter start, Iter end);
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
-  std::mt19937 _gen;
+  std::mt19937 *_gen;
 };
 
 #endif

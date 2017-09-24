@@ -7,7 +7,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <imgui.h>
 
-ObjectsWindow::ObjectsWindow(sf::RenderWindow * w, Map* m) : window(w), map(m){}
+ObjectsWindow::ObjectsWindow(sf::RenderWindow * w, MapGenerator* m) : window(w), mapgen(m){}
 
 template <typename T>
 void ObjectsWindow::listObjects(std::vector<T *> objects, std::vector<bool> *mask,
@@ -59,8 +59,7 @@ void ObjectsWindow::listObjects(std::vector<T *> objects, std::vector<bool> *mas
   }
 }
 
-void ObjectsWindow::higlightCluster(std::vector<sf::ConvexShape> *objectPolygons,
-                     Cluster *cluster) {
+void ObjectsWindow::higlightCluster(Cluster *cluster) {
   for (auto region : cluster->regions) {
     sf::ConvexShape polygon;
     PointList points = region->getPoints();
@@ -76,12 +75,11 @@ void ObjectsWindow::higlightCluster(std::vector<sf::ConvexShape> *objectPolygons
     polygon.setFillColor(col);
     polygon.setOutlineColor(col);
     polygon.setOutlineThickness(1);
-    objectPolygons->push_back(polygon);
+    objectPolygons.push_back(polygon);
   }
 }
 
-void ObjectsWindow::higlightLocation(std::vector<sf::ConvexShape> *objectPolygons,
-                      Location *location) {
+void ObjectsWindow::higlightLocation(Location *location) {
   auto regions = location->region->neighbors;
   for (auto region : regions) {
     sf::ConvexShape polygon;
@@ -98,18 +96,18 @@ void ObjectsWindow::higlightLocation(std::vector<sf::ConvexShape> *objectPolygon
     polygon.setFillColor(col);
     polygon.setOutlineColor(col);
     polygon.setOutlineThickness(1);
-    objectPolygons->push_back(polygon);
+    objectPolygons.push_back(polygon);
   }
 }
 
-std::vector<sf::ConvexShape> ObjectsWindow::draw() {
-  std::vector<sf::ConvexShape> objectPolygons;
+void ObjectsWindow::draw() {
+  objectPolygons.clear();
 
   ImGui::Begin("Objects");
   listObjects<MegaCluster>(
-      map->megaClusters, &mega_selection_mask, "MegaClusters",
+      mapgen->map->megaClusters, &mega_selection_mask, "MegaClusters",
       (selectedFunc<MegaCluster>)[&](MegaCluster * cluster) {
-        higlightCluster(&objectPolygons, cluster);
+        higlightCluster(cluster);
       },
       (openedFunc<MegaCluster>)[&](MegaCluster * cluster) {
         ImGui::Text("Regions: %zu", cluster->regions.size());
@@ -122,9 +120,9 @@ std::vector<sf::ConvexShape> ObjectsWindow::draw() {
       });
 
   listObjects<Cluster>(
-      map->clusters, &selection_mask, "Clusters",
+      mapgen->map->clusters, &selection_mask, "Clusters",
       (selectedFunc<Cluster>)[&](Cluster * cluster) {
-        higlightCluster(&objectPolygons, cluster);
+        higlightCluster(cluster);
       },
       (openedFunc<Cluster>)[&](Cluster * cluster) {
         if (cluster->megaCluster != nullptr) {
@@ -149,7 +147,7 @@ std::vector<sf::ConvexShape> ObjectsWindow::draw() {
       });
 
   // TODO: fix river edition
-  listObjects<River>(map->rivers, &rivers_selection_mask, "Rivers",
+  listObjects<River>(mapgen->map->rivers, &rivers_selection_mask, "Rivers",
                      (selectedFunc<River>)[&](River * river) {
                        for (auto region : river->regions) {
                          sf::ConvexShape polygon;
@@ -205,9 +203,9 @@ std::vector<sf::ConvexShape> ObjectsWindow::draw() {
                        return std::string(t);
                      });
 
-  listObjects<City>(map->cities, &cities_selection_mask, "Cities",
+  listObjects<City>(mapgen->map->cities, &cities_selection_mask, "Cities",
                     (selectedFunc<City>)[&](City * city) {
-                      higlightLocation(&objectPolygons, city);
+                      higlightLocation(city);
                     },
                     (openedFunc<City>)[&](City * city) {
                       ImGui::Text("Name: %s", city->name.c_str());
@@ -222,9 +220,9 @@ std::vector<sf::ConvexShape> ObjectsWindow::draw() {
                     });
 
   listObjects<Location>(
-      map->locations, &location_selection_mask, "Locations",
+      mapgen->map->locations, &location_selection_mask, "Locations",
       (selectedFunc<Location>)[&](Location * city) {
-        higlightLocation(&objectPolygons, city);
+        higlightLocation(city);
       },
       (openedFunc<Location>)[&](Location * city) {
         ImGui::Text("Name: %s", city->name.c_str());
@@ -238,8 +236,6 @@ std::vector<sf::ConvexShape> ObjectsWindow::draw() {
       });
 
   ImGui::End();
-
-  return objectPolygons;
 }
 
 #endif
