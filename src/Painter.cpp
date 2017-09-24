@@ -13,6 +13,7 @@
 #include "mapgen/Biom.hpp"
 #include "mapgen/MapGenerator.hpp"
 #include "mapgen/utils.hpp"
+#include "rang.hpp"
 
 //TODO: move ints to utils.cpp
 template <typename T> using filterFunc = std::function<bool(T *)>;
@@ -71,14 +72,14 @@ private:
 
   void loadIcons() {
     std::map<LocationType, std::string> iconMap = {
-        {CAPITAL, "./images/castle.png"}, {PORT, "images/docks.png"},
+        {CAPITAL, "images/castle.png"}, {PORT, "images/docks.png"},
         {MINE, "images/mine.png"},        {AGRO, "images/farm.png"},
         {TRADE, "images/trade.png"},      {LIGHTHOUSE, "images/lighthouse.png"},
         {CAVE, "images/cave.png"},        {FORT, "images/fort.png"}};
 
     for (auto pair : iconMap) {
       sf::Texture *icon = new sf::Texture();
-      std::cout << pair.second << std::endl << std::flush;
+      mg::info("Loading icon:", pair.second);
       icon->loadFromFile(pair.second);
       icon->setSmooth(true);
       icons.insert(std::make_pair(pair.first, icon));

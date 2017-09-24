@@ -34,7 +34,6 @@ public:
   float nice;
   City* city = nullptr;
   float distanceFormCapital;
-  bool coast;
   std::vector<Region*> neighbors;
   bool hasRoad = false;
   int traffic = 0;

@@ -1,4 +1,5 @@
 #include "mapgen/utils.hpp"
+#include "rang.hpp"
 
 namespace mg {
 	double getDistance(Point p, Point p2) {
@@ -18,4 +19,14 @@ namespace mg {
     std::sort(places.begin(), places.end(), sort);
     return places;
   }
+  void before(std::string method) {
+    std::cout << "Before: " << rang::fg::red << method << rang::style::reset << std::endl << std::flush;
+
+  };
+  void after(std::string method) {
+    std::cout << "After: " << rang::fg::green << method << rang::style::reset << std::endl << std::flush;
+  };
+  void info(std::string prefix, std::string value) {
+    std::cout << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
+  };
 };

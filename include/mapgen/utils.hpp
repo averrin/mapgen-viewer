@@ -14,5 +14,9 @@ namespace mg {
   template <typename T>
   std::vector<T *> filterObjects(std::vector<T *> regions,
                                  std::function<bool(T *)> filter, std::function<bool(T *, T *)> sort);
+
+  void before(std::string method);
+  void after(std::string method);
+  void info(std::string prefix, std::string value);
 };
 #endif

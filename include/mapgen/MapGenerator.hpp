@@ -14,6 +14,11 @@
 #include "Simulator.hpp"
 #include "micropather.h"
 
+typedef std::function<bool(Region *, Region *)> sameFunc;
+typedef std::function<void(Region *, Cluster *)> assignFunc;
+typedef std::function<void(Region *, Cluster *, std::map<Region *, Cluster *>*)> reassignFunc;
+typedef std::function<Cluster *(Region *)> createFunc;
+
 class MapGenerator {
 public:
   MapGenerator(int w, int h);
@@ -91,6 +96,11 @@ private:
 
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
   std::mt19937 *_gen;
+
+  std::vector<Cluster *> clusterize(sameFunc isSame,
+                                                  assignFunc assignCluster,
+                                                  reassignFunc reassignCluster,
+                                    createFunc createCluster);
 };
 
 #endif
