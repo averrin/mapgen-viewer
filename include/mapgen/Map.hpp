@@ -21,7 +21,7 @@ public:
   std::vector<Location *> locations;
   std::vector<Road *> roads;
 
-  std::string status;
+  std::string status = "";
 
   float getRegionDistance(Region *r, Region *r2);
   float LeastCostEstimate(void *stateStart, void *stateEnd);

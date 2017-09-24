@@ -1,19 +1,17 @@
-#include <imgui-SFML.h>
-#include <imgui.h>
-#include "logger.cpp"
+#include "Painter.cpp"
 #include "mapgen/InfoWindow.hpp"
 #include "mapgen/ObjectsWindow.hpp"
-#include "Painter.cpp"
+#include <imgui-SFML.h>
+#include <imgui.h>
 
 class Application {
   std::string VERSION;
-  AppLog log;
   MapGenerator *mapgen;
   std::thread generator;
   sf::RenderWindow *window;
-  Painter* painter;
-  InfoWindow* infoWindow;
-  ObjectsWindow* objectsWindow;
+  Painter *painter;
+  InfoWindow *infoWindow;
+  ObjectsWindow *objectsWindow;
 
   int relax = 0;
   int octaves;
@@ -44,20 +42,23 @@ public:
 #endif
 
     window->setVerticalSyncEnabled(true);
+    window->clear(sf::Color::Green);
     ImGui::SFML::Init(*window);
     char windowTitle[255] = "MapGen";
 
     window->setTitle(windowTitle);
     window->resetGLStates();
 
+    std::cout << "before mg" << std::endl << std::flush;
     initMapGen();
+    std::cout << "before painter" << std::endl << std::flush;
     painter = new Painter(window, mapgen->map, VERSION);
+    std::cout << "after painter" << std::endl << std::flush;
     generator = std::thread([&]() {});
     regen();
 
     infoWindow = new InfoWindow(window);
     objectsWindow = new ObjectsWindow(window, mapgen->map);
-    log.AddLog("Welcome to Mapgen\n");
   }
 
   void regen() {
@@ -91,7 +92,7 @@ public:
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    mapgen->setSeed(8701368);
+    // mapgen->setSeed(8701368);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -106,7 +107,6 @@ public:
       switch (event.key.code) {
       case sf::Keyboard::R:
         mapgen->seed();
-        log.AddLog("Update map\n");
         regen();
         break;
       case sf::Keyboard::Escape:
@@ -152,7 +152,6 @@ public:
       break;
     case sf::Event::Resized:
       mapgen->setSize(window->getSize().x, window->getSize().y);
-      log.AddLog("Update map\n");
       mapgen->update();
       painter->update();
       break;
@@ -163,7 +162,6 @@ public:
       break;
     }
   }
-
 
   void drawMainWindow() {
     ImGui::Begin("Mapgen");
@@ -179,7 +177,6 @@ public:
 
       if (ImGui::InputInt("Seed", &seed)) {
         mapgen->setSeed(seed);
-        log.AddLog("Update map\n");
       }
       ImGui::SameLine(320);
 
@@ -292,7 +289,6 @@ public:
     painter->drawInfo(currentRegion);
   }
 
-
   void drawObjects() {
     auto op = objectsWindow->draw();
     painter->drawObjects(op);
@@ -300,33 +296,37 @@ public:
 
   void serve() {
     sf::Clock deltaClock;
-    sf::Clock clock;
 
+    std::cout << "before serve" << std::endl << std::flush;
     bool faded = false;
     while (window->isOpen()) {
+      std::cout << "serve" << std::endl << std::flush;
       sf::Event event;
       while (window->pollEvent(event)) {
         processEvent(event);
       }
 
+      std::cout << "before loading" << std::endl << std::flush;
       if (!ready) {
         if (!faded) {
           painter->fade();
           faded = true;
         }
-        painter->drawLoading(&clock);
+        painter->drawLoading();
+        std::cout << "after loading" << std::endl << std::flush;
         continue;
       }
       faded = false;
 
       ImGui::SFML::Update(*window, deltaClock.restart());
 
+      std::cout << "before draw" << std::endl << std::flush;
       painter->draw();
+      std::cout << "after draw" << std::endl << std::flush;
 
       if (showUI) {
         drawObjects();
         drawMainWindow();
-        log.Draw("Mapgen: Log", &painter->info);
 
         if (painter->info) {
           drawInfo();
@@ -350,7 +350,6 @@ public:
         screenshot.saveToFile(s);
         char l[255];
         sprintf(l, "Screenshot created: %s\n", s);
-        log.AddLog(l);
         showUI = true;
         getScreenshot = false;
       }

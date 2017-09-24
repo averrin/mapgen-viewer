@@ -67,7 +67,6 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   _relax = DEFAULT_RELAX;
   simpleRivers = true;
   _terrainType = "basic";
-  map->status = "";
   temperature = biom::DEFAULT_TEMPERATURE;
   map = nullptr;
   simulator = nullptr;
@@ -289,13 +288,13 @@ void MapGenerator::getSea(std::vector<Region *> *seas, Region *base,
 
 void MapGenerator::makeCities() {
   map->status = "Founding cities...";
-  MegaCluster *biggestCluster;
-  for (auto c : map->megaClusters) {
-    if (c->isLand) {
-      biggestCluster = c;
-      break;
-    }
-  }
+  // MegaCluster *biggestCluster;
+  // for (auto c : map->megaClusters) {
+  //   if (c->isLand) {
+  //     biggestCluster = c;
+  //     break;
+  //   }
+  // }
 
   std::vector<Region *> places;
 

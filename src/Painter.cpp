@@ -10,16 +10,33 @@
 
 #include "../MapgenConfig.h"
 #include "SelbaWard/SelbaWard.hpp"
-#include "mapgen/MapGenerator.hpp"
 #include "mapgen/Biom.hpp"
+#include "mapgen/MapGenerator.hpp"
 #include "mapgen/utils.hpp"
 
+template <typename T> using filterFunc = std::function<bool(T *)>;
+template <typename T> using sortFunc = std::function<bool(T *, T *)>;
+
+template <typename T>
+std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
+                               sortFunc<T> sort) {
+  std::vector<T *> places;
+
+  std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
+               filter);
+  std::sort(places.begin(), places.end(), sort);
+  return places;
+}
 
 class Painter {
 public:
-  Painter(sf::RenderWindow *w, Map *m, std::string v) : window(w), map(m), VERSION(v) {
+  Painter(sf::RenderWindow *w, Map *m, std::string v)
+      : window(w), map(m), VERSION(v) {
+    std::cout << "before icons" << std::endl << std::flush;
     loadIcons();
+    std::cout << "before pb" << std::endl << std::flush;
     initProgressBar();
+    std::cout << "before font" << std::endl << std::flush;
     sffont.loadFromFile("./font.ttf");
 
     sf::Vector2u windowSize = window->getSize();
@@ -41,6 +58,7 @@ private:
   Map *map;
   std::string VERSION;
   bool needUpdate = true;
+  sf::Clock clock;
 
   void initProgressBar() {
     progressBar.setShowBackgroundAndFrame(true);
@@ -51,13 +69,14 @@ private:
 
   void loadIcons() {
     std::map<LocationType, std::string> iconMap = {
-        {CAPITAL, "images/castle.png"}, {PORT, "images/docks.png"},
-        {MINE, "images/mine.png"},      {AGRO, "images/farm.png"},
-        {TRADE, "images/trade.png"},    {LIGHTHOUSE, "images/lighthouse.png"},
-        {CAVE, "images/cave.png"},      {FORT, "images/fort.png"}};
+        {CAPITAL, "./images/castle.png"}, {PORT, "images/docks.png"},
+        {MINE, "images/mine.png"},        {AGRO, "images/farm.png"},
+        {TRADE, "images/trade.png"},      {LIGHTHOUSE, "images/lighthouse.png"},
+        {CAVE, "images/cave.png"},        {FORT, "images/fort.png"}};
 
     for (auto pair : iconMap) {
       sf::Texture *icon = new sf::Texture();
+      std::cout << pair.second << std::endl << std::flush;
       icon->loadFromFile(pair.second);
       icon->setSmooth(true);
       icons.insert(std::make_pair(pair.first, icon));
@@ -94,11 +113,14 @@ public:
     color.a = 150;
     rectangle.setFillColor(color);
     rectangle.setPosition(0, 0);
+
+    std::cout << "before draw" << std::endl << std::flush;
     window->draw(rectangle);
+    std::cout << "after draw" << std::endl << std::flush;
   }
 
-  void drawLoading(sf::Clock *clock) {
-    const float frame{clock->restart().asSeconds() * 0.3f};
+  void drawLoading() {
+    const float frame{clock.restart().asSeconds() * 0.3f};
     const float target{isIncreasing ? progressBar.getRatio() + frame
                                     : progressBar.getRatio() - frame};
     if (target < 0.f)
@@ -106,14 +128,6 @@ public:
     else if (target > 1.f)
       isIncreasing = false;
     progressBar.setRatio(target);
-    sf::Text operation(map->status, sffont);
-    operation.setCharacterSize(20);
-    operation.setColor(sf::Color::White);
-
-    auto middle = (sf::Vector2f(window->getSize())) / 2.f;
-    operation.setPosition(sf::Vector2f(
-        middle.x - operation.getGlobalBounds().width / 2.f, middle.y + 25.f));
-
     window->draw(progressBar);
 
     sf::RectangleShape bg;
@@ -121,14 +135,25 @@ public:
     bg.setFillColor(sf::Color::Black);
     bg.setOutlineColor(sf::Color::White);
     bg.setOutlineThickness(1);
-    middle = (sf::Vector2f(window->getSize()) - bg.getSize()) / 2.f;
+    auto middle = (sf::Vector2f(window->getSize()) - bg.getSize()) / 2.f;
     bg.setPosition(sf::Vector2f(middle.x, middle.y + 37.f));
     window->draw(bg);
-    window->draw(operation);
+
+    if (map != nullptr) {
+      std::cout << map->status << std::endl << std::flush;
+      sf::Text operation(map->status, sffont);
+      operation.setCharacterSize(20);
+      operation.setColor(sf::Color::White);
+
+      auto middle = (sf::Vector2f(window->getSize())) / 2.f;
+      operation.setPosition(sf::Vector2f(
+                                         middle.x - operation.getGlobalBounds().width / 2.f, middle.y + 25.f));
+      window->draw(operation);
+    }
     window->display();
   }
 
-  void drawInfo(Region* currentRegion) {
+  void drawInfo(Region *currentRegion) {
     sf::ConvexShape selectedPolygon;
 
     if (currentRegion->location != nullptr && !roads) {
@@ -308,9 +333,9 @@ public:
   }
 
   void drawBorders() {
-    auto ends = mg::filterObjects(
+    auto ends = filterObjects(
         map->regions,
-        (mg::filterFunc<Region>)[&](Region * r) {
+        (filterFunc<Region>)[&](Region * r) {
           if (r->stateBorder && !r->seaBorder &&
               std::count_if(r->neighbors.begin(), r->neighbors.end(),
                             [&](Region *n) {
@@ -321,7 +346,7 @@ public:
           }
           return false;
         },
-        (mg::sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
 
     std::vector<Region *> used;
     for (auto r : ends) {
@@ -352,9 +377,9 @@ public:
       used->push_back(r);
     }
 
-    auto ns = mg::filterObjects(
+    auto ns = filterObjects(
         r->neighbors,
-        (mg::filterFunc<Region>)[&](Region * n) {
+        (filterFunc<Region>)[&](Region * n) {
           if (n->stateBorder && !n->seaBorder &&
               std::count(used->begin(), used->end(), n) == 0 &&
               n->state == r->state) {
@@ -362,7 +387,7 @@ public:
           }
           return false;
         },
-        (mg::sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
 
     if (ns.size() > 0) {
       nextBorder(ns[0], used, line, ends);
@@ -507,9 +532,11 @@ public:
       if (temp) {
         if (region->temperature < biom::DEFAULT_TEMPERATURE) {
           sf::Color col(255, 0, 255);
-          col.r = std::min(255.f, 255 * (biom::DEFAULT_TEMPERATURE / region->temperature));
-          col.b = std::min(
-                           255.f, 255 * std::abs(1.f - (biom::DEFAULT_TEMPERATURE / region->temperature)));
+          col.r = std::min(
+              255.f, 255 * (biom::DEFAULT_TEMPERATURE / region->temperature));
+          col.b =
+              std::min(255.f, 255 * std::abs(1.f - (biom::DEFAULT_TEMPERATURE /
+                                                    region->temperature)));
 
           polygon.setFillColor(col);
         }
@@ -538,7 +565,7 @@ public:
         std::min(std::max(var_R, var_G), var_B); // Max. value of RGB
     float del_Max = var_Max - var_Min;           // Delta RGB value
 
-    float H;
+    float H = 0;
     float S;
     float L = (var_Max + var_Min) / 2;
 
@@ -585,5 +612,9 @@ public:
     return texture;
   }
 
-  void draw() { window->clear(bgColor); }
+  void draw() {
+    window->clear(bgColor);
+    drawMap();
+    drawMark();
+  }
 };
