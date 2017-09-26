@@ -7,6 +7,7 @@ class Simulator{
 public:
   Simulator(Map* m, int s);
   void simulate();
+  int years = 1;
 
 private:
   void makeRoads();

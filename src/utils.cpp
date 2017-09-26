@@ -29,4 +29,7 @@ namespace mg {
   void info(std::string prefix, std::string value) {
     std::cout << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
   };
+  void info(std::string prefix, int value) {
+    std::cout << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
+  };
 };

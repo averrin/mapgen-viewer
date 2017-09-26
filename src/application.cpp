@@ -19,10 +19,12 @@ class Application {
   int nPoints;
   int seed;
   int t = 0;
+  int years = 100;
   bool showUI = true;
   bool getScreenshot = false;
   bool ready = false;
   Region *lockedRegion = nullptr;
+  Region *rulerRegion = nullptr;
   bool lock = false;
 
 public:
@@ -62,6 +64,7 @@ public:
       generator.join();
     generator = std::thread([&]() {
       lockedRegion = nullptr;
+      rulerRegion = nullptr;
       lock = false;
       ready = false;
       mapgen->update();
@@ -87,7 +90,7 @@ public:
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    // mapgen->setSeed(8701368);
+    mapgen->setSeed(5836471);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -95,6 +98,7 @@ public:
   }
 
   void processEvent(sf::Event event) {
+    sf::Vector2<float> pos = window->mapPixelToCoords(sf::Mouse::getPosition(*window));
     ImGui::SFML::ProcessEvent(event);
 
     switch (event.type) {
@@ -119,11 +123,14 @@ public:
         painter->update();
         break;
       case sf::Keyboard::M:
-        painter->minerals = !painter->minerals;
-        painter->update();
+        rulerRegion = rulerRegion == nullptr ? mapgen->getRegion(pos) : nullptr;
         break;
       case sf::Keyboard::P:
         painter->roads = !painter->roads;
+        painter->invalidate();
+        break;
+      case sf::Keyboard::A:
+        painter->areas = !painter->areas;
         painter->invalidate();
         break;
       case sf::Keyboard::I:
@@ -250,13 +257,17 @@ public:
       painter->update();
     }
 
+    if (ImGui::SliderInt("Years", &years, 1, 1000)) {
+      mapgen->simulator->years = years;
+    }
     if (ImGui::Button("Start simulation")) {
       simulate();
     }
 
     ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
                 "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] "
-                "toggle pathes\n[RCLICK] toggle selection lock");
+                "toggle pathes\n[RCLICK] toggle selection lock\n"
+                "[M] for distance ruler");
 
     ImGui::End();
   }
@@ -281,6 +292,43 @@ public:
 
     infoWindow->draw(currentRegion);
     painter->drawInfo(currentRegion);
+
+    if (rulerRegion != nullptr) {
+      sf::ConvexShape rPolygon;
+      PointList points = rulerRegion->getPoints();
+      rPolygon.setPointCount(int(points.size()));
+      for (int pi = 0; pi < int(points.size()); pi++) {
+        Point p = points[pi];
+        rPolygon.setPoint(
+                                 pi, sf::Vector2f(static_cast<float>(p->x), static_cast<float>(p->y)));
+      }
+      rPolygon.setFillColor(sf::Color::Transparent);
+      rPolygon.setOutlineColor(sf::Color::Black);
+      rPolygon.setOutlineThickness(2);
+
+      sf::CircleShape site(2.f);
+      site.setFillColor(sf::Color::Red);
+      site.setPosition(static_cast<float>(rulerRegion->site->x - 1),
+                       static_cast<float>(rulerRegion->site->y - 1));
+      window->draw(rPolygon);
+      window->draw(site);
+
+      sf::Vertex line[2];
+      line[0].position = sf::Vector2f(static_cast<float>(rulerRegion->site->x), static_cast<float>(rulerRegion->site->y));
+      line[0].color  = sf::Color::Red;
+      line[1].position = sf::Vector2f(static_cast<float>(currentRegion->site->x), static_cast<float>(currentRegion->site->y));
+      line[1].color = sf::Color::Black;
+
+      window->draw(line, 2, sf::Lines);
+
+      char mt[40];
+      sprintf(mt, "%f", mg::getDistance(rulerRegion->site, currentRegion->site));
+      sf::Text mark(mt, painter->sffont);
+      mark.setCharacterSize(15);
+      mark.setColor(sf::Color::Black);
+      mark.setPosition(line[1].position + sf::Vector2f(15.f,15.f));
+      window->draw(mark);
+    }
   }
 
   void drawObjects() {

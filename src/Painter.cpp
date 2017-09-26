@@ -15,7 +15,7 @@
 #include "mapgen/utils.hpp"
 #include "rang.hpp"
 
-//TODO: move ints to utils.cpp
+// TODO: move ints to utils.cpp
 template <typename T> using filterFunc = std::function<bool(T *)>;
 template <typename T> using sortFunc = std::function<bool(T *, T *)>;
 
@@ -32,12 +32,12 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 
 class Painter {
 public:
-  //TODO: use map instead mapgen
+  // TODO: use map instead mapgen
   Painter(sf::RenderWindow *w, MapGenerator *m, std::string v)
       : window(w), mapgen(m), VERSION(v) {
     loadIcons();
     initProgressBar();
-    //TODO: use whereami
+    // TODO: use whereami
     sffont.loadFromFile("./font.ttf");
 
     sf::Vector2u windowSize = window->getSize();
@@ -49,10 +49,10 @@ public:
     window->clear(bgColor);
   };
 
+  sf::Font sffont;
 private:
   std::map<LocationType, sf::Texture *> icons;
   sf::RenderWindow *window;
-  sf::Font sffont;
   sw::ProgressBar progressBar;
   sf::Texture cachedMap;
   sf::Color bgColor;
@@ -73,9 +73,9 @@ private:
   void loadIcons() {
     std::map<LocationType, std::string> iconMap = {
         {CAPITAL, "images/castle.png"}, {PORT, "images/docks.png"},
-        {MINE, "images/mine.png"},        {AGRO, "images/farm.png"},
-        {TRADE, "images/trade.png"},      {LIGHTHOUSE, "images/lighthouse.png"},
-        {CAVE, "images/cave.png"},        {FORT, "images/fort.png"}};
+        {MINE, "images/mine.png"},      {AGRO, "images/farm.png"},
+        {TRADE, "images/trade.png"},    {LIGHTHOUSE, "images/lighthouse.png"},
+        {CAVE, "images/cave.png"},      {FORT, "images/fort.png"}};
 
     for (auto pair : iconMap) {
       sf::Texture *icon = new sf::Texture();
@@ -104,6 +104,7 @@ public:
   bool cities = true;
   bool locations = true;
   bool states = true;
+  bool areas = false;
 
   bool isIncreasing{true};
 
@@ -147,7 +148,7 @@ public:
 
       auto middle = (sf::Vector2f(window->getSize())) / 2.f;
       operation.setPosition(sf::Vector2f(
-                                         middle.x - operation.getGlobalBounds().width / 2.f, middle.y + 25.f));
+          middle.x - operation.getGlobalBounds().width / 2.f, middle.y + 25.f));
       window->draw(operation);
     }
     window->display();
@@ -320,6 +321,25 @@ public:
         drawBorders();
       }
 
+      if (areas) {
+        for (auto c : mapgen->map->stateClusters) {
+          for (auto region : c->regions) {
+            sf::ConvexShape polygon;
+            PointList points = region->getPoints();
+            polygon.setPointCount(points.size());
+            int n = 0;
+            for (auto p : points) {
+              polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+              n++;
+            }
+
+            sf::Color col(region->stateCluster->states[0]->color);
+            polygon.setFillColor(col);
+            window->draw(polygon);
+          }
+        }
+      }
+
       sf::Vector2u windowSize = window->getSize();
       cachedMap.create(windowSize.x, windowSize.y);
       cachedMap.update(*window);
@@ -397,8 +417,8 @@ public:
     } else if (std::count(ends->begin(), ends->end(), r) == 0) {
       exclude->push_back(r);
       used->pop_back();
-      line->removeVertex(line->getVertexCount()-1);
-        nextBorder(used->back(), used, line, ends, exclude);
+      line->removeVertex(line->getVertexCount() - 1);
+      nextBorder(used->back(), used, line, ends, exclude);
     }
   }
 
@@ -465,9 +485,6 @@ public:
         int b = col.b;
         int s = 1;
         for (auto n : region->neighbors) {
-          // if (n->biom.name==region->biom.name) {
-          //   continue;
-          // }
           r += n->biom.color.r;
           g += n->biom.color.g;
           b += n->biom.color.b;

@@ -25,6 +25,7 @@ void InfoWindow::draw(Region *currentRegion) {
     ImGui::Text("\n");
     ImGui::Text("Cluster size: %zu", cluster->regions.size());
     ImGui::Text("Mega Cluster: %s", currentRegion->megaCluster->name.c_str());
+    ImGui::Text("State Cluster: %p", currentRegion->stateCluster);
     ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
     ImGui::Text("Is border: %s", currentRegion->border ? "true" : "false");
     ImGui::Text("\n");

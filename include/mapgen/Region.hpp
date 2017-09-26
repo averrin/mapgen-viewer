@@ -25,6 +25,7 @@ public:
   Point site;
   bool hasRiver;
   Cluster *cluster;
+  Cluster *stateCluster;
   MegaCluster *megaCluster;
   bool border;
   float humidity;

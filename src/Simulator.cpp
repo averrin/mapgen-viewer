@@ -233,6 +233,7 @@ void Simulator::makeForts() {
   map->status = "Make forts...";
   // TODO: uncluster it too
   std::vector<Region *> regions;
+  std::vector<Region *> cache;
   for (auto mc : map->megaClusters) {
     if (mc->states.size() < 2) {
       continue;
@@ -241,9 +242,13 @@ void Simulator::makeForts() {
     for (auto state : mc->states) {
       regions = filterObjects(mc->regions,
                               (filterFunc<Region>)[&](Region * region) {
-                                return region->stateBorder &&
+                                bool cond = region->stateBorder &&
                                        !region->seaBorder &&
                                        region->state == state;
+                                if (cond) {
+                                  cache.push_back(region);
+                                }
+                                return cond;
                               },
                               (sortFunc<Region>)[&](Region * r, Region * r2) {
                                 if (r->traffic > r2->traffic) {

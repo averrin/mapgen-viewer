@@ -72,6 +72,8 @@ MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
 
 void MapGenerator::makeStates() {
   map->status = "Making states...";
+  map->stateClusters.clear();
+
   _bbox = sf::Rect<double>(0, 0, _w, _h);
   VoronoiDiagramGenerator vdg;
   auto sites = new std::vector<sf::Vector2<double>>();
@@ -92,7 +94,7 @@ void MapGenerator::makeStates() {
       continue;
     }
     for (auto s : map->states) {
-      if (s->cell->pointIntersection(r->site->x, r->site->y) == 1) {
+      if (s->cell->pointIntersection(r->site->x, r->site->y) != -1) {
         r->state = s;
         auto ms = r->megaCluster->states;
         if (std::count(ms.begin(), ms.end(), s) == 0) {
@@ -107,28 +109,63 @@ void MapGenerator::makeStates() {
     }
   }
 
-  // TODO: iterate over state clusters not megaClusters
-  for (auto mc : map->megaClusters) {
-    if (mc->states.size() < 2) {
-      continue;
+  auto sc = clusterize(
+      [&](Region *r, Region *rn) { return r->state != rn->state; },
+      [&](Region *r, Cluster *knownCluster) {
+        r->stateCluster = knownCluster;
+      },
+      [&](Region *rn, Cluster *knownCluster,
+          std::map<Region *, Cluster *> *_clusters) {
+        Cluster *oldCluster = rn->stateCluster;
+        if (oldCluster != knownCluster) {
+          rn->stateCluster = knownCluster;
+          // rn->biom.color = sf::Color::Black;
+          auto kcrn = knownCluster->regions;
+          for (Region *orn : oldCluster->regions) {
+            orn->stateCluster = knownCluster;
+            if (std::find(kcrn.begin(), kcrn.end(), orn) == kcrn.end()) {
+              knownCluster->regions.push_back(orn);
+            }
+            (*_clusters)[orn] = knownCluster;
+          }
+          oldCluster->regions.clear();
+        }
+      },
+      [&](Region *r) {
+        auto cluster = new Cluster();
+        if (r->state != nullptr) {
+          cluster->states.push_back(r->state);
+        }
+        return cluster;
+      }
+
+      );
+
+  sc.erase(std::remove_if(sc.begin(), sc.end(),
+                          [&](Cluster *c) { return c->regions.size() == 0 || c->states.size() == 0; }),
+           sc.end());
+
+  map->stateClusters.assign(sc.begin(), sc.end());
+
+  for (auto sc : map->stateClusters) {
+    if (sc->regions.size() < 200) {
+      if (sc->regions[0]->megaCluster->regions.size() >
+          4 * sc->regions.size()) {
+        auto oldState = sc->states[0];
+        auto newState =
+            oldState == map->states[0] ? map->states[1] : map->states[0];
+        sc->states.clear();
+        sc->states.push_back(newState);
+        for (auto r : sc->regions) {
+          r->state = newState;
+        }
+      }
     }
-    int fsc =
-        std::count_if(mc->regions.begin(), mc->regions.end(),
-                      [&](Region *r) { return r->state == mc->states[0]; });
-    if (mc->regions.size() - fsc > 200 ||
-        std::count_if(mc->cities.begin(), mc->cities.end(), [&](City *c) {
-          return c->region->state == mc->states[1];
-        }) >= 2) {
-      continue;
-    }
-    auto dominate =
-        fsc >= mc->regions.size() * 4 / 5 ? mc->states[0] : mc->states[1];
-    for (auto region : mc->regions) {
-      region->state = dominate;
-    }
-    mc->states.clear();
-    mc->states.push_back(dominate);
   }
+
+  map->stateClusters.erase(std::remove_if(map->stateClusters.begin(), map->stateClusters.end(),
+                          [&](Cluster *c) { return c->regions.size() == 0 || c->states.size() == 0; }),
+                           map->stateClusters.end());
 
   for (auto r : map->regions) {
     if (!r->megaCluster->isLand) {
@@ -308,9 +345,18 @@ void MapGenerator::makeCities() {
                                          r->biom.name != biom::LAKE.name &&
                                          r->biom.name != biom::SNOW.name &&
                                          r->biom.name != biom::ICE.name;
-                             if (cond) {
-                               cache.push_back(r);
-                             }
+                             // if (cond && std::none_of(cache.begin(), cache.end(), [&](Region *ri){
+                             //       for (auto rn : cache) {
+                             //         if (mg::getDistance(ri->site, rn->site) < 0) {
+                             //           return true;
+                             //         }
+                             //       }
+                             //       return false;
+                             //     })) {
+                             //   cache.push_back(r);
+                             // } else {
+                             //   return false;
+                             // }
                              return cond;
                            },
                            (sortFunc<Region>)[&](Region * r, Region * r2) {
@@ -859,7 +905,7 @@ void MapGenerator::calcHumidity() {
   std::reverse(map->regions.begin(), map->regions.end());
 }
 
-std::vector<Cluster *> MapGenerator::clusterize(sameFunc isSame,
+std::vector<Cluster *> MapGenerator::clusterize(sameFunc isNotSame,
                                                 assignFunc assignCluster,
                                                 reassignFunc reassignCluster,
                                                 createFunc createCluster) {
@@ -872,7 +918,7 @@ std::vector<Cluster *> MapGenerator::clusterize(sameFunc isSame,
     Cluster *knownCluster = nullptr;
     for (auto n : c->getNeighbors()) {
       Region *rn = _cells[n];
-      if (isSame(r, rn)) {
+      if (isNotSame(r, rn)) {
         r->border = true;
       } else if (_clusters.count(rn) != 0) {
         cu = false;
@@ -951,7 +997,7 @@ void MapGenerator::makeMegaClusters() {
   map->megaClusters.assign(mc.begin(), mc.end());
 }
 
-//TODO: use clusterize instead this code
+// TODO: use clusterize instead this code
 void MapGenerator::makeClusters() {
   map->status = "Meeting with neighbors...";
   map->clusters.clear();

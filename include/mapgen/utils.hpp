@@ -18,5 +18,6 @@ namespace mg {
   void before(std::string method);
   void after(std::string method);
   void info(std::string prefix, std::string value);
+  void info(std::string prefix, int value);
 };
 #endif
