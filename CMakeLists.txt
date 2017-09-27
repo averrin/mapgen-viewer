@@ -53,6 +53,7 @@ add_executable(${EXECUTABLE_NAME}
   src/City.cpp
   src/Road.cpp
   src/State.cpp
+  src/Package.cpp
   src/Map.cpp
 
   src/Simulator.cpp

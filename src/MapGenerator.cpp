@@ -345,18 +345,18 @@ void MapGenerator::makeCities() {
                                          r->biom.name != biom::LAKE.name &&
                                          r->biom.name != biom::SNOW.name &&
                                          r->biom.name != biom::ICE.name;
-                             // if (cond && std::none_of(cache.begin(), cache.end(), [&](Region *ri){
-                             //       for (auto rn : cache) {
-                             //         if (mg::getDistance(ri->site, rn->site) < 0) {
-                             //           return true;
-                             //         }
-                             //       }
-                             //       return false;
-                             //     })) {
-                             //   cache.push_back(r);
-                             // } else {
-                             //   return false;
-                             // }
+                             if (cond && std::none_of(cache.begin(), cache.end(), [&](Region *ri){
+                                   for (auto rn : cache) {
+                                     if (mg::getDistance(ri->site, rn->site) < 20) {
+                                       return true;
+                                     }
+                                   }
+                                   return false;
+                                 })) {
+                               cache.push_back(r);
+                             } else {
+                               return false;
+                             }
                              return cond;
                            },
                            (sortFunc<Region>)[&](Region * r, Region * r2) {

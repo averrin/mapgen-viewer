@@ -3,6 +3,7 @@
 #include "mapgen/names.hpp"
 #include "mapgen/utils.hpp"
 #include "mapgen/Biom.hpp"
+#include "mapgen/Package.hpp"
 #include <functional>
 #include <cstring>
 
@@ -27,11 +28,32 @@ Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {
 void Simulator::simulate() {
   makeRoads();
   makeCaves();
-  upgradeCities();
+
   removeBadPorts();
   makeLighthouses();
   makeLocationRoads();
   makeForts();
+
+  simulateEconomy();
+
+  upgradeCities();
+}
+
+void Simulator::simulateEconomy() {
+  int y = 1;
+  while (y <= years) {
+    char op[100];
+    sprintf(op, "Simulate economy [%d/%d]", y, years);
+    economyTick(y);
+    y++;
+  }
+}
+
+void Simulator::economyTick(int) {
+  std::vector<Package*> goods;
+  for (auto c : map->cities) {
+    
+  }
 }
 
 void Simulator::makeRoads() {
@@ -245,8 +267,17 @@ void Simulator::makeForts() {
                                 bool cond = region->stateBorder &&
                                        !region->seaBorder &&
                                        region->state == state;
-                                if (cond) {
+                                if (cond && std::none_of(cache.begin(), cache.end(), [&](Region *ri){
+                                      for (auto rn : cache) {
+                                        if (mg::getDistance(ri->site, rn->site) < 20 && ri->state == rn->state) {
+                                          return true;
+                                        }
+                                      }
+                                      return false;
+                                    })) {
                                   cache.push_back(region);
+                                } else {
+                                  return false;
                                 }
                                 return cond;
                               },
@@ -258,7 +289,7 @@ void Simulator::makeForts() {
                               });
 
       int n = 0;
-      while (n < 2) {
+      while (n < std::min(2, int(regions.size()))) {
         City *c = new City(regions[n], names::generateCityName(_gen), FORT);
         map->cities.push_back(c);
         mc->cities.push_back(c);

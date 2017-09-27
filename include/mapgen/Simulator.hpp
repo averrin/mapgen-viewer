@@ -17,6 +17,8 @@ private:
   void makeLighthouses();
   void makeLocationRoads();
   void makeForts();
+  void simulateEconomy();
+  void economyTick(int y);
 
   template<typename Iter>
   Iter select_randomly(Iter start, Iter end);
