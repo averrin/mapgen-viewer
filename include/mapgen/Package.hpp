@@ -11,7 +11,9 @@ enum PackageType {
 class Package {
 public:
   Package (City* owner, PackageType type);
+  float getPrice(City* buyer);
   City* owner;
+  std::vector<City*> ports;
   PackageType type;
   void buy(City* buyer, float price);
 };

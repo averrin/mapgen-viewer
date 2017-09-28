@@ -257,9 +257,7 @@ public:
       painter->update();
     }
 
-    if (ImGui::SliderInt("Years", &years, 1, 1000)) {
-      mapgen->simulator->years = years;
-    }
+    ImGui::SliderInt("Years", &mapgen->simulator->years, 1, 1000);
     if (ImGui::Button("Start simulation")) {
       simulate();
     }

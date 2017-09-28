@@ -211,6 +211,9 @@ void ObjectsWindow::draw() {
                       ImGui::Text("Name: %s", city->name.c_str());
                       ImGui::Text("Type: %s", city->typeName.c_str());
                       ImGui::Text("Trade: %d", city->region->traffic);
+
+                      ImGui::Text("Population: %d", city->population);
+                      ImGui::Text("Wealth: %f", city->wealth);
                     },
                     (titleFunc<City>)[&](City * city) {
                       char t[60];

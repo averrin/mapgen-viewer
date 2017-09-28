@@ -62,6 +62,11 @@ void InfoWindow::draw(Region *currentRegion) {
     ImGui::Text("Traffic: %d", currentRegion->traffic);
     ImGui::Text("Minerals: %f", currentRegion->minerals);
     ImGui::Text("Goodness: %f", currentRegion->nice);
+
+    if (currentRegion->city != nullptr) {
+      ImGui::Text("Population: %d", currentRegion->city->population);
+      ImGui::Text("Wealth: %f", currentRegion->city->wealth);
+    }
     if (currentRegion->state != nullptr) {
       ImGui::Text("State: %s", currentRegion->state->name.c_str());
       ImGui::Text("State border: %s", currentRegion->stateBorder ? "true" : "false");
@@ -77,6 +82,8 @@ void InfoWindow::draw(Region *currentRegion) {
 
       if (currentRegion->city != nullptr) {
         ImGui::Text("Trade: %d", currentRegion->city->region->traffic);
+        ImGui::Text("Population: %d", currentRegion->city->population);
+        ImGui::Text("Wealth: %f", currentRegion->city->wealth);
       }
     } else {
       ImGui::Text("No location");

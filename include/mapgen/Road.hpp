@@ -6,9 +6,9 @@
 
 class Road {
 public:
-  Road(micropather::MPVector<void *>* path, float w);
+  Road(micropather::MPVector<void *>* path, float c);
   std::vector<Region *> regions;
-  float weight;
+  float cost;
 };
 
 #endif

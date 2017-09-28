@@ -1,0 +1,23 @@
+#ifndef ECONOMY_H_
+#define ECONOMY_H_
+
+namespace Economy {
+  const float POPULATION_GROWS = 0.03;
+  const float POPULATION_GROWS_WEALTH_MODIFIER = 5;
+
+  const float PACKAGES_PER_NICE = 100;
+  const float PACKAGES_AGRO_POPULATION_MODIFIER = 1;
+
+  const float PACKAGES_PER_MINERALS = 100;
+  const float PACKAGES_MINERALS_POPULATION_MODIFIER = 1;
+
+  const float CONSUME_AGRO_POPULATION_MODIFIER = 0.5;
+  const float CONSUME_MINERALS_POPULATION_MODIFIER = 0.5;
+
+  const float CONSUME_AGRO_WEALTH_MODIFIER = 1;
+  const float CONSUME_MINERALS_WEALTH_MODIFIER = 1;
+
+  const float PORT_FEE = 0.3;
+}
+
+#endif

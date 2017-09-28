@@ -50,6 +50,7 @@ add_executable(${EXECUTABLE_NAME}
   src/Biom.cpp
   src/Region.cpp
   src/Location.cpp
+  src/Economy.cpp
   src/City.cpp
   src/Road.cpp
   src/State.cpp

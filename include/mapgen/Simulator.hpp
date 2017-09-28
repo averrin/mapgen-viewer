@@ -7,7 +7,7 @@ class Simulator{
 public:
   Simulator(Map* m, int s);
   void simulate();
-  int years = 1;
+  int years = 10;
 
 private:
   void makeRoads();
@@ -19,6 +19,7 @@ private:
   void makeForts();
   void simulateEconomy();
   void economyTick(int y);
+  void populationTick(int y);
 
   template<typename Iter>
   Iter select_randomly(Iter start, Iter end);

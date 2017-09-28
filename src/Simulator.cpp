@@ -4,6 +4,7 @@
 #include "mapgen/utils.hpp"
 #include "mapgen/Biom.hpp"
 #include "mapgen/Package.hpp"
+#include "mapgen/Economy.hpp"
 #include <functional>
 #include <cstring>
 
@@ -44,16 +45,31 @@ void Simulator::simulateEconomy() {
   while (y <= years) {
     char op[100];
     sprintf(op, "Simulate economy [%d/%d]", y, years);
+    map->status = op;
     economyTick(y);
+    populationTick(y);
     y++;
   }
 }
 
-void Simulator::economyTick(int) {
+void Simulator::populationTick(int) {
+  for (auto c : map->cities) {
+    c->population *= (float)(1 + Economy::POPULATION_GROWS * c->wealth * Economy::POPULATION_GROWS_WEALTH_MODIFIER);
+  }
+}
+
+void Simulator::economyTick(int y) {
+  mg::info("Economy year:", y);
   std::vector<Package*> goods;
   for (auto c : map->cities) {
-    
+    auto lg = c->makeGoods(y);
+    goods.insert(goods.end(), lg.begin(), lg.end());
   }
+  mg::info("Goods for sale:", goods.size());
+  for (auto c : map->cities) {
+    c->buyGoods(&goods);
+  }
+  mg::info("Goods not sold:", goods.size());
 }
 
 void Simulator::makeRoads() {
@@ -86,8 +102,10 @@ void Simulator::makeRoads() {
       if (result != micropather::MicroPather::SOLVED) {
         continue;
       }
-      Road *road = new Road(&path, 2);
+      Road *road = new Road(&path, result);
       map->roads.push_back(road);
+      c->roads.push_back(road);
+      oc->roads.push_back(road);
     };
     n++;
   };
@@ -114,7 +132,7 @@ void Simulator::makeCaves() {
       i++;
     }
   }
-  printf("%d caves\n", i);
+  mg::info("Caves created:", i);
 }
 
 void Simulator::upgradeCities() {
@@ -125,7 +143,7 @@ void Simulator::upgradeCities() {
         map->cities,
         (filterFunc<City>)[&](City * c) { return c->region->state == state; },
         (sortFunc<City>)[&](City * c, City * c2) {
-          if (c->region->traffic > c2->region->traffic) {
+          if (c->wealth > c2->wealth) {
             return true;
           }
           return false;
@@ -163,7 +181,7 @@ void Simulator::removeBadPorts() {
                  }
                  return !badPort;
                });
-  printf("%d ports for remove\n", n);
+  mg::info("Ports removed:", n);
   map->cities.clear();
   for (auto c : cities) {
     map->cities.push_back(c);
@@ -176,12 +194,7 @@ void Simulator::removeBadPorts() {
                         r->regions[0]->city != nullptr;
                });
   map->roads.clear();
-  for (auto r : roads) {
-    if (r->regions.back()->city->type == CAPITAL) {
-      r->weight = 4;
-    }
-    map->roads.push_back(r);
-  }
+  map->roads.assign(roads.begin(), roads.end());
 }
 
 void Simulator::makeLighthouses() {

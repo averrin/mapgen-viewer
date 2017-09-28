@@ -27,9 +27,12 @@ namespace mg {
     std::cout << "After: " << rang::fg::green << method << rang::style::reset << std::endl << std::flush;
   };
   void info(std::string prefix, std::string value) {
-    std::cout << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
+    std::cout << rang::style::bold << rang::fg::black << "[info]\t" << rang::style::reset << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
   };
   void info(std::string prefix, int value) {
-    std::cout << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
+    std::cout << rang::style::bold << rang::fg::black << "[info]\t" << rang::style::reset << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
+  };
+  void info(std::string prefix, float value) {
+    std::cout << rang::style::bold << rang::fg::black << "[info]\t" << rang::style::reset << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;
   };
 };
