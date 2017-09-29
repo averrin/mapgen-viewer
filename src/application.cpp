@@ -19,7 +19,6 @@ class Application {
   int nPoints;
   int seed;
   int t = 0;
-  int years = 100;
   bool showUI = true;
   bool getScreenshot = false;
   bool ready = false;
@@ -257,7 +256,6 @@ public:
       painter->update();
     }
 
-    ImGui::SliderInt("Years", &mapgen->simulator->years, 1, 1000);
     if (ImGui::Button("Start simulation")) {
       simulate();
     }
