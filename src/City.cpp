@@ -14,12 +14,12 @@ Package *City::makeGoods(int y) {
   uint p;
   switch (type) {
   case AGRO:
-    p = region->nice * Economy::PACKAGES_PER_NICE * population / 1000 *
+    p = region->nice * Economy::PACKAGES_PER_NICE * population *
         Economy::PACKAGES_AGRO_POPULATION_MODIFIER;
     goods = new Package(this, AGROCULTURE, p);
     break;
   case MINE:
-    p = region->minerals * Economy::PACKAGES_PER_MINERALS * population / 1000 *
+    p = region->minerals * Economy::PACKAGES_PER_MINERALS * population *
         Economy::PACKAGES_MINERALS_POPULATION_MODIFIER;
     for (int n = 0; n < p; n++) {
       goods = new Package(this, MINERALS, p);
@@ -31,15 +31,18 @@ Package *City::makeGoods(int y) {
 
 int City::buyGoods(std::vector<Package *> *goods) {
   uint mineralsNeeded =
-      population * Economy::CONSUME_MINERALS_POPULATION_MODIFIER;
-  uint agroNeeded = population * Economy::CONSUME_AGRO_POPULATION_MODIFIER;
+      population * (Economy::CONSUME_MINERALS_POPULATION_MODIFIER -
+                    region->minerals * Economy::MINERALS_POPULATION_PRODUCE);
+  uint agroNeeded =
+      population * (Economy::CONSUME_AGRO_POPULATION_MODIFIER -
+                    region->nice * Economy::AGRO_POPULATION_PRODUCE);
 
   std::vector<Package *> mineralsCandidates;
   std::vector<Package *> agroCandidates;
 
-  std::copy_if(goods->begin(), goods->end(),
-               std::back_inserter(mineralsCandidates),
-               [&](Package *p) { return p->type == MINERALS; });
+  std::copy_if(
+      goods->begin(), goods->end(), std::back_inserter(mineralsCandidates),
+      [&](Package *p) { return p->type == MINERALS && p->owner != this; });
   std::sort(mineralsCandidates.begin(), mineralsCandidates.end(),
             [&](Package *p1, Package *p2) {
               if (getPrice(p1) < getPrice(p2)) {
@@ -47,8 +50,9 @@ int City::buyGoods(std::vector<Package *> *goods) {
               }
               return false;
             });
-  std::copy_if(goods->begin(), goods->end(), std::back_inserter(agroCandidates),
-               [&](Package *p) { return p->type == AGROCULTURE; });
+  std::copy_if(
+      goods->begin(), goods->end(), std::back_inserter(agroCandidates),
+      [&](Package *p) { return p->type == AGROCULTURE && p->owner != this; });
   std::sort(agroCandidates.begin(), agroCandidates.end(),
             [&](Package *p1, Package *p2) {
               if (getPrice(p1) < getPrice(p2)) {
@@ -92,16 +96,15 @@ int City::buyGoods(std::vector<Package *> *goods) {
   return agroNeeded + mineralsNeeded;
 }
 
-float City::getPrice(Package* p) {
+float City::getPrice(Package *p) {
   float price = 1.f;
   if (cache.find(p->owner) != cache.end()) {
     price = cache[p->owner];
   } else {
-    auto path =
-      std::find_if(roads.begin(), roads.end(), [&](Road *r) {
-          return r->regions.back()->city == p->owner ||
-          r->regions.front()->city == p->owner;
-        });
+    auto path = std::find_if(roads.begin(), roads.end(), [&](Road *r) {
+      return r->regions.back()->city == p->owner ||
+             r->regions.front()->city == p->owner;
+    });
 
     if (path != roads.end()) {
       price *= 1 + ((*path)->cost / 10000.f);

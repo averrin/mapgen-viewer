@@ -1,13 +1,18 @@
 #ifndef SIM_H_
 #define SIM_H_
 #include "mapgen/Map.hpp"
+#include "mapgen/Economy.hpp"
+#include "mapgen/Report.hpp"
 #include <random>
 
 class Simulator{
 public:
   Simulator(Map* m, int s);
   void simulate();
-  int years = 50;
+  int years = 10;
+  EconomyVars* vars;
+
+  Report* report;
 
 private:
   void makeRoads();

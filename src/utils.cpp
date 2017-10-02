@@ -20,11 +20,11 @@ namespace mg {
     return places;
   }
   void before(std::string method) {
-    std::cout << "Before: " << rang::fg::red << method << rang::style::reset << std::endl << std::flush;
+    std::cout << rang::fg::green << rang::style::bold << "[ -> ]\t" << rang::style::reset << method << std::endl << std::flush;
 
   };
   void after(std::string method) {
-    std::cout << "After: " << rang::fg::green << method << rang::style::reset << std::endl << std::flush;
+    std::cout << rang::fg::red << rang::style::bold << "[ <- ]\t" << rang::style::reset << method << std::endl << std::flush;
   };
   void info(std::string prefix, std::string value) {
     std::cout << rang::style::bold << rang::fg::black << "[info]\t" << rang::style::reset << prefix << " " << rang::fg::blue << value << rang::style::reset << std::endl << std::flush;

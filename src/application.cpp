@@ -153,7 +153,7 @@ public:
       break;
     case sf::Event::Resized:
       mapgen->setSize(window->getSize().x, window->getSize().y);
-      mapgen->update();
+      // mapgen->update();
       painter->update();
       break;
     case sf::Event::MouseButtonPressed:
@@ -164,8 +164,42 @@ public:
     }
   }
 
+  void drawSimWindow() {
+    ImGui::Begin("Simulation");
+
+    ImGui::Columns(2, "vars");
+
+    ImGui::Text("POPULATION_GROWS");
+    ImGui::NextColumn();
+    ImGui::DragFloat("##value", &mapgen->simulator->vars->POPULATION_GROWS, 0.01, 0.01, 0.5);
+    ImGui::NextColumn();
+
+    ImGui::Text("POPULATION_GROWS_WEALTH_MODIFIER");
+    ImGui::NextColumn();
+    ImGui::DragFloat("##value", &mapgen->simulator->vars->POPULATION_GROWS_WEALTH_MODIFIER, 0.01, 0.01, 1.f);
+    ImGui::NextColumn();
+
+    ImGui::Columns(1);
+
+    auto pop = mapgen->simulator->report->population;
+    if (pop.size() > 0) {
+        float arr[pop.size()];
+        int n = 0;
+        for (auto p : pop) {
+          arr[n] = p/1000.f;
+        }
+        ImGui::PlotLines("", arr, pop.size(), 1.f, "Total Population", 0.f, 1000.0f, ImVec2(0,100));
+    }
+
+    if (ImGui::Button("Start simulation")) {
+      simulate();
+    }
+
+    ImGui::End();
+  }
+
   void drawMainWindow() {
-    ImGui::Begin("Mapgen");
+    ImGui::Begin("Generation");
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -254,10 +288,6 @@ public:
 
     if (ImGui::Checkbox("Show verbose info", &painter->info)) {
       painter->update();
-    }
-
-    if (ImGui::Button("Start simulation")) {
-      simulate();
     }
 
     ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
@@ -359,6 +389,7 @@ public:
       if (showUI) {
         drawObjects();
         drawMainWindow();
+        drawSimWindow();
 
         if (painter->info) {
           drawInfo();

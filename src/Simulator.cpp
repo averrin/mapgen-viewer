@@ -5,6 +5,7 @@
 #include "mapgen/Biom.hpp"
 #include "mapgen/Package.hpp"
 #include "mapgen/Economy.hpp"
+#include "mapgen/Report.hpp"
 #include <functional>
 #include <cstring>
 #include <thread>
@@ -26,6 +27,8 @@
 
 Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {
   _gen = new std::mt19937(_seed);
+  vars = new EconomyVars();
+  report = new Report();
 }
 
 void Simulator::simulate() {
@@ -55,10 +58,13 @@ void Simulator::simulateEconomy() {
 }
 
 void Simulator::populationTick(int) {
+  int p = 0.f;
   for (auto c : map->cities) {
-    c->population *= (float)(1 + Economy::POPULATION_GROWS * c->wealth * Economy::POPULATION_GROWS_WEALTH_MODIFIER);
+    c->population *= (float)(1 + vars->POPULATION_GROWS * c->wealth * vars->POPULATION_GROWS_WEALTH_MODIFIER);
     c->population = std::max(c->population, 0);
+    p += c->population;
   }
+  report->population.push_back(p);
 }
 
 void Simulator::economyTick(int y) {
@@ -72,9 +78,7 @@ void Simulator::economyTick(int y) {
       return s + p2->count;
     });
   mg::info("Goods for sale:", gc);
-  std::random_device rd;
-  std::mt19937 g(rd());
-  std::shuffle(map->cities.begin(), map->cities.end(), g);
+  std::shuffle(map->cities.begin(), map->cities.end(), *_gen);
   uint sn = 0;
   for (auto c : map->cities) {
     sn += c->buyGoods(goods);

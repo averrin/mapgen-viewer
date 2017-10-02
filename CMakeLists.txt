@@ -57,6 +57,7 @@ add_executable(${EXECUTABLE_NAME}
   src/Package.cpp
   src/Map.cpp
 
+  src/Report.cpp
   src/Simulator.cpp
   src/MapGenerator.cpp
   src/Painter.cpp

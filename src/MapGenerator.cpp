@@ -84,7 +84,7 @@ void MapGenerator::makeStates() {
   int n = 0;
   for (auto c : diagram->cells) {
     State *s = new State((n == 0 ? "Blue empire" : "Red lands"),
-                         (n == 0 ? sf::Color::Blue : sf::Color::Red), c);
+                         (n == 0 ? sf::Color(0,107,218) : sf::Color(170,62,62)), c);
     map->states.push_back(s);
     n++;
   }
@@ -231,7 +231,6 @@ void MapGenerator::simplifyRivers() {
       rvr->push_back(sr[i]);
     }
   }
-  std::cout << "end\n" << std::flush;
 }
 
 void MapGenerator::makeRelax() {
@@ -323,13 +322,6 @@ void MapGenerator::getSea(std::vector<Region *> *seas, Region *base,
 
 void MapGenerator::makeCities() {
   map->status = "Founding cities...";
-  // MegaCluster *biggestCluster;
-  // for (auto c : map->megaClusters) {
-  //   if (c->isLand) {
-  //     biggestCluster = c;
-  //     break;
-  //   }
-  // }
 
   std::vector<Region *> places;
 
@@ -622,7 +614,6 @@ void MapGenerator::makeHeights() {
   heightMapBuilder.SetDestSize(_w, _h);
   heightMapBuilder.SetBounds(0.0, 10.0, 0.0, 10.0);
   heightMapBuilder.Build();
-  std::cout << "Height generation finished\n" << std::flush;
 }
 
 void MapGenerator::makeRiver(Region *r) {
@@ -1106,8 +1097,6 @@ void MapGenerator::makeDiagram() {
   delete _sites;
 
   std::sort(_diagram->cells.begin(), _diagram->cells.end(), cellsOrdered);
-  std::cout << "Diagram generation finished: " << _diagram->cells.size() << "\n"
-            << std::flush;
 }
 
 void MapGenerator::genRandomSites(std::vector<sf::Vector2<double>> &sites,
