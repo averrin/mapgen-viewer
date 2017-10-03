@@ -4,6 +4,7 @@
 #include "Region.hpp"
 #include "Location.hpp"
 #include "Road.hpp"
+#include "mapgen/Economy.hpp"
 
 class Package;
 class City : public Location {
@@ -11,6 +12,7 @@ public:
   City(Region* r, std::string n, LocationType t);
   Package* makeGoods(int y);
   int buyGoods(std::vector<Package*>* goods);
+  EconomyVars* economyVars;
 
   bool isCapital = false;
 

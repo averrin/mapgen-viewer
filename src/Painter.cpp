@@ -506,6 +506,9 @@ public:
         if ((region->city != nullptr && cities) ||
             (region->city == nullptr && locations)) {
           auto texture = icons[region->location->type];
+          if (region->city != nullptr && region->city->isCapital) {
+            texture = icons[CAPITAL];
+          }
           sprite.setTexture(*texture);
           auto p = region->site;
           auto size = texture->getSize();

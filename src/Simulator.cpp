@@ -1,37 +1,41 @@
 #include "mapgen/Simulator.hpp"
+#include "mapgen/Biom.hpp"
+#include "mapgen/Economy.hpp"
+#include "mapgen/Package.hpp"
 #include "mapgen/Region.hpp"
+#include "mapgen/Report.hpp"
 #include "mapgen/names.hpp"
 #include "mapgen/utils.hpp"
-#include "mapgen/Biom.hpp"
-#include "mapgen/Package.hpp"
-#include "mapgen/Economy.hpp"
-#include "mapgen/Report.hpp"
-#include <functional>
 #include <cstring>
-#include <thread>
+#include <functional>
 #include <mutex>
+#include <thread>
 
-	template <typename T> using filterFunc = std::function<bool(T *)>;
-	template <typename T> using sortFunc = std::function<bool(T *, T *)>;
+template <typename T> using filterFunc = std::function<bool(T *)>;
+template <typename T> using sortFunc = std::function<bool(T *, T *)>;
 
-  template <typename T>
-  std::vector<T *> filterObjects(std::vector<T *> regions,
-                                      filterFunc<T> filter, sortFunc<T> sort) {
-    std::vector<T *> places;
+template <typename T>
+std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
+                               sortFunc<T> sort) {
+  std::vector<T *> places;
 
-    std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
-                 filter);
-    std::sort(places.begin(), places.end(), sort);
-    return places;
-  }
+  std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
+               filter);
+  std::sort(places.begin(), places.end(), sort);
+  return places;
+}
 
 Simulator::Simulator(Map *m, int s) : map(m), _seed(s) {
   _gen = new std::mt19937(_seed);
   vars = new EconomyVars();
-  report = new Report();
+  report = nullptr;
 }
 
 void Simulator::simulate() {
+  report = new Report();
+  // TODO: reset all simulation results (caves, cities, etc)
+  resetAll();
+
   makeRoads();
   makeCaves();
 
@@ -45,11 +49,50 @@ void Simulator::simulate() {
   upgradeCities();
 }
 
+void Simulator::resetAll() {
+  for (auto c : map->cities) {
+    c->isCapital = false;
+    c->population = 1000;
+    c->wealth = 1.f;
+  }
+  for (auto r : map->regions) {
+    if (r->city == nullptr && r->location != nullptr) {
+      map->locations.erase(std::remove(map->locations.begin(),
+                                       map->locations.end(), r->location));
+      r->location = nullptr;
+      r->city = nullptr;
+    }
+
+    if (r->city != nullptr && r->city->type == FORT) {
+      map->cities.erase(
+          std::remove(map->cities.begin(), map->cities.end(), r->city));
+      r->megaCluster->cities.erase(std::remove(r->megaCluster->cities.begin(),
+                                               r->megaCluster->cities.end(),
+                                               r->city));
+      r->location = nullptr;
+      r->city = nullptr;
+    }
+  }
+  if (map->roads.size() > 0) {
+    removeInvalidRoads();
+  }
+}
+
+void Simulator::removeInvalidRoads() {
+  map->roads.erase(
+      std::remove_if(map->roads.begin(), map->roads.end(), [&](Road *r) {
+        return (r->regions.back()->city == nullptr &&
+                r->regions.back()->location == nullptr) ||
+               (r->regions.front()->city == nullptr &&
+                r->regions.front()->location == nullptr);
+      }));
+}
+
 void Simulator::simulateEconomy() {
   int y = 1;
   while (y <= years) {
     char op[100];
-    sprintf(op, "Simulate economy [%d/%d]", y*10, years*10);
+    sprintf(op, "Simulate economy [%d/%d]", y * 10, years * 10);
     map->status = op;
     economyTick(y);
     populationTick(y);
@@ -60,7 +103,9 @@ void Simulator::simulateEconomy() {
 void Simulator::populationTick(int) {
   int p = 0.f;
   for (auto c : map->cities) {
-    c->population *= (float)(1 + vars->POPULATION_GROWS * c->wealth * vars->POPULATION_GROWS_WEALTH_MODIFIER);
+    c->population *= (float)(1 +
+                             vars->POPULATION_GROWS * c->wealth *
+                                 vars->POPULATION_GROWS_WEALTH_MODIFIER);
     c->population = std::max(c->population, 0);
     p += c->population;
   }
@@ -68,15 +113,15 @@ void Simulator::populationTick(int) {
 }
 
 void Simulator::economyTick(int y) {
-  mg::info("Economy year:", y*10);
-  std::vector<Package*>* goods = new std::vector<Package*>();
+  mg::info("Economy year:", y * 10);
+  std::vector<Package *> *goods = new std::vector<Package *>();
   for (auto c : map->cities) {
+    c->economyVars = vars;
     auto lg = c->makeGoods(y);
     goods->push_back(lg);
   }
-  uint gc = std::accumulate(goods->begin(), goods->end(), 0, [](int s, Package * p2) {
-      return s + p2->count;
-    });
+  uint gc = std::accumulate(goods->begin(), goods->end(), 0,
+                            [](int s, Package *p2) { return s + p2->count; });
   mg::info("Goods for sale:", gc);
   std::shuffle(map->cities.begin(), map->cities.end(), *_gen);
   uint sn = 0;
@@ -84,9 +129,15 @@ void Simulator::economyTick(int y) {
     sn += c->buyGoods(goods);
   }
   mg::info("Still needs:", sn);
+
+  float w = 0.f;
+  for (auto c : map->cities) {
+    w += c->wealth;
+  }
+  report->wealth.push_back(w);
 }
 
-Road* makeRoad(Map* map, City* c, City* oc) {
+Road *makeRoad(Map *map, City *c, City *oc) {
   auto pather = new micropather::MicroPather(map);
   micropather::MPVector<void *> path;
   float totalCost = 0;
@@ -114,19 +165,18 @@ void Simulator::makeRoads() {
          std::vector<City *>(map->cities.begin() + n, map->cities.end())) {
       sprintf(op, "Making roads [%d/%d]", k, tc);
       map->status = op;
-      threads[k] = std::thread([&](){
-            auto road = makeRoad(map, c, oc);
-            if (road == nullptr) {
-              return;
-            }
-            g_lock.lock();
-            map->roads.push_back(road);
-            c->roads.push_back(road);
-            oc->roads.push_back(road);
-            g_lock.unlock();
-          });
+      threads[k] = std::thread([&]() {
+        auto road = makeRoad(map, c, oc);
+        if (road == nullptr) {
+          return;
+        }
+        g_lock.lock();
+        map->roads.push_back(road);
+        c->roads.push_back(road);
+        oc->roads.push_back(road);
+        g_lock.unlock();
+      });
       k++;
-
     };
     n++;
   };
@@ -175,14 +225,15 @@ void Simulator::upgradeCities() {
           return false;
         });
 
-    _cities[0]->type = CAPITAL;
+    _cities[0]->isCapital = true;
+    ;
     printf("%s is capital\n", _cities[0]->name.c_str());
-    int n = 1;
-    while (n < 4) {
-      _cities[n]->type = TRADE;
-      printf("%s is trade\n", _cities[n]->name.c_str());
-      n++;
-    }
+    // int n = 1;
+    // while (n < 4) {
+    //   _cities[n]->type = TRADE;
+    //   printf("%s is trade\n", _cities[n]->name.c_str());
+    //   n++;
+    // }
   }
 }
 
@@ -213,14 +264,7 @@ void Simulator::removeBadPorts() {
     map->cities.push_back(c);
   }
 
-  std::vector<Road *> roads;
-  std::copy_if(map->roads.begin(), map->roads.end(), std::back_inserter(roads),
-               [&](Road *r) {
-                 return r->regions.back()->city != nullptr &&
-                        r->regions[0]->city != nullptr;
-               });
-  map->roads.clear();
-  map->roads.assign(roads.begin(), roads.end());
+  removeInvalidRoads();
 }
 
 void Simulator::makeLighthouses() {
@@ -267,8 +311,8 @@ void Simulator::makeLocationRoads() {
       continue;
     }
     std::sort(mc->cities.begin(), mc->cities.end(), [&](City *c, City *c2) {
-        if (mg::getDistance(l->region->site, c->region->site) <
-            mg::getDistance(l->region->site, c2->region->site)) {
+      if (mg::getDistance(l->region->site, c->region->site) <
+          mg::getDistance(l->region->site, c2->region->site)) {
         return true;
       }
       return false;
@@ -306,11 +350,14 @@ void Simulator::makeForts() {
       regions = filterObjects(mc->regions,
                               (filterFunc<Region>)[&](Region * region) {
                                 bool cond = region->stateBorder &&
-                                       !region->seaBorder &&
-                                       region->state == state;
-                                // if (cond && std::none_of(cache.begin(), cache.end(), [&](Region *ri){
+                                            !region->seaBorder &&
+                                            region->state == state;
+                                // if (cond && std::none_of(cache.begin(),
+                                // cache.end(), [&](Region *ri){
                                 //       for (auto rn : cache) {
-                                //         if (mg::getDistance(ri->site, rn->site) < 20 && ri->state == rn->state) {
+                                //         if (mg::getDistance(ri->site,
+                                //         rn->site) < 20 && ri->state ==
+                                //         rn->state) {
                                 //           return true;
                                 //         }
                                 //       }
@@ -340,8 +387,7 @@ void Simulator::makeForts() {
   }
 }
 
-template <typename Iter>
-Iter Simulator::select_randomly(Iter start, Iter end) {
+template <typename Iter> Iter Simulator::select_randomly(Iter start, Iter end) {
   std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
   std::advance(start, dis(*_gen));
   return start;

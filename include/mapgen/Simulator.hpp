@@ -9,7 +9,9 @@ class Simulator{
 public:
   Simulator(Map* m, int s);
   void simulate();
-  int years = 10;
+  void resetAll();
+
+  int years = 50;
   EconomyVars* vars;
 
   Report* report;
@@ -22,6 +24,7 @@ private:
   void makeLighthouses();
   void makeLocationRoads();
   void makeForts();
+  void removeInvalidRoads();
   void simulateEconomy();
   void economyTick(int y);
   void populationTick(int y);
