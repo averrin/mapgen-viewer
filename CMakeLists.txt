@@ -63,6 +63,7 @@ add_executable(${EXECUTABLE_NAME}
   src/Painter.cpp
   src/objectsWindow.cpp
   src/infoWindow.cpp
+  src/simulationWindow.cpp
   # src/logger.cpp
   src/application.cpp
 

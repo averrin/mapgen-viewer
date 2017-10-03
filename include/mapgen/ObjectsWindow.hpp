@@ -1,4 +1,4 @@
-#include "mapgen/Map.hpp"
+#include "mapgen/MapGenerator.hpp"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <functional>
 

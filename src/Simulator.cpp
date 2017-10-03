@@ -50,6 +50,7 @@ void Simulator::simulate() {
 }
 
 void Simulator::resetAll() {
+  map->status = "Reseting simulation results";
   for (auto c : map->cities) {
     c->isCapital = false;
     c->population = 1000;
@@ -85,7 +86,7 @@ void Simulator::removeInvalidRoads() {
                 r->regions.back()->location == nullptr) ||
                (r->regions.front()->city == nullptr &&
                 r->regions.front()->location == nullptr);
-      }));
+        }), map->roads.end());
 }
 
 void Simulator::simulateEconomy() {
@@ -108,6 +109,12 @@ void Simulator::populationTick(int) {
                                  vars->POPULATION_GROWS_WEALTH_MODIFIER);
     c->population = std::max(c->population, 0);
     p += c->population;
+    if (c->population > report->maxPopulation) {
+      report->maxPopulation = c->population;
+    }
+    if (c->population != 1000 && c->population < report->minPopulation) {
+      report->minPopulation = c->population;
+    }
   }
   report->population.push_back(p);
 }
@@ -133,6 +140,13 @@ void Simulator::economyTick(int y) {
   float w = 0.f;
   for (auto c : map->cities) {
     w += c->wealth;
+
+    if (c->wealth > report->maxWealth) {
+      report->maxWealth = c->wealth;
+    }
+    if (c->wealth != 0.f && c->wealth < report->minWealth) {
+      report->minWealth = c->wealth;
+    }
   }
   report->wealth.push_back(w);
 }

@@ -3,7 +3,7 @@
 
 namespace Economy {
   const float POPULATION_GROWS = 0.04;
-  const float POPULATION_GROWS_WEALTH_MODIFIER = 0.25;
+  const float POPULATION_GROWS_WEALTH_MODIFIER = 0.1;
 
   const float PACKAGES_PER_NICE = 20;
   const float PACKAGES_AGRO_POPULATION_MODIFIER = 0.04;
@@ -17,8 +17,8 @@ namespace Economy {
   const float CONSUME_AGRO_WEALTH_MODIFIER = 0.1;
   const float CONSUME_MINERALS_WEALTH_MODIFIER = 0.1;
 
-  const float CANT_BUY_AGRO = 0.01;
-  const float CANT_BUY_MINERALS = 0.01;
+  const float CANT_BUY_AGRO = 0.3;
+  const float CANT_BUY_MINERALS = 0.3;
 
   const float MINERALS_POPULATION_PRODUCE = 0.3;
   const float AGRO_POPULATION_PRODUCE = 0.4;
