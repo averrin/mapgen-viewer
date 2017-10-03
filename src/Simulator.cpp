@@ -97,6 +97,7 @@ void Simulator::simulateEconomy() {
     map->status = op;
     economyTick(y);
     populationTick(y);
+    disasterTick(y);
     y++;
   }
 }
@@ -117,6 +118,16 @@ void Simulator::populationTick(int) {
     }
   }
   report->population.push_back(p);
+}
+
+void Simulator::disasterTick(int) {
+  // int r = rand() % 100;
+  // if (r <= 10 && !plague) {
+  //   for (auto c : map->cities) {
+  //     c->population *= 0.5;
+  //   }
+  //   plague = true;
+  // }
 }
 
 void Simulator::economyTick(int y) {

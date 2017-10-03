@@ -41,6 +41,7 @@ add_executable(${EXECUTABLE_NAME}
   include/imgui/imgui.cpp
   include/imgui/imgui_draw.cpp
   include/imgui/imgui-SFML.cpp
+  include/imgui/imgui_tabs.cpp
   ${BACKWARD_ENABLE}
   include/micropather.cpp
   include/noiseutils.cpp

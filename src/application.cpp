@@ -4,6 +4,7 @@
 #include "mapgen/SimulationWindow.hpp"
 #include <imgui-SFML.h>
 #include <imgui.h>
+#include <imgui_tabs.h>
 
 class Application {
   std::string VERSION;
@@ -181,102 +182,125 @@ public:
   }
 
   void drawMainWindow() {
-    ImGui::Begin("Generation");
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Begin("MapGen");
+    ImGui::BeginTabBar("##MainTabBar");
 
-    ImGui::Text("Window size: w:%d h:%d", window->getSize().x,
-                window->getSize().y);
+    ImGui::DrawTabsBackground();
 
-    ImGui::Text("\n");
-    ImGui::Text("Controls:");
-    if (ImGui::TreeNode("Settings")) {
+    if (ImGui::AddTab("Generation")) {
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-      if (ImGui::InputInt("Seed", &seed)) {
-        mapgen->setSeed(seed);
-      }
-      ImGui::SameLine(320);
+      ImGui::Text("Window size: w:%d h:%d", window->getSize().x,
+                  window->getSize().y);
 
-      if (ImGui::Button("Random")) {
-        mapgen->seed();
-        regen();
-      }
+      ImGui::Text("\n");
+      ImGui::Text("Controls:");
+      if (ImGui::TreeNode("Settings")) {
 
-      const char *templates[] = {"basic", "archipelago", "new"};
-      if (ImGui::Combo("Map template", &t, templates, 3)) {
-        mapgen->setMapTemplate(templates[t]);
-      }
-
-      if (ImGui::SliderInt("Height octaves", &octaves, 1, 10)) {
-        mapgen->setOctaveCount(octaves);
-      }
-
-      if (ImGui::SliderFloat("Height freq", &freq, 0.001, 2.f)) {
-        mapgen->setFrequency(freq);
-      }
-
-      if (ImGui::InputInt("Points", &nPoints)) {
-        if (nPoints < 5) {
-          nPoints = 5;
+        if (ImGui::InputInt("Seed", &seed)) {
+          mapgen->setSeed(seed);
         }
-        mapgen->setPointCount(nPoints);
+
+        const char *templates[] = {"basic", "archipelago", "new"};
+        if (ImGui::Combo("Map template", &t, templates, 3)) {
+          mapgen->setMapTemplate(templates[t]);
+        }
+
+        if (ImGui::SliderInt("Height octaves", &octaves, 1, 10)) {
+          mapgen->setOctaveCount(octaves);
+        }
+
+        if (ImGui::SliderFloat("Height freq", &freq, 0.001, 2.f)) {
+          mapgen->setFrequency(freq);
+        }
+
+        if (ImGui::InputInt("Points", &nPoints)) {
+          if (nPoints < 5) {
+            nPoints = 5;
+          }
+          mapgen->setPointCount(nPoints);
+        }
+
+        if (ImGui::Button("Random")) {
+          mapgen->seed();
+          regen();
+        }
+        ImGui::SameLine(120);
+        if (ImGui::Button("Update")) {
+          regen();
+        }
+
+        ImGui::TreePop();
+      }
+      if (ImGui::TreeNode("Special layers")) {
+        if (ImGui::Checkbox("Edges", &painter->edges)) {
+          painter->update();
+        }
+        ImGui::SameLine(120);
+        if (ImGui::Checkbox("Heights", &painter->heights)) {
+          painter->update();
+        }
+
+        ImGui::SameLine(220);
+        if (ImGui::Checkbox("Humidity", &painter->hum)) {
+          painter->update();
+        }
+        if (ImGui::Checkbox("Temp", &painter->temp)) {
+          painter->update();
+        }
+        ImGui::SameLine(120);
+        if (ImGui::Checkbox("Minerals", &painter->minerals)) {
+          painter->update();
+        }
+        ImGui::TreePop();
       }
 
-      if (ImGui::Button("Update")) {
-        regen();
+      if (ImGui::TreeNode("Info toggles")) {
+        if (ImGui::Checkbox("Cities", &painter->cities)) {
+          painter->update();
+        }
+        if (ImGui::Checkbox("Locations*", &painter->locations)) {
+          painter->update();
+        }
+        if (ImGui::Checkbox("States", &painter->states)) {
+          painter->update();
+        }
+        if (ImGui::Checkbox("Roads and sea pathes*", &painter->roads)) {
+          painter->update();
+        }
+        ImGui::TreePop();
+      }
+      ImGui::Text("\n");
+
+      if (ImGui::Checkbox("Show verbose info", &painter->info)) {
+        painter->update();
       }
 
-      ImGui::TreePop();
+      ImGui::Text(
+          "\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
+          "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] "
+          "toggle pathes\n[RCLICK] toggle selection lock\n"
+          "[M] for distance ruler");
     }
-    if (ImGui::TreeNode("Special layers")) {
-      if (ImGui::Checkbox("Edges", &painter->edges)) {
-        painter->update();
-      }
-      ImGui::SameLine(120);
-      if (ImGui::Checkbox("Heights", &painter->heights)) {
-        painter->update();
-      }
 
-      ImGui::SameLine(220);
-      if (ImGui::Checkbox("Humidity", &painter->hum)) {
-        painter->update();
+    if (ImGui::AddTab("Simulation")) {
+      simulationWindow->draw();
+
+      if (mapgen->simulator->report != nullptr) {
+        if (ImGui::Button("Reset simulation")) {
+          resetSimulation();
+        }
       }
-      if (ImGui::Checkbox("Temp", &painter->temp)) {
-        painter->update();
+      ImGui::Text("\n");
+      if (ImGui::Button("Start simulation")) {
+        simulate();
       }
-      ImGui::SameLine(120);
-      if (ImGui::Checkbox("Minerals", &painter->minerals)) {
-        painter->update();
-      }
-      ImGui::TreePop();
     }
-
-    if (ImGui::TreeNode("Info toggles")) {
-      if (ImGui::Checkbox("Cities", &painter->cities)) {
-        painter->update();
-      }
-      if (ImGui::Checkbox("Locations*", &painter->locations)) {
-        painter->update();
-      }
-      if (ImGui::Checkbox("States", &painter->states)) {
-        painter->update();
-      }
-      if (ImGui::Checkbox("Roads and sea pathes*", &painter->roads)) {
-        painter->update();
-      }
-      ImGui::TreePop();
+    if (ImGui::AddTab("Objects")) {
+      drawObjects();
     }
-    ImGui::Text("\n");
-
-    if (ImGui::Checkbox("Show verbose info", &painter->info)) {
-      painter->update();
-    }
-
-    ImGui::Text("\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
-                "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] "
-                "toggle pathes\n[RCLICK] toggle selection lock\n"
-                "[M] for distance ruler");
-
+    ImGui::EndTabBar();
     ImGui::End();
   }
 
@@ -373,23 +397,7 @@ public:
       painter->draw();
 
       if (showUI) {
-        drawObjects();
         drawMainWindow();
-
-        //TODO: Move whole window paint to separate file
-        ImGui::Begin("Simulation");
-        simulationWindow->draw();
-
-        if (mapgen->simulator->report != nullptr) {
-          if (ImGui::Button("Reset simulation")) {
-            resetSimulation();
-          }
-        }
-        ImGui::Text("\n");
-        if (ImGui::Button("Start simulation")) {
-          simulate();
-        }
-        ImGui::End();
 
         if (painter->info) {
           drawInfo();

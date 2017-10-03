@@ -28,9 +28,11 @@ private:
   void simulateEconomy();
   void economyTick(int y);
   void populationTick(int y);
+  void disasterTick(int y);
 
   template<typename Iter>
   Iter select_randomly(Iter start, Iter end);
+  bool plague = false;
 
   Map* map;
   std::mt19937* _gen;

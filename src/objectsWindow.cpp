@@ -103,7 +103,6 @@ void ObjectsWindow::higlightLocation(Location *location) {
 void ObjectsWindow::draw() {
   objectPolygons.clear();
 
-  ImGui::Begin("Objects");
   listObjects<MegaCluster>(
       mapgen->map->megaClusters, &mega_selection_mask, "MegaClusters",
       (selectedFunc<MegaCluster>)[&](MegaCluster * cluster) {
@@ -237,8 +236,6 @@ void ObjectsWindow::draw() {
         sprintf(t, "%s [%s]", city->name.c_str(), city->typeName.c_str());
         return std::string(t);
       });
-
-  ImGui::End();
 }
 
 #endif
