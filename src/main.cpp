@@ -1,6 +1,6 @@
 #include "application.cpp"
 
-std::string VERSION = "0.5.1";
+std::string VERSION = "0.5.2";
 
 int main()
 {
