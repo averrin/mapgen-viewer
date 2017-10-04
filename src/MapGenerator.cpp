@@ -696,9 +696,9 @@ void MapGenerator::makeRiver(Region *r) {
   }
 
   int count = 0;
+	Cell *end = nullptr;
   while (count < 100) {
     std::vector<Cell *> n = c->getNeighbors();
-    Cell *end = nullptr;
 
     for (Cell *c2 : n) {
       if (std::find(visited.begin(), visited.end(), c2) != visited.end()) {
