@@ -24,7 +24,7 @@ private:
   void makeLighthouses();
   void makeLocationRoads();
   void makeForts();
-  void removeInvalidRoads();
+  void fixRoads();
   void removeCities();
 
   void simulateEconomy();

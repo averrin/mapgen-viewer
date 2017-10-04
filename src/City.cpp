@@ -109,7 +109,8 @@ float City::getPrice(Package *p) {
     if (path != roads.end()) {
       price *= 1 + ((*path)->cost / 10000.f);
     } else {
-      mg::warn("Strange situation:", "ghost road");
+      mg::warn("Road not found: from ", *this);
+      mg::warn("Road not found: to ", *p->owner);
       price *= 1.5;
     }
     if (p->owner->region->state != region->state) {
@@ -118,4 +119,8 @@ float City::getPrice(Package *p) {
     cache.insert(std::make_pair(p->owner, price));
   }
   return price;
+}
+
+std::ostream& operator<<(std::ostream &strm, const City &c) {
+  return strm << "City: " << c.name << " [" << c.typeName << "]";
 }

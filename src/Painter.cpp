@@ -161,12 +161,8 @@ public:
     infoPolygons.clear();
     sf::ConvexShape selectedPolygon;
 
-    if (currentRegion->location != nullptr && !roads) {
-      for (auto r : mapgen->map->roads) {
-        if (r->regions[0] != currentRegion->location->region &&
-            r->regions.back() != currentRegion->location->region) {
-          continue;
-        }
+    if (currentRegion->city != nullptr && !roads) {
+      for (auto r : currentRegion->city->roads) {
         drawRoad(r);
       }
     }

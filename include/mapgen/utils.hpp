@@ -2,6 +2,7 @@
 #define UTILS_HPP_
 #include <SFML/Graphics.hpp>
 #include <functional>
+#include "mapgen/City.hpp"
 
 typedef sf::Vector2<double>* Point;
 namespace mg {
@@ -19,7 +20,9 @@ namespace mg {
   void after(std::string method);
   void info(std::string prefix, std::string value);
   void info(std::string prefix, int value);
+  void info(std::string prefix, City value);
   void warn(std::string prefix, std::string value);
   void warn(std::string prefix, int value);
+  void warn(std::string prefix, City value);
 };
 #endif

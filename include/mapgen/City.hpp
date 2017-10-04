@@ -21,6 +21,8 @@ public:
   std::vector<Road*> roads;
   std::map<City*,float> cache;
   float getPrice(Package* p);
+private:
+  friend std::ostream& operator<<(std::ostream &strm, const City &c);
 };
 
 #endif

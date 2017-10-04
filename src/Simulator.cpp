@@ -43,6 +43,8 @@ void Simulator::simulate() {
   makeLighthouses();
   makeLocationRoads();
   makeForts();
+
+  fixRoads();
   removeCities();
 
   simulateEconomy();
@@ -81,11 +83,11 @@ void Simulator::resetAll() {
     }
   }
   if (map->roads.size() > 0) {
-    removeInvalidRoads();
+    fixRoads();
   }
 }
 
-void Simulator::removeInvalidRoads() {
+void Simulator::fixRoads() {
   map->roads.erase(
       std::remove_if(map->roads.begin(), map->roads.end(),
                      [&](Road *r) {
@@ -98,6 +100,14 @@ void Simulator::removeInvalidRoads() {
 
   for (auto c : map->cities) {
     if (c->roads.size() == 0) {
+      c->region->city = nullptr;
+      c->region->location = nullptr;
+
+      auto cc = c->region->megaCluster->cities;
+      cc.erase(std::remove(cc.begin(), cc.end(), c), cc.end());
+
+      auto cl = map->locations;
+      cl.erase(std::remove(cl.begin(), cl.end(), c), cl.end());
       map->cities.erase(std::remove(map->cities.begin(), map->cities.end(), c), map->cities.end());
       continue;
     }
@@ -111,6 +121,21 @@ void Simulator::removeInvalidRoads() {
                        }),
         c->roads.end());
   }
+
+  for (auto r : map->roads) {
+    auto c1 = r->regions.front()->city;
+    auto c2 = r->regions.back()->city;
+    if (c1 == nullptr || c2 == nullptr) {
+      continue;
+    }
+    if (std::count(c1->roads.begin(), c1->roads.end(), r) == 0) {
+      c1->roads.push_back(r);
+    }
+    if (std::count(c2->roads.begin(), c2->roads.end(), r) == 0) {
+      c2->roads.push_back(r);
+    }
+  }
+
 }
 
 void Simulator::simulateEconomy() {
@@ -193,7 +218,8 @@ Road *makeRoad(Map *map, City *c, City *oc) {
   pather->Reset();
   int result = pather->Solve(c->region, oc->region, &path, &totalCost);
   if (result != micropather::MicroPather::SOLVED) {
-    mg::warn("No road", c->typeName);
+    mg::warn("No road from", *c);
+    mg::warn("No road to", *oc);
     return nullptr;
   }
   Road *road = new Road(&path, totalCost);
@@ -214,18 +240,19 @@ void Simulator::makeRoads() {
     for (auto oc :
          std::vector<City *>(map->cities.begin() + n, map->cities.end())) {
       sprintf(op, "Making roads [%d/%d]", k, tc);
+      if (c == oc) {
+        continue;
+      }
       map->status = op;
-      threads[k] = std::thread([&]() {
+      threads[k] = std::thread([&](City* c, City* oc) {
         auto road = makeRoad(map, c, oc);
         if (road == nullptr) {
           return;
         }
         g_lock.lock();
         map->roads.push_back(road);
-        c->roads.push_back(road);
-        oc->roads.push_back(road);
         g_lock.unlock();
-      });
+        }, c, oc);
       k++;
     };
     n++;
@@ -234,6 +261,16 @@ void Simulator::makeRoads() {
     sprintf(op, "Finalize roads [%d/%d]", i, tc);
     map->status = op;
     threads[i].join();
+  }
+  for (auto r : map->roads) {
+    auto c1 = r->regions.front()->city;
+    auto c2 = r->regions.back()->city;
+    if (std::count(c1->roads.begin(), c1->roads.end(), r) == 0) {
+      c1->roads.push_back(r);
+    }
+    if (std::count(c2->roads.begin(), c2->roads.end(), r) == 0) {
+      c2->roads.push_back(r);
+    }
   }
   std::shuffle(map->roads.begin(), map->roads.end(), *_gen);
 }
@@ -276,9 +313,13 @@ void Simulator::upgradeCities() {
           return false;
         });
 
+    if (_cities.size() == 0) {
+      continue;
+    }
     _cities[0]->isCapital = true;
-    ;
-    printf("%s is capital\n", _cities[0]->name.c_str());
+    mg::info("Capital:", *_cities[0]);
+
+    //TODO: refine city tiers
     // int n = 1;
     // while (n < 4) {
     //   _cities[n]->type = TRADE;
@@ -314,8 +355,6 @@ void Simulator::removeBadPorts() {
   for (auto c : cities) {
     map->cities.push_back(c);
   }
-
-  removeInvalidRoads();
 }
 
 void Simulator::makeLighthouses() {
