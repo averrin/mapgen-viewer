@@ -23,6 +23,9 @@ float Map::getRegionDistance(Region *r, Region *r2) {
     if (r2->state != r->state) {
       d *= 1.2;
     }
+    if (r2->hasRoad) {
+      d *= 0.2;
+    }
   } else {
     d *= 0.8;
   }

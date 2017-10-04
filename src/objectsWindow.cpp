@@ -118,6 +118,23 @@ void ObjectsWindow::draw() {
         return cluster->name.c_str();
       });
 
+  listObjects<StateCluster>(
+                           mapgen->map->stateClusters, &mega_selection_mask, "StateClusters",
+                           (selectedFunc<StateCluster>)[&](StateCluster * cluster) {
+                             higlightCluster(cluster);
+                           },
+                           (openedFunc<StateCluster>)[&](StateCluster * cluster) {
+                             ImGui::Text("Regions: %zu", cluster->regions.size());
+                             ImGui::Text("States: %zu", cluster->states.size());
+                           },
+                           (titleFunc<StateCluster>)[&](StateCluster * cluster) {
+                             auto n = int(cluster->regions.size());
+                             char t[100];
+                             sprintf(t, "%s [%p]: %d", cluster->states[0]->name.c_str(),
+                                     cluster, n);
+                             return std::string(t);
+                           });
+
   listObjects<Cluster>(
       mapgen->map->clusters, &selection_mask, "Clusters",
       (selectedFunc<Cluster>)[&](Cluster * cluster) {

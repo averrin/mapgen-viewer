@@ -19,6 +19,7 @@ void InfoWindow::draw(Region *currentRegion) {
   }
 
   if (ImGui::TreeNode("Region")) {
+    ImGui::Text("Is Land: %s", currentRegion->megaCluster->isLand ? "true" : "false");
     ImGui::Text("Biom: %s", currentRegion->biom.name.c_str());
     ImGui::Text("Humidity: %f", currentRegion->humidity);
     ImGui::Text("Temperature: %f", currentRegion->temperature);
@@ -26,6 +27,15 @@ void InfoWindow::draw(Region *currentRegion) {
     ImGui::Text("Cluster size: %zu", cluster->regions.size());
     ImGui::Text("Mega Cluster: %s", currentRegion->megaCluster->name.c_str());
     ImGui::Text("State Cluster: %p", currentRegion->stateCluster);
+    if (currentRegion->stateCluster != nullptr) {
+      auto sc = currentRegion->stateCluster;
+      ImGui::Text("State Cluster regions: %zu", sc->regions.size());
+      ImGui::Text("Mega Cluster: %s", sc->megaCluster->name.c_str());
+      ImGui::Text("State megaCluster regions: %zu", sc->megaCluster->regions.size());
+      ImGui::Text("State 4x regions: %zu", 4*sc->regions.size());
+      // sc->regions[0]->megaCluster->regions.size() > 4 * sc->regions.size()
+    }
+    ImGui::Text("State border: %s", currentRegion->stateBorder ? "true" : "false");
     ImGui::Text("Has river: %s", currentRegion->hasRiver ? "true" : "false");
     ImGui::Text("Is border: %s", currentRegion->border ? "true" : "false");
     ImGui::Text("\n");

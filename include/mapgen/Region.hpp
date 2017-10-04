@@ -13,6 +13,7 @@ typedef std::map<Point,float> HeightMap;
 
 struct Cluster;
 typedef Cluster MegaCluster;
+typedef Cluster StateCluster;
 class City;
 class Location;
 class Region {

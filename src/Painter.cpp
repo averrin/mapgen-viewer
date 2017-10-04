@@ -108,6 +108,7 @@ public:
   bool locations = true;
   bool states = true;
   bool areas = false;
+  bool showWalkers = true;
 
   bool isIncreasing{true};
 
@@ -365,7 +366,7 @@ public:
           if (r->stateBorder && !r->seaBorder &&
               std::count_if(r->neighbors.begin(), r->neighbors.end(),
                             [&](Region *n) {
-                              return n->stateBorder && !n->seaBorder &&
+                             return n->stateBorder && !n->seaBorder &&
                                      n->state == r->state;
                             }) == 1) {
             return true;
@@ -377,6 +378,19 @@ public:
     std::vector<Region *> used;
     std::vector<Region *> exclude;
     for (auto r : ends) {
+      sf::ConvexShape polygon;
+      PointList points = r->getPoints();
+      polygon.setPointCount(points.size());
+      int n = 0;
+      for (auto p : points) {
+        polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+        n++;
+      }
+
+      sf::Color col(sf::Color::Black);
+      polygon.setFillColor(col);
+      // window->draw(polygon);
+
       if (std::count(used.begin(), used.end(), r) == 0) {
         sw::Spline line;
         sf::Color col = r->state->color;
@@ -649,15 +663,17 @@ public:
     window->clear(bgColor);
     drawMap();
 
-    if (mapgen->map->roads.size() != 0) {
-      drawWalkers();
+    if (showWalkers) {
+      if (mapgen->map->roads.size() != 0) {
+        drawWalkers();
+      }
     }
   }
 
   void drawWalkers() {
     if (walkers.size() == 0) {
       int n = 0;
-      while (n < mapgen->map->cities.size()/2) {
+      while (n < mapgen->map->cities.size()) {
         auto c = mapgen->map->cities[n];
         if (c->roads.size() == 0) {
           n++;
