@@ -13,6 +13,7 @@
 #include "mapgen/Biom.hpp"
 #include "mapgen/MapGenerator.hpp"
 #include "mapgen/utils.hpp"
+#include "mapgen/Walker.hpp"
 #include "rang.hpp"
 
 // TODO: move ints to utils.cpp
@@ -50,6 +51,7 @@ public:
   };
 
   sf::Font sffont;
+
 private:
   std::map<LocationType, sf::Texture *> icons;
   sf::RenderWindow *window;
@@ -62,6 +64,7 @@ private:
   std::string VERSION;
   bool needUpdate = true;
   sf::Clock clock;
+  std::vector<Walker*> walkers;
 
   void initProgressBar() {
     progressBar.setShowBackgroundAndFrame(true);
@@ -266,30 +269,35 @@ public:
     }
   }
 
-  void drawRoad(Road *r) {
-    sw::Spline road;
-    int i = 0;
-
-    road.setColor(sf::Color(200, 160, 100, 70));
-    road.setThickness(1);
-    for (auto reg : r->regions) {
-      Point p = reg->site;
-      road.addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
-      if (reg->megaCluster->isLand) {
-        road.setColor(i, sf::Color(70, 50, 0));
-        float w = std::min(3.f, 1.f + reg->traffic / 200.f);
-        road.setThickness(i, w);
-      } else {
-        road.setColor(i, sf::Color(80, 80, 255, 180));
-        road.setThickness(i, 2);
+  sw::Spline *drawRoad(Road *r) {
+    sw::Spline *road = new sw::Spline();
+    if (r->spline != nullptr) {
+      road = r->spline;
+    } else {
+      int i = 0;
+      road->setColor(sf::Color(200, 160, 100, 70));
+      road->setThickness(1);
+      for (auto reg : r->regions) {
+        Point p = reg->site;
+        road->addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
+        if (reg->megaCluster->isLand) {
+          road->setColor(i, sf::Color(70, 50, 0));
+          float w = std::min(3.f, 1.f + reg->traffic / 200.f);
+          road->setThickness(i, w);
+        } else {
+          road->setColor(i, sf::Color(80, 80, 255, 180));
+          road->setThickness(i, 2);
+        }
+        i++;
       }
+      road->setBezierInterpolation();
+      road->setInterpolationSteps(10);
+      road->smoothHandles();
+      road->update();
+      r->spline = road;
     }
-    road.setBezierInterpolation();
-    road.setInterpolationSteps(10);
-    road.smoothHandles();
-    road.update();
-    window->draw(road);
-    i++;
+    window->draw(*road);
+    return road;
   }
 
   void drawRoads() {
@@ -339,6 +347,7 @@ public:
           }
         }
       }
+      drawMark();
 
       sf::Vector2u windowSize = window->getSize();
       cachedMap.create(windowSize.x, windowSize.y);
@@ -444,6 +453,7 @@ public:
     polygons.clear();
     poi.clear();
     sprites.clear();
+    walkers.clear();
 
     for (auto mc : mapgen->map->megaClusters) {
       for (auto p : mc->resourcePoints) {
@@ -642,6 +652,32 @@ public:
   void draw() {
     window->clear(bgColor);
     drawMap();
-    drawMark();
+
+    if (mapgen->map->roads.size() != 0) {
+      drawWalkers();
+    }
+  }
+
+  void drawWalkers() {
+    if (walkers.size() == 0) {
+      int n = 0;
+      while (n < mapgen->map->cities.size()/2) {
+        auto c = mapgen->map->cities[n];
+        if (c->roads.size() == 0) {
+          n++;
+          continue;
+        }
+        auto w = new Walker(c, mapgen);
+        walkers.push_back(w);
+        n++;
+      }
+    } else {
+      for (auto w : walkers) {
+        w->tick();
+        if (w->shape != nullptr) {
+          window->draw(*w->shape);
+        }
+      }
+    }
   }
 };

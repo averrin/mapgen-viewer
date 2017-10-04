@@ -187,6 +187,7 @@ public:
 
     ImGui::DrawTabsBackground();
 
+    //TODO: move to separate file
     if (ImGui::AddTab("Generation")) {
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

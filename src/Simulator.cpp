@@ -43,10 +43,16 @@ void Simulator::simulate() {
   makeLighthouses();
   makeLocationRoads();
   makeForts();
+  removeCities();
 
   simulateEconomy();
 
   upgradeCities();
+}
+
+void Simulator::removeCities() {
+  // mapgen->map->cities.erase(std::remove_if(mapgen->map->cities.begin(), mapgen->map->cities.end(), [](City* c){
+  //     return c->roads.}), mapgen->map->cities.end());
 }
 
 void Simulator::resetAll() {
@@ -81,12 +87,30 @@ void Simulator::resetAll() {
 
 void Simulator::removeInvalidRoads() {
   map->roads.erase(
-      std::remove_if(map->roads.begin(), map->roads.end(), [&](Road *r) {
-        return (r->regions.back()->city == nullptr &&
-                r->regions.back()->location == nullptr) ||
-               (r->regions.front()->city == nullptr &&
-                r->regions.front()->location == nullptr);
-        }), map->roads.end());
+      std::remove_if(map->roads.begin(), map->roads.end(),
+                     [&](Road *r) {
+                       return r == nullptr || (r->regions.back()->city == nullptr &&
+                               r->regions.back()->location == nullptr) ||
+                              (r->regions.front()->city == nullptr &&
+                               r->regions.front()->location == nullptr);
+                     }),
+      map->roads.end());
+
+  for (auto c : map->cities) {
+    if (c->roads.size() == 0) {
+      map->cities.erase(std::remove(map->cities.begin(), map->cities.end(), c), map->cities.end());
+      continue;
+    }
+    c->roads.erase(
+        std::remove_if(c->roads.begin(), c->roads.end(),
+                       [&](Road *r) {
+                        return r == nullptr || (r->regions.back()->city == nullptr &&
+                                 r->regions.back()->location == nullptr) ||
+                                (r->regions.front()->city == nullptr &&
+                                 r->regions.front()->location == nullptr);
+                       }),
+        c->roads.end());
+  }
 }
 
 void Simulator::simulateEconomy() {
@@ -169,6 +193,7 @@ Road *makeRoad(Map *map, City *c, City *oc) {
   pather->Reset();
   int result = pather->Solve(c->region, oc->region, &path, &totalCost);
   if (result != micropather::MicroPather::SOLVED) {
+    mg::warn("No road", c->typeName);
     return nullptr;
   }
   Road *road = new Road(&path, totalCost);
@@ -210,6 +235,7 @@ void Simulator::makeRoads() {
     map->status = op;
     threads[i].join();
   }
+  std::shuffle(map->roads.begin(), map->roads.end(), *_gen);
 }
 
 void Simulator::makeCaves() {
@@ -404,6 +430,15 @@ void Simulator::makeForts() {
       int n = 0;
       while (n < std::min(2, int(regions.size()))) {
         City *c = new City(regions[n], names::generateCityName(_gen), FORT);
+        for (auto oc : map->cities) {
+          auto road = makeRoad(map, c, oc);
+          if (road == nullptr) {
+            continue;
+          }
+          map->roads.push_back(road);
+          c->roads.push_back(road);
+          oc->roads.push_back(road);
+        }
         map->cities.push_back(c);
         mc->cities.push_back(c);
         n++;

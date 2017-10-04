@@ -23,18 +23,17 @@ public:
   float getHeight(Point p);
   Biom biom;
   Point site;
-  bool hasRiver;
-  Cluster *cluster;
-  Cluster *stateCluster;
-  MegaCluster *megaCluster;
-  bool border;
-  float humidity;
-  Cell* cell;
-  float temperature;
-  float minerals;
-  float nice;
+  bool hasRiver = false;
+  Cluster *cluster = nullptr;
+  Cluster *stateCluster = nullptr;
+  MegaCluster *megaCluster = nullptr;
+  bool border = false;
+  float humidity = 0.f;
+  Cell* cell = nullptr;
+  float temperature = 0.f;
+  float minerals = 0.f;
+  float nice = 0.f;
   City* city = nullptr;
-  float distanceFormCapital;
   std::vector<Region*> neighbors;
   bool hasRoad = false;
   int traffic = 0;
@@ -48,14 +47,14 @@ private:
 };
 
 struct Cluster {
-  std::string name;
+  std::string name = "";
   std::vector<Region*> regions;
   std::vector<Cluster*> neighbors;
-  MegaCluster* megaCluster;
+  MegaCluster* megaCluster = nullptr;
   Biom biom;
-  bool hasRiver;
-  bool isLand;
-  Point* center;
+  bool hasRiver = false;;
+  bool isLand = false;;
+  Point* center = nullptr;
   PointList border;
   std::vector<Region*> resourcePoints;
   std::vector<Region*> goodPoints;

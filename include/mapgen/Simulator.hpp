@@ -25,6 +25,8 @@ private:
   void makeLocationRoads();
   void makeForts();
   void removeInvalidRoads();
+  void removeCities();
+
   void simulateEconomy();
   void economyTick(int y);
   void populationTick(int y);

@@ -57,6 +57,7 @@ add_executable(${EXECUTABLE_NAME}
   src/State.cpp
   src/Package.cpp
   src/Map.cpp
+  src/Walker.cpp
 
   src/Report.cpp
   src/Simulator.cpp

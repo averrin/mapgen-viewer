@@ -100,7 +100,7 @@ float City::getPrice(Package *p) {
   float price = 1.f;
   if (cache.find(p->owner) != cache.end()) {
     price = cache[p->owner];
-  } else {
+  } else if (roads.size() != 0) {
     auto path = std::find_if(roads.begin(), roads.end(), [&](Road *r) {
       return r->regions.back()->city == p->owner ||
              r->regions.front()->city == p->owner;

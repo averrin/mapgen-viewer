@@ -50,6 +50,11 @@ public:
   Map* map;
   Simulator* simulator;
 
+  template<typename Iter>
+  Iter select_randomly(Iter start, Iter end);
+
+  std::mt19937 *_gen;
+
 private:
   void makeHeights();
   void makeDiagram();
@@ -91,11 +96,7 @@ private:
   utils::NoiseMap _mineralsMap;
   std::string _terrainType;
 
-  template<typename Iter>
-  Iter select_randomly(Iter start, Iter end);
-
   void genRandomSites(std::vector<sf::Vector2<double> >& sites, sf::Rect<double>& bbox, unsigned int dx, unsigned int dy, unsigned int numSites);
-  std::mt19937 *_gen;
 
   std::vector<Cluster *> clusterize(sameFunc isSame,
                                                   assignFunc assignCluster,

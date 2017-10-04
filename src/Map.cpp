@@ -12,13 +12,13 @@ float Map::getRegionDistance(Region *r, Region *r2) {
   if (r->megaCluster->isLand) {
     float hd = (r->getHeight(r->site) - r2->getHeight(r2->site));
     if (hd < 0) {
-      d += 10000 * std::abs(hd);
-      if (r2->city != nullptr && d >= 5000) {
-        d -= 5000;
+      d += 1000 * std::abs(hd);
+      if (r2->city != nullptr && d >= 500) {
+        d -= 500;
       }
     }
     if (r2->hasRiver) {
-      d *= 0.8;
+      d *= 0.6;
     }
     if (r2->state != r->state) {
       d *= 1.2;
