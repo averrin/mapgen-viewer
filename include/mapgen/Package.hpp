@@ -10,12 +10,12 @@ enum PackageType {
 
 class Package {
 public:
-  Package (City* owner, PackageType type, uint count);
+  Package (City* owner, PackageType type, unsigned int count);
   City* owner;
   std::vector<City*> ports;
   PackageType type;
-  uint count = 0;
-  void buy(City* buyer, float price, uint c);
+  unsigned int count = 0;
+  void buy(City* buyer, float price, unsigned int c);
 };
 
 #endif

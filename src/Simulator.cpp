@@ -10,6 +10,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <numeric>
 
 template <typename T> using filterFunc = std::function<bool(T *)>;
 template <typename T> using sortFunc = std::function<bool(T *, T *)>;
@@ -185,13 +186,15 @@ void Simulator::economyTick(int y) {
   for (auto c : map->cities) {
     c->economyVars = vars;
     auto lg = c->makeGoods(y);
-    goods->push_back(lg);
+	if (lg != nullptr) {
+		goods->push_back(lg);
+	}
   }
-  uint gc = std::accumulate(goods->begin(), goods->end(), 0,
+  unsigned int gc = std::accumulate(goods->begin(), goods->end(), 0,
                             [](int s, Package *p2) { return s + p2->count; });
   mg::info("Goods for sale:", gc);
   std::shuffle(map->cities.begin(), map->cities.end(), *_gen);
-  uint sn = 0;
+  unsigned int sn = 0;
   for (auto c : map->cities) {
     sn += c->buyGoods(goods);
   }
@@ -231,10 +234,14 @@ void Simulator::makeRoads() {
   map->status = "Making roads...";
   char op[100];
 
-  int tc = (map->cities.size() * map->cities.size() - map->cities.size()) / 2;
+  const int tc = (map->cities.size() * map->cities.size() - map->cities.size()) / 2;
   int k = 0;
   int n = 1;
+#ifdef _WIN32
+  std::thread threads[10000];
+#else
   std::thread threads[tc];
+#endif
   std::mutex g_lock;
   for (auto c : map->cities) {
     for (auto oc :

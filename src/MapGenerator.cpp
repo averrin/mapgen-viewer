@@ -250,6 +250,9 @@ void MapGenerator::simplifyRivers() {
     sr.push_back((*rvr)[0]);
     for (PointList::iterator it = rvr->begin(); it < rvr->end(); it++, i++) {
       Point p = (*rvr)[i];
+	  if (i == rvr->size() - 1) {
+		  break;
+	  }
       Point p2 = (*rvr)[i + 1];
       if (c - i - 1 < 2) {
         break;
@@ -695,7 +698,7 @@ void MapGenerator::makeRiver(Region *r) {
   int count = 0;
   while (count < 100) {
     std::vector<Cell *> n = c->getNeighbors();
-    Cell *end;
+    Cell *end = nullptr;
 
     for (Cell *c2 : n) {
       if (std::find(visited.begin(), visited.end(), c2) != visited.end()) {
@@ -722,17 +725,20 @@ void MapGenerator::makeRiver(Region *r) {
       end = c2;
     }
     count++;
+
     if (count == 100) {
       r->biom = biom::LAKE;
       river->push_back(r->site);
       rvr->regions.push_back(r);
       r->humidity = 1;
 
-      for (auto n : end->getNeighbors()) {
-        r = _cells[n];
-        r->biom = biom::LAKE;
-        r->humidity = 1;
-      }
+	  if (end != nullptr) {
+		  for (auto n : end->getNeighbors()) {
+			r = _cells[n];
+			r->biom = biom::LAKE;
+			r->humidity = 1;
+		  }
+	  }
       break;
     }
     if (r->getHeight(r->site) < 0.0625) {

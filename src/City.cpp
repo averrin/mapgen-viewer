@@ -10,8 +10,8 @@ City::City(Region *r, std::string n, LocationType t)
 }
 
 Package *City::makeGoods(int y) {
-  Package *goods;
-  uint p;
+  Package *goods = nullptr;
+  unsigned int p;
   switch (type) {
   case AGRO:
     p = region->nice * economyVars->PACKAGES_PER_NICE * population *
@@ -30,10 +30,10 @@ Package *City::makeGoods(int y) {
 }
 
 int City::buyGoods(std::vector<Package *> *goods) {
-  uint mineralsNeeded =
+  unsigned int mineralsNeeded =
       population * (economyVars->CONSUME_MINERALS_POPULATION_MODIFIER -
                     region->minerals * economyVars->MINERALS_POPULATION_PRODUCE);
-  uint agroNeeded =
+  unsigned int agroNeeded =
       population * (economyVars->CONSUME_AGRO_POPULATION_MODIFIER -
                     region->nice * economyVars->AGRO_POPULATION_PRODUCE);
 
@@ -64,7 +64,7 @@ int City::buyGoods(std::vector<Package *> *goods) {
   if (agroCandidates.size() > 0) {
     int n = 0;
     auto p = agroCandidates[n];
-    uint c = 0;
+    unsigned int c = 0;
     while (agroNeeded > 0 && n < agroCandidates.size()) {
       p = agroCandidates[n];
       c = std::min((int)agroNeeded, (int)p->count);
@@ -78,7 +78,7 @@ int City::buyGoods(std::vector<Package *> *goods) {
   if (mineralsCandidates.size() > 0) {
     int n = 0;
     auto p = mineralsCandidates[n];
-    uint c = 0;
+    unsigned int c = 0;
     while (mineralsNeeded > 0 && n < mineralsCandidates.size()) {
       p = mineralsCandidates[n];
       c = std::min((int)mineralsNeeded, (int)p->count);
