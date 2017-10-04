@@ -192,7 +192,7 @@ void MapGenerator::makeStates() {
       std::cout<<oc->regions.size()<<std::endl<<std::flush;
       mg::info("oc size", oc->regions.size());
 
-      if (oc->regions.size() > 4 * sc->regions.size()) {
+      if (oc->regions.size() > 4 * sc->regions.size() || (sc->regions.size() < 50 && oc->regions.size() >= sc->regions.size())) {
         mg::info("State Corrections", sc->regions.size());
         auto oldState = sc->states[0];
         mg::info("State Corrections: ", oldState->name);

@@ -105,7 +105,7 @@ public:
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    mapgen->setSeed(18014229);
+    mapgen->setSeed(28167073);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -273,9 +273,8 @@ public:
         if (ImGui::Checkbox("Roads and sea pathes*", &painter->roads)) {
           painter->update();
         }
-        if (ImGui::Checkbox("Walkers*", &painter->showWalkers)) {
-          // painter->update();
-        }
+        ImGui::Checkbox("Walkers*", &painter->showWalkers);
+
         ImGui::TreePop();
       }
       ImGui::Text("\n");
