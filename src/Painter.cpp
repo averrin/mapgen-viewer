@@ -36,10 +36,14 @@ public:
   // TODO: use map instead mapgen
   Painter(sf::RenderWindow *w, MapGenerator *m, std::string v)
       : window(w), mapgen(m), VERSION(v) {
+
+    auto dir = get_selfpath();
+    char path[100];
+    sprintf(path, "%s/font.ttf", dir.c_str());
+    mg::info("Loading font:", path);
+    sffont.loadFromFile(path);
     loadIcons();
     initProgressBar();
-    // TODO: use whereami
-    sffont.loadFromFile("./font.ttf");
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
@@ -66,6 +70,20 @@ private:
   sf::Clock clock;
   std::vector<Walker*> walkers;
 
+  std::string get_selfpath() {
+    char buff[PATH_MAX];
+#ifdef _WIN32
+    GetModuleFileName(NULL,buff,sizeof(buff));
+#else
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    if (len != -1) {
+      buff[len] = '\0';
+    }
+#endif
+    auto path = std::string(buff);
+    return path.substr(0, path.size()-7);
+  }
+
   void initProgressBar() {
     progressBar.setShowBackgroundAndFrame(true);
     progressBar.setSize(sf::Vector2f(400, 10));
@@ -80,10 +98,14 @@ private:
         {TRADE, "images/trade.png"},    {LIGHTHOUSE, "images/lighthouse.png"},
         {CAVE, "images/cave.png"},      {FORT, "images/fort.png"}};
 
+    auto dir = get_selfpath();
+    char path[100];
+
     for (auto pair : iconMap) {
       sf::Texture *icon = new sf::Texture();
-      mg::info("Loading icon:", pair.second);
-      icon->loadFromFile(pair.second);
+      sprintf(path, "%s/%s", dir.c_str(), pair.second.c_str());
+      mg::info("Loading icon:", path);
+      icon->loadFromFile(path);
       icon->setSmooth(true);
       icons.insert(std::make_pair(pair.first, icon));
     }

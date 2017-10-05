@@ -732,13 +732,11 @@ void MapGenerator::makeRiver(Region *r) {
       rvr->regions.push_back(r);
       r->humidity = 1;
 
-	  if (end != nullptr) {
 		  for (auto n : end->getNeighbors()) {
 			r = _cells[n];
 			r->biom = biom::LAKE;
 			r->humidity = 1;
 		  }
-	  }
       break;
     }
     if (r->getHeight(r->site) < 0.0625) {
