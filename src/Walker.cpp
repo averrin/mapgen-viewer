@@ -18,7 +18,9 @@ Walker::Walker(City *c, MapGenerator *m) : mapgen(m) {
   // road = *mapgen->select_randomly(s->roads.begin(), s->roads.end());
   reverse = rand() % 2 == 0;
   shape = new sf::CircleShape(3);
-  shape->setFillColor(sf::Color::Red);
+  shape->setFillColor(sf::Color(225,225,190));
+  shape->setOutlineColor(sf::Color::Black);
+  shape->setOutlineThickness(1);
   road = *select_randomly(c->roads.begin(), c->roads.end());
   reverse = road->regions.back()->city == c;
   if (reverse) {

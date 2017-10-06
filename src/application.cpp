@@ -105,7 +105,7 @@ public:
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    //mapgen->setSeed(28167073);
+    // mapgen->setSeed(28167073);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -164,7 +164,15 @@ public:
         getScreenshot = true;
         break;
       case sf::Keyboard::W:
-        painter->showWalkers = ! painter->showWalkers;
+        painter->showWalkers = !painter->showWalkers;
+        break;
+      case sf::Keyboard::N:
+        painter->lables = !painter->lables;
+        painter->invalidate();
+        break;
+      case sf::Keyboard::B:
+        painter->blur = !painter->blur;
+        painter->invalidate();
         break;
       }
       break;
@@ -190,7 +198,7 @@ public:
 
     ImGui::DrawTabsBackground();
 
-    //TODO: move to separate file
+    // TODO: move to separate file
     if (ImGui::AddTab("Generation")) {
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -274,6 +282,7 @@ public:
           painter->update();
         }
         ImGui::Checkbox("Walkers*", &painter->showWalkers);
+        ImGui::Checkbox("Lables", &painter->lables);
 
         ImGui::TreePop();
       }
@@ -287,7 +296,11 @@ public:
           "\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
           "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] "
           "toggle pathes\n[RCLICK] toggle selection lock\n"
-          "[M] for distance ruler");
+          "[M] for distance ruler\n"
+          "[W] toggle walkers\n"
+          "[B] toggle water blur\n"
+          "[N] toggle labels\n"
+          "[A] show state clusters\n");
     }
 
     if (ImGui::AddTab("Simulation")) {
@@ -367,7 +380,7 @@ public:
               mg::getDistance(rulerRegion->site, currentRegion->site));
       sf::Text mark(mt, painter->sffont);
       mark.setCharacterSize(15);
-      mark.setColor(sf::Color::Black);
+      mark.setFillColor(sf::Color::Black);
       mark.setPosition(line[1].position + sf::Vector2f(15.f, 15.f));
       window->draw(mark);
     }

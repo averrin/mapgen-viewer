@@ -16,6 +16,8 @@
 #include "mapgen/Walker.hpp"
 #include "rang.hpp"
 
+#include <cmath>
+
 // TODO: move ints to utils.cpp
 template <typename T> using filterFunc = std::function<bool(T *)>;
 template <typename T> using sortFunc = std::function<bool(T *, T *)>;
@@ -52,6 +54,12 @@ public:
     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
     window->clear(bgColor);
+
+    char spath[100];
+    sprintf(spath, "%s/blur.frag", dir.c_str());
+
+    shader_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
+    shader_blur.setUniform("blur_radius", 0.004f);
   };
 
   sf::Font sffont;
@@ -69,6 +77,7 @@ private:
   bool needUpdate = true;
   sf::Clock clock;
   std::vector<Walker*> walkers;
+  sf::Shader shader_blur;
 
   std::string get_selfpath() {
     char buff[PATH_MAX];
@@ -113,6 +122,7 @@ private:
 
 public:
   std::vector<sf::ConvexShape> polygons;
+  std::vector<sf::ConvexShape> waterPolygons;
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::CircleShape> poi;
   std::vector<sf::Sprite> sprites;
@@ -131,6 +141,8 @@ public:
   bool states = true;
   bool areas = false;
   bool showWalkers = true;
+  bool lables = true;
+  bool blur = true;
 
   bool isIncreasing{true};
 
@@ -170,7 +182,7 @@ public:
     if (mapgen->map != nullptr) {
       sf::Text operation(mapgen->map->status, sffont);
       operation.setCharacterSize(20);
-      operation.setColor(sf::Color::White);
+      operation.setFillColor(sf::Color::White);
 
       auto middle = (sf::Vector2f(window->getSize())) / 2.f;
       operation.setPosition(sf::Vector2f(
@@ -325,8 +337,61 @@ public:
     }
   }
 
+  void drawLables() {
+    for (auto c : mapgen->map->cities) {
+
+      sf::RectangleShape bg;
+      bg.setFillColor(sf::Color(50,30,22, 200));
+      if (c->isCapital) {
+        bg.setOutlineColor(c->region->state->color);
+      } else {
+        bg.setOutlineColor(sf::Color(200,200,180, 180));
+      }
+      bg.setOutlineThickness(1);
+
+      sf::Text label(c->name, sffont);
+      label.setCharacterSize(10);
+      label.setFillColor(sf::Color(255,255,220));
+      label.setPosition(sf::Vector2f(c->region->site->x, c->region->site->y + 10));
+
+      bg.setSize(sf::Vector2f(label.getGlobalBounds().width + 8, 18));
+      bg.setPosition(sf::Vector2f(c->region->site->x - 4, c->region->site->y + 7));
+
+      window->draw(bg);
+      window->draw(label);
+    }
+  }
+
   void drawMap() {
     if (needUpdate) {
+      sf::Vector2u windowSize = window->getSize();
+      for (auto p : waterPolygons) {
+        window->draw(p);
+      }
+
+      if (blur) {
+        for (auto p : polygons) {
+          window->draw(p);
+        }
+        cachedMap.create(windowSize.x, windowSize.y);
+        cachedMap.update(*window);
+
+        sf::RectangleShape rectangle;
+        rectangle.setSize(sf::Vector2f(window->getSize().x, window->getSize().y));
+        rectangle.setPosition(0, 0);
+        rectangle.setTexture(&cachedMap);
+
+        window->draw(rectangle, &shader_blur);
+
+        for (auto p : polygons) {
+          auto p2 = sf::ConvexShape(p);
+          p2.setFillColor(bgColor);
+          p2.setOutlineColor(sf::Color(50,20,0));
+          p2.setOutlineThickness(2);
+          window->draw(p2);
+        }
+      }
+
       for (auto p : polygons) {
         window->draw(p);
       }
@@ -339,11 +404,10 @@ public:
         window->draw(sprite);
       }
 
-      // if (info) {
-      //   for (auto p : poi) {
-      //     window->draw(p);
-      //   }
-      // }
+      if (lables) {
+        drawLables();
+      }
+
       if (states) {
         drawBorders();
       }
@@ -368,7 +432,6 @@ public:
       }
       drawMark();
 
-      sf::Vector2u windowSize = window->getSize();
       cachedMap.create(windowSize.x, windowSize.y);
       cachedMap.update(*window);
       needUpdate = false;
@@ -377,6 +440,7 @@ public:
       rectangle.setSize(sf::Vector2f(window->getSize().x, window->getSize().y));
       rectangle.setPosition(0, 0);
       rectangle.setTexture(&cachedMap);
+
       window->draw(rectangle);
     }
   }
@@ -469,7 +533,7 @@ public:
     sprintf(mt, "Mapgen [%s] by Averrin", VERSION.c_str());
     sf::Text mark(mt, sffont);
     mark.setCharacterSize(15);
-    mark.setColor(sf::Color::White);
+    mark.setFillColor(sf::Color::White);
     mark.setPosition(sf::Vector2f(windowSize.x - 240, windowSize.y - 25));
     window->draw(mark);
   }
@@ -483,6 +547,7 @@ public:
   void update() {
     infoPolygons.clear();
     polygons.clear();
+    waterPolygons.clear();
     poi.clear();
     sprites.clear();
     walkers.clear();
@@ -610,7 +675,11 @@ public:
           polygon.setFillColor(col);
         }
       }
-      polygons.push_back(polygon);
+      if (region->megaCluster->isLand) {
+        polygons.push_back(polygon);
+      } else {
+        waterPolygons.push_back(polygon);
+      }
     }
 
     needUpdate = true;

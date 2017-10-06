@@ -13,6 +13,8 @@ set (mapgen_VERSION_PATCH 1)
 file(GLOB SOURCE "src/*.cpp" "include/mapgen/*.h")
 file(COPY "font.ttf" DESTINATION "bin")
 file(COPY "images" DESTINATION "bin")
+file(COPY "images" DESTINATION "bin")
+file(COPY "src/blur.frag" DESTINATION "bin")
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/MapgenConfig.h.in"
