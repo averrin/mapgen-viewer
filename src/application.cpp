@@ -104,8 +104,8 @@ public:
 
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
-    mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    // mapgen->setSeed(28167073);
+    mapgen = new MapGenerator(window->getSize().x*2, window->getSize().y*2);
+    mapgen->setSeed(28167073);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -117,9 +117,39 @@ public:
         window->mapPixelToCoords(sf::Mouse::getPosition(*window));
     ImGui::SFML::ProcessEvent(event);
 
+    auto view = window->getView();
+
     switch (event.type) {
     case sf::Event::KeyPressed:
       switch (event.key.code) {
+      case sf::Keyboard::Right:
+        if(view.getCenter().x >= window->getSize().x*1.5) {
+          return;
+        }
+        view.move(20,0);
+        window->setView(view);
+        break;
+      case sf::Keyboard::Left:
+        if(view.getCenter().x <= window->getSize().x/2) {
+          return;
+        }
+        view.move(-20,0);
+        window->setView(view);
+        break;
+      case sf::Keyboard::Up:
+        if(view.getCenter().y <= window->getSize().y/2) {
+          return;
+        }
+        view.move(0,-20);
+        window->setView(view);
+        break;
+      case sf::Keyboard::Down:
+        if(view.getCenter().y >= window->getSize().y*1.5) {
+          return;
+        }
+        view.move(0,20);
+        window->setView(view);
+        break;
       case sf::Keyboard::R:
         mapgen->seed();
         regen();
@@ -180,7 +210,7 @@ public:
       window->close();
       break;
     case sf::Event::Resized:
-      mapgen->setSize(window->getSize().x, window->getSize().y);
+      // mapgen->setSize(window->getSize().x*2, window->getSize().y*2);
       // mapgen->update();
       painter->update();
       break;
@@ -300,7 +330,8 @@ public:
           "[W] toggle walkers\n"
           "[B] toggle water blur\n"
           "[N] toggle labels\n"
-          "[A] show state clusters\n");
+          "[A] show state clusters\n"
+          "[ARROWS] for move vie\nw");
     }
 
     if (ImGui::AddTab("Simulation")) {

@@ -58,7 +58,7 @@ Iter MapGenerator::select_randomly(Iter start, Iter end) {
 
 MapGenerator::MapGenerator(int w, int h) : _w(w), _h(h) {
   _vdg = VoronoiDiagramGenerator();
-  _pointsCount = 10000;
+  _pointsCount = 40000;
   _octaves = 4;
   _freq = 0.3;
   _relax = DEFAULT_RELAX;

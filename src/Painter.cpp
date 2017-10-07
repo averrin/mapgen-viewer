@@ -48,27 +48,33 @@ public:
     initProgressBar();
 
     sf::Vector2u windowSize = window->getSize();
-    cachedMap.create(windowSize.x, windowSize.y);
+    world = new sf::RenderTexture();
+    world->create(windowSize.x*2, windowSize.y*2);
 
     bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
     bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
     bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
     window->clear(bgColor);
+    world->clear(bgColor);
 
     char spath[100];
     sprintf(spath, "%s/blur.frag", dir.c_str());
 
     shader_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
     shader_blur.setUniform("blur_radius", 0.004f);
+
+    view = window->getView();
+    view.setCenter(windowSize.x/2, windowSize.y/2);
+    window->setView(view);
   };
 
   sf::Font sffont;
+  sf::View view;
 
 private:
   std::map<LocationType, sf::Texture *> icons;
   sf::RenderWindow *window;
   sw::ProgressBar progressBar;
-  sf::Texture cachedMap;
   sf::Color bgColor;
   float color[3] = {0.12f, 0.12f, 0.12f};
   Map *map;
@@ -78,6 +84,7 @@ private:
   sf::Clock clock;
   std::vector<Walker*> walkers;
   sf::Shader shader_blur;
+  sf::RenderTexture* world;
 
   std::string get_selfpath() {
     char buff[PATH_MAX];
@@ -156,7 +163,7 @@ public:
     rectangle.setFillColor(color);
     rectangle.setPosition(0, 0);
 
-    window->draw(rectangle);
+    world->draw(rectangle);
   }
 
   void drawLoading() {
@@ -168,7 +175,7 @@ public:
     else if (target > 1.f)
       isIncreasing = false;
     progressBar.setRatio(target);
-    window->draw(progressBar);
+    world->draw(progressBar);
 
     sf::RectangleShape bg;
     bg.setSize(sf::Vector2f(420, 40));
@@ -177,7 +184,7 @@ public:
     bg.setOutlineThickness(1);
     auto middle = (sf::Vector2f(window->getSize()) - bg.getSize()) / 2.f;
     bg.setPosition(sf::Vector2f(middle.x, middle.y + 37.f));
-    window->draw(bg);
+    world->draw(bg);
 
     if (mapgen->map != nullptr) {
       sf::Text operation(mapgen->map->status, sffont);
@@ -187,8 +194,11 @@ public:
       auto middle = (sf::Vector2f(window->getSize())) / 2.f;
       operation.setPosition(sf::Vector2f(
           middle.x - operation.getGlobalBounds().width / 2.f, middle.y + 25.f));
-      window->draw(operation);
+      world->draw(operation);
     }
+    world->display();
+    sf::Sprite sprite(world->getTexture());
+    window->draw(sprite);
     window->display();
   }
 
@@ -267,12 +277,12 @@ public:
 
     if (verbose) {
       for (auto p : infoPolygons) {
-        window->draw(p);
+        world->draw(p);
       }
     }
 
-    window->draw(selectedPolygon);
-    window->draw(site);
+    world->draw(selectedPolygon);
+    world->draw(site);
   }
 
   void drawRivers() {
@@ -295,7 +305,7 @@ public:
       river.setInterpolationSteps(10);
       river.smoothHandles();
       river.update();
-      window->draw(river);
+      world->draw(river);
       rn++;
     }
   }
@@ -327,7 +337,7 @@ public:
       road->update();
       r->spline = road;
     }
-    window->draw(*road);
+    world->draw(*road);
     return road;
   }
 
@@ -357,43 +367,41 @@ public:
       bg.setSize(sf::Vector2f(label.getGlobalBounds().width + 8, 18));
       bg.setPosition(sf::Vector2f(c->region->site->x - 4, c->region->site->y + 7));
 
-      window->draw(bg);
-      window->draw(label);
+      world->draw(bg);
+      world->draw(label);
     }
   }
 
   void drawMap() {
+    sf::RectangleShape rectangle;
+    rectangle.setSize(sf::Vector2f(world->getSize().x, world->getSize().y));
+    rectangle.setPosition(0, 0);
     if (needUpdate) {
-      sf::Vector2u windowSize = window->getSize();
+      world->clear(bgColor);
+
       for (auto p : waterPolygons) {
-        window->draw(p);
+        world->draw(p);
       }
 
       if (blur) {
         for (auto p : polygons) {
-          window->draw(p);
+          world->draw(p);
         }
-        cachedMap.create(windowSize.x, windowSize.y);
-        cachedMap.update(*window);
 
-        sf::RectangleShape rectangle;
-        rectangle.setSize(sf::Vector2f(window->getSize().x, window->getSize().y));
-        rectangle.setPosition(0, 0);
-        rectangle.setTexture(&cachedMap);
-
-        window->draw(rectangle, &shader_blur);
+        rectangle.setTexture(&world->getTexture());
+        world->draw(rectangle, &shader_blur);
 
         for (auto p : polygons) {
           auto p2 = sf::ConvexShape(p);
           p2.setFillColor(bgColor);
           p2.setOutlineColor(sf::Color(50,20,0));
           p2.setOutlineThickness(2);
-          window->draw(p2);
+          world->draw(p2);
         }
       }
 
       for (auto p : polygons) {
-        window->draw(p);
+        world->draw(p);
       }
 
       drawRivers();
@@ -401,7 +409,7 @@ public:
         drawRoads();
       }
       for (auto sprite : sprites) {
-        window->draw(sprite);
+        world->draw(sprite);
       }
 
       if (lables) {
@@ -426,22 +434,11 @@ public:
 
             sf::Color col(region->stateCluster->states[0]->color);
             polygon.setFillColor(col);
-            window->draw(polygon);
+            world->draw(polygon);
           }
         }
       }
-      drawMark();
-
-      cachedMap.create(windowSize.x, windowSize.y);
-      cachedMap.update(*window);
       needUpdate = false;
-    } else {
-      sf::RectangleShape rectangle;
-      rectangle.setSize(sf::Vector2f(window->getSize().x, window->getSize().y));
-      rectangle.setPosition(0, 0);
-      rectangle.setTexture(&cachedMap);
-
-      window->draw(rectangle);
     }
   }
 
@@ -475,7 +472,7 @@ public:
 
       sf::Color col(sf::Color::Black);
       polygon.setFillColor(col);
-      // window->draw(polygon);
+      // world->draw(polygon);
 
       if (std::count(used.begin(), used.end(), r) == 0) {
         sw::Spline line;
@@ -489,7 +486,7 @@ public:
         line.setInterpolationSteps(20);
         line.smoothHandles();
         line.update();
-        window->draw(line);
+        world->draw(line);
       }
     }
   }
@@ -540,7 +537,7 @@ public:
 
   void drawObjects(std::vector<sf::ConvexShape> op) {
     for (auto obj : op) {
-      window->draw(obj);
+      world->draw(obj);
     }
   }
 
@@ -759,6 +756,14 @@ public:
         drawWalkers();
       }
     }
+
+    world->display();
+    sf::Sprite sprite(world->getTexture());
+    window->draw(sprite);
+    view = window->getView();
+    window->setView(window->getDefaultView());
+    drawMark();
+    window->setView(view);
   }
 
   void drawWalkers() {
