@@ -141,7 +141,7 @@ public:
   bool states = true;
   bool areas = false;
   bool showWalkers = true;
-  bool lables = true;
+  bool labels = true;
   bool blur = true;
 
   bool isIncreasing{true};
@@ -337,7 +337,7 @@ public:
     }
   }
 
-  void drawLables() {
+  void drawLabels() {
     for (auto c : mapgen->map->cities) {
 
       sf::RectangleShape bg;
@@ -404,8 +404,8 @@ public:
         window->draw(sprite);
       }
 
-      if (lables) {
-        drawLables();
+      if (labels) {
+        drawLabels();
       }
 
       if (states) {

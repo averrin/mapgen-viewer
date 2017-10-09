@@ -167,7 +167,7 @@ public:
         painter->showWalkers = !painter->showWalkers;
         break;
       case sf::Keyboard::N:
-        painter->lables = !painter->lables;
+        painter->labels = !painter->labels;
         painter->invalidate();
         break;
       case sf::Keyboard::B:
@@ -282,7 +282,9 @@ public:
           painter->update();
         }
         ImGui::Checkbox("Walkers*", &painter->showWalkers);
-        ImGui::Checkbox("Lables", &painter->lables);
+        if (ImGui::Checkbox("Labels", &painter->labels)) {
+          painter->invalidate();
+        }
 
         ImGui::TreePop();
       }

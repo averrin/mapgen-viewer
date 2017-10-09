@@ -175,8 +175,6 @@ void MapGenerator::makeStates() {
         for (auto n : r->neighbors) {
           if (n->stateCluster != nullptr && n->stateCluster != r->stateCluster && n->stateCluster) {
             oc = n->stateCluster;
-            std::cout<<oc<<std::endl<<std::flush;
-            std::cout<<oc->regions.size()<<std::endl<<std::flush;
             break;
           }
         }
@@ -187,26 +185,19 @@ void MapGenerator::makeStates() {
       if (oc == nullptr || oc->regions.size() <= 0) {
         continue;
       }
-      // mg::info("oc state", oc->states[0]->name);
-      std::cout<<oc<<std::endl<<std::flush;
-      std::cout<<oc->regions.size()<<std::endl<<std::flush;
-      mg::info("oc size", oc->regions.size());
 
       if (oc->regions.size() > 4 * sc->regions.size() || (sc->regions.size() < 50 && oc->regions.size() >= sc->regions.size())) {
-        mg::info("State Corrections", sc->regions.size());
+        mg::info("State Corrections size:", sc->regions.size());
         auto oldState = sc->states[0];
-        mg::info("State Corrections: ", oldState->name);
+        mg::info("State Corrections from:", oldState->name);
         auto newState = oc->states[0];
-        mg::info("State Corrections: ", newState->name);
-        // sc->states.clear();
-        // sc->states.push_back(newState);
+        mg::info("State Corrections to:", newState->name);
         for (auto r : sc->regions) {
           r->state = newState;
           oc->regions.push_back(r);
           r->stateCluster = oc;
         }
         sc->regions.clear();
-        // map->stateClusters.erase(std::remove(map->stateClusters.begin(), map->stateClusters.end(), sc), map->stateClusters.end());
       }
     }
   }
@@ -547,7 +538,6 @@ void MapGenerator::makeCities() {
             return true;
           },
           (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
-      std::cout << places.size() << std::endl << std::flush;
 
       if (places.size() == 0) {
         continue;
