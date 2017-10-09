@@ -121,7 +121,7 @@ if (OPENGL_FOUND)
 endif()
 
 IF(NOT WIN32)
-	target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw Threads::Threads)
+	target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw Threads::Threads sfsvg)
 else()
 	target_link_libraries(${EXECUTABLE_NAME} voronoi "${PROJECT_BINARY_DIR}/include/libnoise.lib" imgui sw Threads::Threads)
 endif()

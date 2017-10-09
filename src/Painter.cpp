@@ -8,6 +8,8 @@
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 
+#include <SFC/Svg.hpp>
+
 #include "../MapgenConfig.h"
 #include "SelbaWard/SelbaWard.hpp"
 #include "mapgen/Biom.hpp"
@@ -60,6 +62,12 @@ public:
 
     shader_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
     shader_blur.setUniform("blur_radius", 0.004f);
+
+    img.setMode(sfc::DrawMode::NORMAL);
+
+    sprintf(path, "%s/elephant.svg", dir.c_str());
+    img.loadFromFile(path);
+
   };
 
   sf::Font sffont;
@@ -78,6 +86,8 @@ private:
   sf::Clock clock;
   std::vector<Walker*> walkers;
   sf::Shader shader_blur;
+
+  sfc::SVGImage img;
 
   std::string get_selfpath() {
     char buff[PATH_MAX];
@@ -759,6 +769,17 @@ public:
         drawWalkers();
       }
     }
+    // img.setOutlineColor(sf::Color::Black);
+    // img.setFillColor(sf::Color::White);
+    // img.setOutlineThickness(2);
+    sf::Texture t;
+    t.loadFromImage(img.rasterize());
+    sf::Sprite s;
+    s.setTexture(t);
+    // s.setScale(24/img.getSize().x, 24/img.getSize().y);
+    sf::Vector2u windowSize = window->getSize();
+    s.setPosition(windowSize.x/2, windowSize.y/2);
+    window->draw(s);
   }
 
   void drawWalkers() {
