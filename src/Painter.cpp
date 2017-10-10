@@ -80,17 +80,22 @@ private:
   sf::Shader shader_blur;
 
   std::string get_selfpath() {
-    char buff[PATH_MAX];
+  int bl;
 #ifdef _WIN32
-    GetModuleFileName(NULL,buff,sizeof(buff));
+  char buff[MAX_PATH];
+  bl = 11;
+  GetModuleFileName(NULL,buff,sizeof(buff));
 #else
+  char buff[PATH_MAX];
+  bl = 7;
     ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
     if (len != -1) {
       buff[len] = '\0';
     }
 #endif
     auto path = std::string(buff);
-    return path.substr(0, path.size()-7);
+	std::cout << path << std::endl;
+    return path.substr(0, path.size()-bl);
   }
 
   void initProgressBar() {
@@ -118,10 +123,31 @@ private:
       icon->setSmooth(true);
       icons.insert(std::make_pair(pair.first, icon));
     }
+      sprintf(path, "%s/images/tt.png", dir.c_str());
+	  tt = new sf::Texture();
+      tt->loadFromFile(path);
+      tt->setSmooth(true);
+      sprintf(path, "%s/images/st.png", dir.c_str());
+	  st = new sf::Texture();
+      st->loadFromFile(path);
+      st->setSmooth(true);
+      sprintf(path, "%s/images/snow.png", dir.c_str());
+	  sn = new sf::Texture();
+      sn->loadFromFile(path);
+      sn->setSmooth(true);
+      sprintf(path, "%s/images/pt.png", dir.c_str());
+	 pt = new sf::Texture();
+      pt->loadFromFile(path);
+      pt->setSmooth(true);
   }
+  sf::Texture* tt;
+  sf::Texture* st;
+  sf::Texture* sn;
+  sf::Texture* pt;
 
 public:
   std::vector<sf::ConvexShape> polygons;
+  std::vector<sf::ConvexShape> secondLayer;
   std::vector<sf::ConvexShape> waterPolygons;
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::CircleShape> poi;
@@ -397,6 +423,10 @@ public:
       }
 
       drawRivers();
+
+      for (auto p : secondLayer) {
+        window->draw(p);
+      }
       if (roads) {
         drawRoads();
       }
@@ -548,6 +578,7 @@ public:
     infoPolygons.clear();
     polygons.clear();
     waterPolygons.clear();
+	secondLayer.clear();
     poi.clear();
     sprites.clear();
     walkers.clear();
@@ -629,7 +660,36 @@ public:
         }
       }
 
-      polygon.setFillColor(col);
+
+	  polygon.setFillColor(col);
+	  if (region->biom.name == "Forrest" || region->biom.name == "Rain forrest") {
+		//  std::cout << region->biom.name << std::endl << std::flush;
+		  auto sp = sf::ConvexShape(polygon);
+		  sp.setFillColor(sf::Color(10,10,10));
+		  sp.move(0, 5);
+		  secondLayer.push_back(sp);
+		  polygon.setTexture(tt);
+		  secondLayer.push_back(polygon);
+	  } else if (region->biom.name == "Sand" || region->biom.name == "Desert") {
+		  polygon.setTexture(st);
+	  } else if (region->biom.name == "Grass" || region->biom.name == "Meadow") {
+		  polygon.setTexture(st);
+	  } else if (region->biom.name == "Prairie") {
+		  polygon.setTexture(pt);
+	  } else if (region->biom.name == "Ice" || region->biom.name == "Snow") {
+		  if (region->biom.name == "Ice") {
+		  auto sp = sf::ConvexShape(polygon);
+		  sp.setFillColor(sf::Color(200,200,240));
+		  sp.move(0, 5);
+		  secondLayer.push_back(sp);
+		  polygon.setTexture(sn);
+		  secondLayer.push_back(polygon);
+ }
+		  polygon.setTexture(sn);
+	  } else if (region->biom.name == "Rock") {
+	  }
+	  else {
+	  }
 
       if (edges) {
         polygon.setOutlineColor(sf::Color(100, 100, 100));
