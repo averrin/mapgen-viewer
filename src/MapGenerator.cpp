@@ -379,9 +379,9 @@ void MapGenerator::makeCities() {
                            (filterFunc<Region>)[&](Region * r) {
                              bool cond = r->city == nullptr &&
                                          r->minerals > 1 &&
-                                         r->biom.name != biom::LAKE.name &&
-                                         r->biom.name != biom::SNOW.name &&
-                                         r->biom.name != biom::ICE.name;
+                                         r->biom != biom::LAKE &&
+                                         r->biom != biom::SNOW &&
+                                         r->biom != biom::ICE;
                              // if (cond && std::none_of(cache.begin(),
                              // cache.end(), [&](Region *ri){
                              //       for (auto rn : cache) {
@@ -430,7 +430,7 @@ void MapGenerator::makeCities() {
         mc->regions,
         (filterFunc<Region>)[&](Region * r) {
           return r->city == nullptr && r->nice > 0.8 &&
-                 r->biom.feritlity > 0.7 && r->biom.name != biom::LAKE.name;
+                 r->biom.feritlity > 0.7 && r->biom != biom::LAKE;
         },
         (sortFunc<Region>)[&](Region * r, Region * r2) {
           if (r->nice * r->biom.feritlity > r2->nice * r2->biom.feritlity) {
@@ -578,7 +578,7 @@ void MapGenerator::makeBorders() {
       Cell *c = r->cell;
       for (auto n : c->getNeighbors()) {
         Region *rn = _cells[n];
-        if (rn->biom.name != r->biom.name) {
+        if (rn->biom != r->biom) {
           for (auto e : n->getEdges()) {
             if (c->pointIntersection(e->startPoint()->x, e->startPoint()->y) ==
                 0) {
@@ -772,7 +772,7 @@ void MapGenerator::makeRivers() {
 void MapGenerator::makeFinalRegions() {
   map->status = "Making forrests and deserts...";
   for (auto r : map->regions) {
-    if (r->biom.name == biom::LAKE.name) {
+    if (r->biom == biom::LAKE) {
       r->minerals = 0;
       continue;
     }
@@ -827,7 +827,7 @@ void MapGenerator::makeFinalRegions() {
                           Region *reg = _cells[oc];
                           return reg->nice >= r->nice;
                         }) == 0 &&
-          r->biom.name != biom::LAKE.name) {
+          r->biom != biom::LAKE) {
         cluster->goodPoints.push_back(r);
       }
     }
@@ -895,7 +895,7 @@ void MapGenerator::calcTemp() {
                      (temperature / 1.2 * r->getHeight(r->site));
     Cell *c = r->cell;
     for (auto n : c->getNeighbors()) {
-      if (_cells[n]->biom.name == biom::LAKE.name) {
+      if (_cells[n]->biom == biom::LAKE) {
         r->temperature += 2;
         r->biom.feritlity += 0.2;
       }
@@ -926,7 +926,7 @@ void MapGenerator::calcHumidity() {
       }
       for (auto n : c->getNeighbors()) {
         Region *rn = _cells[n];
-        if (rn->hasRiver || rn->biom.name == biom::LAKE.name) {
+        if (rn->hasRiver || rn->biom == biom::LAKE) {
           r->humidity += 0.05;
         }
         float hd = rn->getHeight(rn->site) - r->getHeight(r->site);
@@ -996,7 +996,7 @@ void MapGenerator::makeMegaClusters() {
 
   auto mc = clusterize(
       map->regions,
-      [&](Region *r, Region *rn) { return r->biom.name != rn->biom.name; },
+      [&](Region *r, Region *rn) { return r->biom != rn->biom; },
       [&](Region *r, Cluster *knownCluster) {
         r->megaCluster = knownCluster;
         r->cluster = knownCluster;
@@ -1020,7 +1020,7 @@ void MapGenerator::makeMegaClusters() {
       },
       [&](Region *r) {
         Cluster *cluster = new MegaCluster();
-        cluster->isLand = r->biom.name == biom::LAND.name;
+        cluster->isLand = r->biom == biom::LAND;
         cluster->megaCluster = cluster;
         if (cluster->isLand) {
           cluster->name = names::generateLandName(_gen);
@@ -1047,7 +1047,7 @@ void MapGenerator::makeClusters() {
     Cluster *knownCluster = nullptr;
     for (auto n : c->getNeighbors()) {
       Region *rn = _cells[n];
-      if (r->biom.name != rn->biom.name) {
+      if (r->biom != rn->biom) {
         r->border = true;
       } else if (_clusters.count(n) != 0) {
         cu = false;

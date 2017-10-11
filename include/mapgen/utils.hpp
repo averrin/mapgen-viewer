@@ -4,6 +4,9 @@
 #include <functional>
 #include "mapgen/City.hpp"
 
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+
 typedef sf::Vector2<double>* Point;
 namespace mg {
 	template <typename T> using filterFunc = std::function<bool(T *)>;
@@ -21,6 +24,7 @@ namespace mg {
   void info(std::string prefix, std::string value);
   void info(std::string prefix, int value);
   void info(std::string prefix, City value);
+  void info(std::string prefix, fs::path value);
   void warn(std::string prefix, std::string value);
   void warn(std::string prefix, int value);
   void warn(std::string prefix, City value);

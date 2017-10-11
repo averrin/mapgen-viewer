@@ -12,11 +12,20 @@
 #include "SelbaWard/SelbaWard.hpp"
 #include "mapgen/Biom.hpp"
 #include "mapgen/MapGenerator.hpp"
-#include "mapgen/utils.hpp"
 #include "mapgen/Walker.hpp"
+#include "mapgen/utils.hpp"
 #include "rang.hpp"
 
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+
 #include <cmath>
+
+inline bool ends_with(std::string const &value, std::string const &ending) {
+  if (ending.size() > value.size())
+    return false;
+  return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
 
 // TODO: move ints to utils.cpp
 template <typename T> using filterFunc = std::function<bool(T *)>;
@@ -42,9 +51,9 @@ public:
     auto dir = get_selfpath();
     char path[100];
     sprintf(path, "%s/font.ttf", dir.c_str());
-    mg::info("Loading font:", path);
+    // mg::info("Loading font:", path);
     sffont.loadFromFile(path);
-    loadIcons();
+    loadImages();
     initProgressBar();
 
     sf::Vector2u windowSize = window->getSize();
@@ -65,7 +74,8 @@ public:
   sf::Font sffont;
 
 private:
-  std::map<LocationType, sf::Texture *> icons;
+  std::map<LocationType, sf::Texture *> locationIcons;
+  std::map<std::string, sf::Texture *> images;
   sf::RenderWindow *window;
   sw::ProgressBar progressBar;
   sf::Texture cachedMap;
@@ -76,9 +86,11 @@ private:
   std::string VERSION;
   bool needUpdate = true;
   sf::Clock clock;
-  std::vector<Walker*> walkers;
+  std::vector<Walker *> walkers;
   sf::Shader shader_blur;
+  float iconSize = 24.f;
 
+  //TODO: rewrite this horror
   std::string get_selfpath() {
   int bl;
 #ifdef _WIN32
@@ -88,7 +100,7 @@ private:
 #else
   char buff[PATH_MAX];
   bl = 7;
-    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff)-1);
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff) - 1);
     if (len != -1) {
       buff[len] = '\0';
     }
@@ -105,45 +117,32 @@ private:
         (sf::Vector2f(window->getSize()) - progressBar.getSize()) / 2.f);
   }
 
-  void loadIcons() {
+  void loadImages() {
     std::map<LocationType, std::string> iconMap = {
-        {CAPITAL, "images/castle.png"}, {PORT, "images/docks.png"},
-        {MINE, "images/mine.png"},      {AGRO, "images/farm.png"},
-        {TRADE, "images/trade.png"},    {LIGHTHOUSE, "images/lighthouse.png"},
-        {CAVE, "images/cave.png"},      {FORT, "images/fort.png"}};
+        {CAPITAL, "castle"}, {PORT, "docks"},  {MINE, "mine"},
+        {AGRO, "farm"},      {TRADE, "trade"}, {LIGHTHOUSE, "lighthouse"},
+        {CAVE, "cave"},      {FORT, "fort"}};
 
     auto dir = get_selfpath();
     char path[100];
 
-    for (auto pair : iconMap) {
+    sprintf(path, "%s/images", dir.c_str());
+    for (auto &d : fs::directory_iterator(path)) {
+      fs::path path = d.path();
+      if (!ends_with(path, ".png")) {
+        continue;
+      }
       sf::Texture *icon = new sf::Texture();
-      sprintf(path, "%s/%s", dir.c_str(), pair.second.c_str());
-      mg::info("Loading icon:", path);
+      mg::info("Loading image:", path);
       icon->loadFromFile(path);
       icon->setSmooth(true);
-      icons.insert(std::make_pair(pair.first, icon));
+      images[path.stem()] = icon;
     }
-      sprintf(path, "%s/images/tt.png", dir.c_str());
-	  tt = new sf::Texture();
-      tt->loadFromFile(path);
-      tt->setSmooth(true);
-      sprintf(path, "%s/images/st.png", dir.c_str());
-	  st = new sf::Texture();
-      st->loadFromFile(path);
-      st->setSmooth(true);
-      sprintf(path, "%s/images/snow.png", dir.c_str());
-	  sn = new sf::Texture();
-      sn->loadFromFile(path);
-      sn->setSmooth(true);
-      sprintf(path, "%s/images/pt.png", dir.c_str());
-	 pt = new sf::Texture();
-      pt->loadFromFile(path);
-      pt->setSmooth(true);
+
+    for (auto pair : iconMap) {
+      locationIcons.insert(std::make_pair(pair.first, images[pair.second]));
+    }
   }
-  sf::Texture* tt;
-  sf::Texture* st;
-  sf::Texture* sn;
-  sf::Texture* pt;
 
 public:
   std::vector<sf::ConvexShape> polygons;
@@ -336,7 +335,8 @@ public:
       road->setThickness(1);
       for (auto reg : r->regions) {
         Point p = reg->site;
-        road->addVertex(i, {static_cast<float>(p->x), static_cast<float>(p->y)});
+        road->addVertex(i,
+                        {static_cast<float>(p->x), static_cast<float>(p->y)});
         if (reg->megaCluster->isLand) {
           road->setColor(i, sf::Color(70, 50, 0));
           float w = std::min(3.f, 1.f + reg->traffic / 200.f);
@@ -367,21 +367,24 @@ public:
     for (auto c : mapgen->map->cities) {
 
       sf::RectangleShape bg;
-      bg.setFillColor(sf::Color(50,30,22, 200));
-      if (c->isCapital) {
+      bg.setFillColor(sf::Color(50, 30, 22, 200));
+      // if (c->isCapital) {
+      if (states) {
         bg.setOutlineColor(c->region->state->color);
       } else {
-        bg.setOutlineColor(sf::Color(200,200,180, 180));
+        bg.setOutlineColor(sf::Color(200, 200, 180, 180));
       }
       bg.setOutlineThickness(1);
 
       sf::Text label(c->name, sffont);
       label.setCharacterSize(10);
-      label.setFillColor(sf::Color(255,255,220));
-      label.setPosition(sf::Vector2f(c->region->site->x, c->region->site->y + 10));
+      label.setFillColor(sf::Color(255, 255, 220));
+      label.setPosition(
+          sf::Vector2f(c->region->site->x, c->region->site->y + 10));
 
       bg.setSize(sf::Vector2f(label.getGlobalBounds().width + 8, 18));
-      bg.setPosition(sf::Vector2f(c->region->site->x - 4, c->region->site->y + 7));
+      bg.setPosition(
+          sf::Vector2f(c->region->site->x - 4, c->region->site->y + 7));
 
       window->draw(bg);
       window->draw(label);
@@ -403,7 +406,8 @@ public:
         cachedMap.update(*window);
 
         sf::RectangleShape rectangle;
-        rectangle.setSize(sf::Vector2f(window->getSize().x, window->getSize().y));
+        rectangle.setSize(
+            sf::Vector2f(window->getSize().x, window->getSize().y));
         rectangle.setPosition(0, 0);
         rectangle.setTexture(&cachedMap);
 
@@ -412,7 +416,7 @@ public:
         for (auto p : polygons) {
           auto p2 = sf::ConvexShape(p);
           p2.setFillColor(bgColor);
-          p2.setOutlineColor(sf::Color(50,20,0));
+          p2.setOutlineColor(sf::Color(50, 20, 0));
           p2.setOutlineThickness(2);
           window->draw(p2);
         }
@@ -440,6 +444,9 @@ public:
 
       if (states) {
         drawBorders();
+        // for (auto p : poi) {
+        //   window->draw(p);
+        // }
       }
 
       if (areas) {
@@ -482,7 +489,7 @@ public:
           if (r->stateBorder && !r->seaBorder &&
               std::count_if(r->neighbors.begin(), r->neighbors.end(),
                             [&](Region *n) {
-                             return n->stateBorder && !n->seaBorder &&
+                              return n->stateBorder && !n->seaBorder &&
                                      n->state == r->state;
                             }) == 1) {
             return true;
@@ -583,24 +590,24 @@ public:
     sprites.clear();
     walkers.clear();
 
-    for (auto mc : mapgen->map->megaClusters) {
-      for (auto p : mc->resourcePoints) {
-        float rad = p->minerals * 3 + 1;
-        sf::CircleShape poiShape(rad);
-        poiShape.setFillColor(sf::Color::Blue);
-        poiShape.setPosition(
-            sf::Vector2f(p->site->x - rad / 2.f, p->site->y - rad / 2.f));
-        poi.push_back(poiShape);
-      }
-      for (auto p : mc->goodPoints) {
-        float rad = p->minerals * 3 + 1;
-        sf::CircleShape poiShape(rad);
-        poiShape.setFillColor(sf::Color::Red);
-        poiShape.setPosition(
-            sf::Vector2f(p->site->x - rad / 2.f, p->site->y - rad / 2.f));
-        poi.push_back(poiShape);
-      }
-    }
+    // for (auto mc : mapgen->map->megaClusters) {
+    //   for (auto p : mc->resourcePoints) {
+    //     float rad = p->minerals * 3 + 1;
+    //     sf::CircleShape poiShape(rad);
+    //     poiShape.setFillColor(sf::Color::Blue);
+    //     poiShape.setPosition(
+    //         sf::Vector2f(p->site->x - rad / 2.f, p->site->y - rad / 2.f));
+    //     poi.push_back(poiShape);
+    //   }
+    //   for (auto p : mc->goodPoints) {
+    //     float rad = p->minerals * 3 + 1;
+    //     sf::CircleShape poiShape(rad);
+    //     poiShape.setFillColor(sf::Color::Red);
+    //     poiShape.setPosition(
+    //         sf::Vector2f(p->site->x - rad / 2.f, p->site->y - rad / 2.f));
+    //     poi.push_back(poiShape);
+    //   }
+    // }
 
     std::vector<Region *> regions = mapgen->map->regions;
     polygons.reserve(regions.size());
@@ -643,49 +650,63 @@ public:
 
         if ((region->city != nullptr && cities) ||
             (region->city == nullptr && locations)) {
-          auto texture = icons[region->location->type];
-          if (region->city != nullptr && region->city->isCapital) {
-            texture = icons[CAPITAL];
+          auto texture = images["village"];
+          texture = locationIcons[region->city->type];
+          if (region->city != nullptr) {
+            if (region->city->isCapital) {
+              texture = locationIcons[CAPITAL];
+            } else if (region->city->population > 2000) {
+              // texture = icons["castle"];
+            }
           }
           sprite.setTexture(*texture);
           auto p = region->site;
           auto size = texture->getSize();
+          // sprite.setScale(0.05, 0.05);
           sprite.setPosition(
-              sf::Vector2f(p->x - size.x / 2.f, p->y - size.y / 2.f));
+              sf::Vector2f(p->x - iconSize / 2.f, p->y - iconSize / 2.f));
           sprites.push_back(sprite);
         }
 
         if (states && region->state != nullptr && region->city != nullptr) {
-          col = region->state->color;
+          // col = region->state->color;
+          int rad = 2;
+          sf::CircleShape poiShape(rad);
+          poiShape.setFillColor(region->state->color);
+          poiShape.setOutlineColor(sf::Color(23, 23, 23));
+          poiShape.setOutlineThickness(1);
+          poiShape.setPosition(
+              sf::Vector2f(region->site->x - rad / 2.f + iconSize / 2.f,
+                          region->site->y - rad / 2.f + iconSize / 2.f));
+          poi.push_back(poiShape);
         }
       }
 
 
 	  polygon.setFillColor(col);
-	  if (region->biom.name == "Forrest" || region->biom.name == "Rain forrest") {
-		//  std::cout << region->biom.name << std::endl << std::flush;
+	  if (region->biom == biom::FORREST || region->biom == biom::RAIN_FORREST) {
 		  auto sp = sf::ConvexShape(polygon);
 		  sp.setFillColor(sf::Color(10,10,10));
 		  sp.move(0, 5);
 		  secondLayer.push_back(sp);
-		  polygon.setTexture(tt);
+		  polygon.setTexture(images["tt"]);
 		  secondLayer.push_back(polygon);
-	  } else if (region->biom.name == "Sand" || region->biom.name == "Desert") {
-		  polygon.setTexture(st);
-	  } else if (region->biom.name == "Grass" || region->biom.name == "Meadow") {
-		  polygon.setTexture(st);
-	  } else if (region->biom.name == "Prairie") {
-		  polygon.setTexture(pt);
-	  } else if (region->biom.name == "Ice" || region->biom.name == "Snow") {
-		  if (region->biom.name == "Ice") {
+	  } else if (region->biom == biom::SAND || region->biom == biom::DESERT) {
+		  polygon.setTexture(images["st"]);
+	  } else if (region->biom == biom::GRASS || region->biom == biom::MEADOW) {
+		  polygon.setTexture(images["snow"]);
+	  } else if (region->biom == biom::PRAIRIE) {
+		  polygon.setTexture(images["pt"]);
+	  } else if (region->biom == biom::ICE || region->biom == biom::SNOW) {
+		  if (region->biom == biom::ICE) {
 		  auto sp = sf::ConvexShape(polygon);
 		  sp.setFillColor(sf::Color(200,200,240));
 		  sp.move(0, 5);
 		  secondLayer.push_back(sp);
-		  polygon.setTexture(sn);
+		  polygon.setTexture(images["snow"]);
 		  secondLayer.push_back(polygon);
  }
-		  polygon.setTexture(sn);
+		  polygon.setTexture(images["snow"]);
 	  } else if (region->biom.name == "Rock") {
 	  }
 	  else {

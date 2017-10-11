@@ -41,7 +41,7 @@ void Map::AdjacentCost(void *state,
   auto r = ((Region *)state);
   for (auto n : r->neighbors) {
 
-    if (n->biom.name == "Lake") {
+    if (n->biom == biom::LAKE) {
       continue;
     }
     if (r->megaCluster->isLand) {

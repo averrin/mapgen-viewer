@@ -7,6 +7,12 @@ struct Biom {
   sf::Color color;
   std::string name;
   float feritlity;
+  bool operator==(const Biom& b) const {
+    return b.name == name;
+  }
+  bool operator!=(const Biom& b) const {
+    return b.name != name;
+  }
 };
 
 namespace biom {

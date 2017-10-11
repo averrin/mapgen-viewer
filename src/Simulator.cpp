@@ -286,7 +286,7 @@ void Simulator::makeCaves() {
   map->status = "Digging caves...";
   int i = 0;
   for (auto c : map->clusters) {
-    if (c->biom.name != biom::ROCK.name) {
+    if (c->biom != biom::ROCK) {
       continue;
     }
 
