@@ -2,28 +2,28 @@
 #define ECONOMY_H_
 
 namespace Economy {
-  const float POPULATION_GROWS = 0.04;
-  const float POPULATION_GROWS_WEALTH_MODIFIER = 0.1;
+  const float POPULATION_GROWS = 0.04f;
+  const float POPULATION_GROWS_WEALTH_MODIFIER = 0.1f;
 
-  const float PACKAGES_PER_NICE = 20;
-  const float PACKAGES_AGRO_POPULATION_MODIFIER = 0.04;
+  const float PACKAGES_PER_NICE = 20.f;
+  const float PACKAGES_AGRO_POPULATION_MODIFIER = 0.04f;
 
-  const float PACKAGES_PER_MINERALS = 15;
-  const float PACKAGES_MINERALS_POPULATION_MODIFIER = 0.03;
+  const float PACKAGES_PER_MINERALS = 15.f;
+  const float PACKAGES_MINERALS_POPULATION_MODIFIER = 0.03f;
 
-  const float CONSUME_AGRO_POPULATION_MODIFIER = 0.5;
-  const float CONSUME_MINERALS_POPULATION_MODIFIER = 0.5;
+  const float CONSUME_AGRO_POPULATION_MODIFIER = 0.5f;
+  const float CONSUME_MINERALS_POPULATION_MODIFIER = 0.5f;
 
-  const float CONSUME_AGRO_WEALTH_MODIFIER = 0.1;
-  const float CONSUME_MINERALS_WEALTH_MODIFIER = 0.1;
+  const float CONSUME_AGRO_WEALTH_MODIFIER = 0.1f;
+  const float CONSUME_MINERALS_WEALTH_MODIFIER = 0.1f;
 
-  const float CANT_BUY_AGRO = 0.3;
-  const float CANT_BUY_MINERALS = 0.3;
+  const float CANT_BUY_AGRO = 0.3f;
+  const float CANT_BUY_MINERALS = 0.3f;
 
-  const float MINERALS_POPULATION_PRODUCE = 0.3;
-  const float AGRO_POPULATION_PRODUCE = 0.4;
+  const float MINERALS_POPULATION_PRODUCE = 0.3f;
+  const float AGRO_POPULATION_PRODUCE = 0.4f;
 
-  const float PORT_FEE = 0.3;
+  const float PORT_FEE = 0.3f;
 }
 
 class EconomyVars {

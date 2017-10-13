@@ -18,16 +18,16 @@ float Map::getRegionDistance(Region *r, Region *r2) {
       }
     }
     if (r2->hasRiver) {
-      d *= 0.6;
+      d *= 0.6f;
     }
     if (r2->state != r->state) {
-      d *= 1.2;
+      d *= 1.2f;
     }
     if (r2->hasRoad) {
-      d *= 0.2;
+      d *= 0.2f;
     }
   } else {
-    d *= 0.8;
+    d *= 0.8f;
   }
   return d;
 }

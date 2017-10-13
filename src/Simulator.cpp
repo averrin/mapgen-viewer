@@ -156,7 +156,7 @@ void Simulator::simulateEconomy() {
 void Simulator::populationTick(int) {
   int p = 0.f;
   for (auto c : map->cities) {
-    c->population *= (float)(1 +
+    c->population *= (int)(1 +
                              vars->POPULATION_GROWS * c->wealth *
                                  vars->POPULATION_GROWS_WEALTH_MODIFIER);
     c->population = std::max(c->population, 0);
@@ -345,7 +345,7 @@ void Simulator::removeBadPorts() {
   std::copy_if(map->cities.begin(), map->cities.end(),
                std::back_inserter(cities), [&](City *c) {
                  bool badPort = c->type == PORT &&
-                                c->region->traffic <= map->cities.size();
+                                c->region->traffic <= int(map->cities.size());
                  if (badPort) {
                    c->region->city = nullptr;
                    c->region->location = nullptr;

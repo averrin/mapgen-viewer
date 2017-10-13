@@ -106,7 +106,7 @@ private:
 #endif
     auto path = fs::path(buff);
     std::cout << path << std::endl;
-    return path.parent_path();
+    return path.parent_path().string();
   }
 
   void initProgressBar() {
@@ -128,14 +128,14 @@ private:
     sprintf(path, "%s/images", dir.c_str());
     for (auto &d : fs::directory_iterator(path)) {
       fs::path path = d.path();
-      if (!ends_with(path, ".png")) {
+      if (!ends_with(path.string(), ".png")) {
         continue;
       }
       sf::Texture *icon = new sf::Texture();
       mg::info("Loading image:", path);
-      icon->loadFromFile(path);
+      icon->loadFromFile(path.string());
       icon->setSmooth(true);
-      images[path.stem()] = icon;
+      images[path.stem().string()] = icon;
     }
 
     for (auto pair : iconMap) {
@@ -670,7 +670,7 @@ public:
         if ((region->city != nullptr && cities) ||
             (region->city == nullptr && locations)) {
           // auto texture = images["village"];
-          auto texture = locationIcons[region->city->type];
+          auto texture = locationIcons[region->location->type];
           if (region->city != nullptr) {
             if (region->city->isCapital) {
               texture = locationIcons[CAPITAL];

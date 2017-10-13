@@ -279,11 +279,7 @@ void MapGenerator::simplifyRivers() {
 }
 
 void MapGenerator::makeRelax() {
-  try {
-    _diagram.reset(_vdg.relax());
-  } catch (const std::exception &e) {
-    std::cout << "Relax failed" << std::endl << std::flush;
-  }
+	_diagram.reset(_vdg.relax());
 }
 
 void MapGenerator::seed() {
@@ -897,7 +893,7 @@ void MapGenerator::calcTemp() {
     for (auto n : c->getNeighbors()) {
       if (_cells[n]->biom == biom::LAKE) {
         r->temperature += 2;
-        r->biom.feritlity += 0.2;
+        r->biom.feritlity += 0.2f;
       }
     }
   }
@@ -911,7 +907,7 @@ void MapGenerator::calcHumidity() {
       continue;
     }
     if (r->hasRiver) {
-      r->humidity += 0.2;
+      r->humidity += 0.2f;
     }
   }
 
@@ -927,7 +923,7 @@ void MapGenerator::calcHumidity() {
       for (auto n : c->getNeighbors()) {
         Region *rn = _cells[n];
         if (rn->hasRiver || rn->biom == biom::LAKE) {
-          r->humidity += 0.05;
+          r->humidity += 0.05f;
         }
         float hd = rn->getHeight(rn->site) - r->getHeight(r->site);
         if (rn->humidity > r->humidity && r->humidity != 1 && hd < 0.04) {

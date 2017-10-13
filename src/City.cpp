@@ -63,7 +63,7 @@ int City::buyGoods(std::vector<Package *> *goods) {
     int n = 0;
     auto p = agroCandidates[n];
     unsigned int c = 0;
-    while (agroNeeded > 0 && n < agroCandidates.size()) {
+    while (agroNeeded > 0 && n < int(agroCandidates.size())) {
       p = agroCandidates[n];
       c = std::min((int)agroNeeded, (int)p->count);
       agroNeeded -= c;
@@ -77,7 +77,7 @@ int City::buyGoods(std::vector<Package *> *goods) {
     int n = 0;
     auto p = mineralsCandidates[n];
     unsigned int c = 0;
-    while (mineralsNeeded > 0 && n < mineralsCandidates.size()) {
+    while (mineralsNeeded > 0 && n < int(mineralsCandidates.size())) {
       p = mineralsCandidates[n];
       c = std::min((int)mineralsNeeded, (int)p->count);
       mineralsNeeded -= c;
