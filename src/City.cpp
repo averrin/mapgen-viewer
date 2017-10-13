@@ -21,9 +21,7 @@ Package *City::makeGoods(int y) {
   case MINE:
     p = region->minerals * economyVars->PACKAGES_PER_MINERALS * population *
         economyVars->PACKAGES_MINERALS_POPULATION_MODIFIER;
-    for (int n = 0; n < p; n++) {
-      goods = new Package(this, MINERALS, p);
-    }
+    goods = new Package(this, MINERALS, p);
     break;
   }
   return goods;

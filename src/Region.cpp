@@ -14,3 +14,9 @@ PointList Region::getPoints() {
 float Region::getHeight(Point p) {
   return _heights[p];
 }
+
+bool Region::isCoast() {
+  return std::count_if(neighbors.begin(), neighbors.end(), [&](Region* n) {
+      return !n->megaCluster->isLand;
+    }) != 0;
+}

@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 
+#include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
@@ -12,6 +13,7 @@
 #include "SelbaWard/SelbaWard.hpp"
 #include "mapgen/Biom.hpp"
 #include "mapgen/MapGenerator.hpp"
+#include "mapgen/Painter.hpp"
 #include "mapgen/Walker.hpp"
 #include "mapgen/utils.hpp"
 #include "rang.hpp"
@@ -51,17 +53,15 @@ public:
     auto dir = get_selfpath();
     char path[100];
     sprintf(path, "%s/font.ttf", dir.c_str());
-    // mg::info("Loading font:", path);
-    sffont.loadFromFile(path);
+    // mg::info("Loading font:", path.string());
+    sffont.loadFromFile(sf::String(path));
     loadImages();
     initProgressBar();
 
     sf::Vector2u windowSize = window->getSize();
     cachedMap.create(windowSize.x, windowSize.y);
 
-    bgColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
-    bgColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
-    bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
+    bgColor = sf::Color(23,23,23);
     window->clear(bgColor);
 
     char spath[100];
@@ -69,6 +69,7 @@ public:
 
     shader_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
     shader_blur.setUniform("blur_radius", 0.004f);
+    // shader_blur.setParameter("blur_radius", 0.004f);
   };
 
   sf::Font sffont;
@@ -90,24 +91,22 @@ private:
   sf::Shader shader_blur;
   float iconSize = 24.f;
 
-  //TODO: rewrite this horror
+  // TODO: rewrite this horror
   std::string get_selfpath() {
-  int bl;
+    int bl;
 #ifdef _WIN32
-  char buff[MAX_PATH];
-  bl = 11;
-  GetModuleFileName(NULL,buff,sizeof(buff));
+    char buff[MAX_PATH];
+    GetModuleFileName(NULL, buff, sizeof(buff));
 #else
-  char buff[PATH_MAX];
-  bl = 7;
+    char buff[PATH_MAX];
     ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff) - 1);
     if (len != -1) {
       buff[len] = '\0';
     }
 #endif
-    auto path = std::string(buff);
-	std::cout << path << std::endl;
-    return path.substr(0, path.size()-bl);
+    auto path = fs::path(buff);
+    std::cout << path << std::endl;
+    return path.parent_path();
   }
 
   void initProgressBar() {
@@ -145,9 +144,9 @@ private:
   }
 
 public:
-  std::vector<sf::ConvexShape> polygons;
-  std::vector<sf::ConvexShape> secondLayer;
-  std::vector<sf::ConvexShape> waterPolygons;
+  std::vector<DrawableRegion> polygons;
+  std::vector<DrawableRegion> secondLayer;
+  std::vector<DrawableRegion> waterPolygons;
   std::vector<sf::ConvexShape> infoPolygons;
   std::vector<sf::CircleShape> poi;
   std::vector<sf::Sprite> sprites;
@@ -168,6 +167,7 @@ public:
   bool showWalkers = true;
   bool labels = true;
   bool blur = true;
+  bool useTextures = false;
 
   bool isIncreasing{true};
 
@@ -185,6 +185,8 @@ public:
   }
 
   void drawLoading() {
+    window->clear();
+
     const float frame{clock.restart().asSeconds() * 0.3f};
     const float target{isIncreasing ? progressBar.getRatio() + frame
                                     : progressBar.getRatio() - frame};
@@ -208,6 +210,7 @@ public:
       sf::Text operation(mapgen->map->status, sffont);
       operation.setCharacterSize(20);
       operation.setFillColor(sf::Color::White);
+      // operation.setColor(sf::Color::White);
 
       auto middle = (sf::Vector2f(window->getSize())) / 2.f;
       operation.setPosition(sf::Vector2f(
@@ -217,72 +220,77 @@ public:
     window->display();
   }
 
+  Region *currentRegionCache = nullptr;
+
   void drawInfo(Region *currentRegion) {
-    infoPolygons.clear();
     sf::ConvexShape selectedPolygon;
 
-    if (currentRegion->city != nullptr && !roads) {
-      for (auto r : currentRegion->city->roads) {
-        drawRoad(r);
+    if (currentRegion != currentRegionCache) {
+      currentRegionCache = currentRegion;
+
+      infoPolygons.clear();
+      if (currentRegion->city != nullptr && !roads) {
+        for (auto r : currentRegion->city->roads) {
+          drawRoad(r);
+        }
       }
-    }
-    PointList points = currentRegion->getPoints();
-    selectedPolygon.setPointCount(int(points.size()));
+      PointList points = currentRegion->getPoints();
+      Cluster *cluster = currentRegion->cluster;
 
-    Cluster *cluster = currentRegion->cluster;
+      int i = 0;
+      for (std::vector<Region *>::iterator
+               it = cluster->megaCluster->regions.begin();
+           it < cluster->megaCluster->regions.end(); it++, i++) {
 
-    int i = 0;
-    for (std::vector<Region *>::iterator
-             it = cluster->megaCluster->regions.begin();
-         it < cluster->megaCluster->regions.end(); it++, i++) {
-
-      Region *region = cluster->megaCluster->regions[i];
-      sf::ConvexShape polygon;
-      PointList points = region->getPoints();
-      polygon.setPointCount(points.size());
-      int n = 0;
-      for (PointList::iterator it2 = points.begin(); it2 < points.end();
-           it2++, n++) {
-        sf::Vector2<double> *p = points[n];
-        polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+        Region *region = cluster->megaCluster->regions[i];
+        sf::ConvexShape polygon;
+        PointList points = region->getPoints();
+        polygon.setPointCount(points.size());
+        int n = 0;
+        for (PointList::iterator it2 = points.begin(); it2 < points.end();
+             it2++, n++) {
+          sf::Vector2<double> *p = points[n];
+          polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+        }
+        sf::Color col = sf::Color::Black;
+        col.a = 20;
+        polygon.setFillColor(col);
+        polygon.setOutlineColor(col);
+        polygon.setOutlineThickness(1);
+        infoPolygons.push_back(polygon);
       }
-      sf::Color col = sf::Color::Black;
-      col.a = 20;
-      polygon.setFillColor(col);
-      polygon.setOutlineColor(col);
-      polygon.setOutlineThickness(1);
-      infoPolygons.push_back(polygon);
-    }
-    i = 0;
-    for (std::vector<Region *>::iterator it = cluster->regions.begin();
-         it < cluster->regions.end(); it++, i++) {
+      i = 0;
+      for (std::vector<Region *>::iterator it = cluster->regions.begin();
+           it < cluster->regions.end(); it++, i++) {
 
-      Region *region = cluster->regions[i];
-      sf::ConvexShape polygon;
-      PointList points = region->getPoints();
-      polygon.setPointCount(points.size());
-      int n = 0;
-      for (PointList::iterator it2 = points.begin(); it2 < points.end();
-           it2++, n++) {
-        sf::Vector2<double> *p = points[n];
-        polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+        Region *region = cluster->regions[i];
+        sf::ConvexShape polygon;
+        PointList points = region->getPoints();
+        polygon.setPointCount(points.size());
+        int n = 0;
+        for (PointList::iterator it2 = points.begin(); it2 < points.end();
+             it2++, n++) {
+          sf::Vector2<double> *p = points[n];
+          polygon.setPoint(n, sf::Vector2f(p->x, p->y));
+        }
+        sf::Color col = sf::Color::Red;
+        col.a = 50;
+        polygon.setFillColor(col);
+        polygon.setOutlineColor(col);
+        polygon.setOutlineThickness(1);
+        infoPolygons.push_back(polygon);
       }
-      sf::Color col = sf::Color::Red;
-      col.a = 50;
-      polygon.setFillColor(col);
-      polygon.setOutlineColor(col);
-      polygon.setOutlineThickness(1);
-      infoPolygons.push_back(polygon);
-    }
 
-    for (int pi = 0; pi < int(points.size()); pi++) {
-      Point p = points[pi];
-      selectedPolygon.setPoint(
-          pi, sf::Vector2f(static_cast<float>(p->x), static_cast<float>(p->y)));
     }
-
     sf::CircleShape site(2.f);
 
+    selectedPolygon.setPointCount(int(currentRegion->getPoints().size()));
+    int pi = 0;
+    for (auto p : currentRegion->getPoints()) {
+      selectedPolygon.setPoint(pi, sf::Vector2f(static_cast<float>(p->x),
+                                               static_cast<float>(p->y)));
+      ++pi;
+    }
     selectedPolygon.setFillColor(sf::Color::Transparent);
     selectedPolygon.setOutlineColor(sf::Color::Red);
     selectedPolygon.setOutlineThickness(2);
@@ -326,11 +334,12 @@ public:
   }
 
   sw::Spline *drawRoad(Road *r) {
-    sw::Spline *road = new sw::Spline();
+    sw::Spline *road = nullptr;
     if (r->spline != nullptr) {
       road = r->spline;
     } else {
       int i = 0;
+      road = new sw::Spline();
       road->setColor(sf::Color(200, 160, 100, 70));
       road->setThickness(1);
       for (auto reg : r->regions) {
@@ -379,6 +388,7 @@ public:
       sf::Text label(c->name, sffont);
       label.setCharacterSize(10);
       label.setFillColor(sf::Color(255, 255, 220));
+      // label.setColor(sf::Color(255, 255, 220));
       label.setPosition(
           sf::Vector2f(c->region->site->x, c->region->site->y + 10));
 
@@ -395,12 +405,12 @@ public:
     if (needUpdate) {
       sf::Vector2u windowSize = window->getSize();
       for (auto p : waterPolygons) {
-        window->draw(p);
+        window->draw(p.shape);
       }
 
       if (blur) {
         for (auto p : polygons) {
-          window->draw(p);
+          window->draw(p.shape);
         }
         cachedMap.create(windowSize.x, windowSize.y);
         cachedMap.update(*window);
@@ -414,22 +424,29 @@ public:
         window->draw(rectangle, &shader_blur);
 
         for (auto p : polygons) {
-          auto p2 = sf::ConvexShape(p);
+          // TODO: implement border of clasters
+          // if (!p.region->isCoast()) {
+          //   continue;
+          // }
+          auto p2 = sf::ConvexShape(p.shape);
           p2.setFillColor(bgColor);
           p2.setOutlineColor(sf::Color(50, 20, 0));
           p2.setOutlineThickness(2);
           window->draw(p2);
+          // auto p3 = sf::ConvexShape(p.shape);
+          // p2.setFillColor(bgColor);
+          // window->draw(p3);
         }
       }
 
       for (auto p : polygons) {
-        window->draw(p);
+        window->draw(p.shape);
       }
 
       drawRivers();
 
       for (auto p : secondLayer) {
-        window->draw(p);
+        window->draw(p.shape);
       }
       if (roads) {
         drawRoads();
@@ -571,6 +588,7 @@ public:
     sf::Text mark(mt, sffont);
     mark.setCharacterSize(15);
     mark.setFillColor(sf::Color::White);
+    // mark.setColor(sf::Color::White);
     mark.setPosition(sf::Vector2f(windowSize.x - 240, windowSize.y - 25));
     window->draw(mark);
   }
@@ -585,10 +603,11 @@ public:
     infoPolygons.clear();
     polygons.clear();
     waterPolygons.clear();
-	secondLayer.clear();
+    secondLayer.clear();
     poi.clear();
     sprites.clear();
     walkers.clear();
+    currentRegionCache = nullptr;
 
     // for (auto mc : mapgen->map->megaClusters) {
     //   for (auto p : mc->resourcePoints) {
@@ -650,8 +669,8 @@ public:
 
         if ((region->city != nullptr && cities) ||
             (region->city == nullptr && locations)) {
-          auto texture = images["village"];
-          texture = locationIcons[region->city->type];
+          // auto texture = images["village"];
+          auto texture = locationIcons[region->city->type];
           if (region->city != nullptr) {
             if (region->city->isCapital) {
               texture = locationIcons[CAPITAL];
@@ -677,42 +696,46 @@ public:
           poiShape.setOutlineThickness(1);
           poiShape.setPosition(
               sf::Vector2f(region->site->x - rad / 2.f + iconSize / 2.f,
-                          region->site->y - rad / 2.f + iconSize / 2.f));
+                           region->site->y - rad / 2.f + iconSize / 2.f));
           poi.push_back(poiShape);
         }
       }
 
+      polygon.setFillColor(col);
+      if (useTextures) {
+        if (region->biom == biom::FORREST ||
+            region->biom == biom::RAIN_FORREST) {
+          auto sp = sf::ConvexShape(polygon);
+          sp.setFillColor(sf::Color(10, 10, 10));
+          sp.move(0, 5);
+          secondLayer.push_back(DrawableRegion{sp, region, 2});
+          polygon.setTexture(images["tt"]);
+          secondLayer.push_back(DrawableRegion{polygon, region, 2});
+        } else if (region->biom == biom::SAND || region->biom == biom::DESERT) {
+          if (region->biom == biom::SAND) {
+            polygon.setFillColor(sf::Color(200,200,200));
+          }
+          polygon.setTexture(images["st"]);
+        } else if (region->biom == biom::GRASS ||
+                   region->biom == biom::MEADOW) {
+          polygon.setTexture(images["snow"]);
+        } else if (region->biom == biom::PRAIRIE) {
+          polygon.setTexture(images["pt"]);
+        } else if (region->biom == biom::ICE || region->biom == biom::SNOW) {
+          if (region->biom == biom::ICE) {
+            auto sp = sf::ConvexShape(polygon);
+            sp.setFillColor(sf::Color(200, 200, 240));
+            sp.move(0, 5);
+            secondLayer.push_back(DrawableRegion{sp, region, 2});
+            polygon.setTexture(images["snow"]); //
+            secondLayer.push_back(DrawableRegion{polygon, region, 2});
+          }
+          polygon.setTexture(images["snow"]);
+        } else if (region->biom.name == "Rock") {
+        }
+      }
 
-	  polygon.setFillColor(col);
-	  if (region->biom == biom::FORREST || region->biom == biom::RAIN_FORREST) {
-		  auto sp = sf::ConvexShape(polygon);
-		  sp.setFillColor(sf::Color(10,10,10));
-		  sp.move(0, 5);
-		  secondLayer.push_back(sp);
-		  polygon.setTexture(images["tt"]);
-		  secondLayer.push_back(polygon);
-	  } else if (region->biom == biom::SAND || region->biom == biom::DESERT) {
-		  polygon.setTexture(images["st"]);
-	  } else if (region->biom == biom::GRASS || region->biom == biom::MEADOW) {
-		  polygon.setTexture(images["snow"]);
-	  } else if (region->biom == biom::PRAIRIE) {
-		  polygon.setTexture(images["pt"]);
-	  } else if (region->biom == biom::ICE || region->biom == biom::SNOW) {
-		  if (region->biom == biom::ICE) {
-		  auto sp = sf::ConvexShape(polygon);
-		  sp.setFillColor(sf::Color(200,200,240));
-		  sp.move(0, 5);
-		  secondLayer.push_back(sp);
-		  polygon.setTexture(images["snow"]);
-		  secondLayer.push_back(polygon);
- }
-		  polygon.setTexture(images["snow"]);
-	  } else if (region->biom.name == "Rock") {
-	  }
-	  else {
-	  }
-
-      if (edges) {
+      if (edges && (region->megaCluster->isLand || !blur)) {
         polygon.setOutlineColor(sf::Color(100, 100, 100));
         polygon.setOutlineThickness(1);
       }
@@ -726,7 +749,7 @@ public:
         color[2] = 1.f;
       }
 
-      if (minerals) {
+      if (minerals && (region->megaCluster->isLand || !blur)) {
         sf::Color col(region->biom.color);
         col.g = 255 * (region->minerals) / 1.2;
         col.b = col.b / 3;
@@ -757,71 +780,71 @@ public:
         }
       }
       if (region->megaCluster->isLand) {
-        polygons.push_back(polygon);
+        polygons.push_back(DrawableRegion{polygon, region, 1});
       } else {
-        waterPolygons.push_back(polygon);
+        waterPolygons.push_back(DrawableRegion{polygon, region, 0});
       }
     }
 
     needUpdate = true;
   }
 
-  sf::Color adjustLightness(sf::Color color, float d) {
-    // R, G and B input range = 0 ÷ 255
-    // H, S and L output range = 0 ÷ 1.0
+  // sf::Color adjustLightness(sf::Color color, float d) {
+  //   // R, G and B input range = 0 ÷ 255
+  //   // H, S and L output range = 0 ÷ 1.0
 
-    float var_R = (color.r / 255);
-    float var_G = (color.g / 255);
-    float var_B = (color.b / 255);
+  //   float var_R = (color.r / 255);
+  //   float var_G = (color.g / 255);
+  //   float var_B = (color.b / 255);
 
-    float del_R;
-    float del_G;
-    float del_B;
+  //   float del_R;
+  //   float del_G;
+  //   float del_B;
 
-    float var_Min =
-        std::min(std::min(var_R, var_G), var_B); // Min. value of RGB
-    float var_Max =
-        std::min(std::max(var_R, var_G), var_B); // Max. value of RGB
-    float del_Max = var_Max - var_Min;           // Delta RGB value
+  //   float var_Min =
+  //       std::min(std::min(var_R, var_G), var_B); // Min. value of RGB
+  //   float var_Max =
+  //       std::min(std::max(var_R, var_G), var_B); // Max. value of RGB
+  //   float del_Max = var_Max - var_Min;           // Delta RGB value
 
-    float H = 0;
-    float S;
-    float L = (var_Max + var_Min) / 2;
+  //   float H = 0;
+  //   float S;
+  //   float L = (var_Max + var_Min) / 2;
 
-    if (del_Max == 0) // This is a gray, no chroma...
-    {
-      H = 0;
-      S = 0;
-    } else // Chromatic data...
-    {
-      if (L < 0.5) {
-        S = del_Max / (var_Max + var_Min);
-      } else {
-        S = del_Max / (2 - var_Max - var_Min);
-      }
+  //   if (del_Max == 0) // This is a gray, no chroma...
+  //   {
+  //     H = 0;
+  //     S = 0;
+  //   } else // Chromatic data...
+  //   {
+  //     if (L < 0.5) {
+  //       S = del_Max / (var_Max + var_Min);
+  //     } else {
+  //       S = del_Max / (2 - var_Max - var_Min);
+  //     }
 
-      del_R = (((var_Max - var_R) / 6) + (del_Max / 2)) / del_Max;
-      del_G = (((var_Max - var_G) / 6) + (del_Max / 2)) / del_Max;
-      del_B = (((var_Max - var_B) / 6) + (del_Max / 2)) / del_Max;
+  //     del_R = (((var_Max - var_R) / 6) + (del_Max / 2)) / del_Max;
+  //     del_G = (((var_Max - var_G) / 6) + (del_Max / 2)) / del_Max;
+  //     del_B = (((var_Max - var_B) / 6) + (del_Max / 2)) / del_Max;
 
-      if (var_R == var_Max) {
-        H = del_B - del_G;
-      } else if (var_G == var_Max) {
-        H = (1 / 3) + del_R - del_B;
-      } else if (var_B == var_Max) {
-        H = (2 / 3) + del_G - del_R;
-      }
+  //     if (var_R == var_Max) {
+  //       H = del_B - del_G;
+  //     } else if (var_G == var_Max) {
+  //       H = (1 / 3) + del_R - del_B;
+  //     } else if (var_B == var_Max) {
+  //       H = (2 / 3) + del_G - del_R;
+  //     }
 
-      if (H < 0) {
-        H += 1;
-      }
-      if (H > 1) {
-        H -= 1;
-      }
-    }
-    L += d;
-    return color;
-  }
+  //     if (H < 0) {
+  //       H += 1;
+  //     }
+  //     if (H > 1) {
+  //       H -= 1;
+  //     }
+  //   }
+  //   L += d;
+  //   return color;
+  // }
 
   sf::Texture getScreenshot() {
     sf::Vector2u windowSize = window->getSize();

@@ -109,6 +109,7 @@ void Simulator::fixRoads() {
 
       auto cl = map->locations;
       cl.erase(std::remove(cl.begin(), cl.end(), c), cl.end());
+      // error: V789 Iterators for the 'map->cities' container, used in the range-based for loop, become invalid upon the call of the 'erase' function.
       map->cities.erase(std::remove(map->cities.begin(), map->cities.end(), c), map->cities.end());
       continue;
     }
@@ -220,6 +221,7 @@ Road *makeRoad(Map *map, City *c, City *oc) {
   float totalCost = 0;
   pather->Reset();
   int result = pather->Solve(c->region, oc->region, &path, &totalCost);
+  delete pather;
   if (result != micropather::MicroPather::SOLVED) {
     mg::warn("No road from", *c);
     mg::warn("No road to", *oc);
@@ -431,6 +433,7 @@ void Simulator::makeLocationRoads() {
     Road *road = new Road(&path, 1);
     map->roads.push_back(road);
   }
+  delete _pather;
 }
 
 void Simulator::makeForts() {

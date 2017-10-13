@@ -42,6 +42,7 @@ public:
   State* state = nullptr;
   bool stateBorder = false;
   bool seaBorder = false;
+  bool isCoast();
 private:
 	PointList _verticies;
   HeightMap _heights;

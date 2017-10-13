@@ -1104,12 +1104,11 @@ void MapGenerator::makeClusters() {
   }
 }
 
-Region *MapGenerator::getRegion(sf::Vector2f pos) {
-  for (auto &pair : _cells) {
-    Cell *c = pair.first;
-    if (c->pointIntersection(pos.x, pos.y) != -1) {
-      return pair.second;
-    }
+Region *MapGenerator::getRegion(Region* startRegion, sf::Vector2f pos) {
+  for (auto region : map->regions) {
+      if (region->cell->pointIntersection(pos.x, pos.y) != -1) {
+        return region;
+      }
   }
   return nullptr;
 }

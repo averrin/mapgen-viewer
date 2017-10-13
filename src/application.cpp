@@ -130,16 +130,8 @@ public:
       case sf::Keyboard::L:
         simulate();
         break;
-      case sf::Keyboard::H:
-        painter->hum = !painter->hum;
-        painter->update();
-        break;
-      case sf::Keyboard::T:
-        painter->temp = !painter->temp;
-        painter->update();
-        break;
       case sf::Keyboard::M:
-        rulerRegion = rulerRegion == nullptr ? mapgen->getRegion(pos) : nullptr;
+        rulerRegion = rulerRegion == nullptr ? mapgen->getRegion(nullptr, pos) : nullptr;
         break;
       case sf::Keyboard::P:
         painter->roads = !painter->roads;
@@ -173,6 +165,10 @@ public:
       case sf::Keyboard::B:
         painter->blur = !painter->blur;
         painter->invalidate();
+        break;
+      case sf::Keyboard::T:
+        painter->useTextures = !painter->useTextures;
+        painter->update();
         break;
       }
       break;
@@ -285,6 +281,9 @@ public:
         if (ImGui::Checkbox("Labels", &painter->labels)) {
           painter->invalidate();
         }
+        if (ImGui::Checkbox("Experimental textures", &painter->useTextures)) {
+          painter->update();
+        }
 
         ImGui::TreePop();
       }
@@ -296,7 +295,7 @@ public:
 
       ImGui::Text(
           "\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
-          "map\n[U] toggle ui\n[H] toggle humidity\n[I] toggle info\n[P] "
+          "map\n[U] toggle ui\n[T] toggle textures\n[I] toggle info\n[P] "
           "toggle pathes\n[RCLICK] toggle selection lock\n"
           "[M] for distance ruler\n"
           "[W] toggle walkers\n"
@@ -324,12 +323,15 @@ public:
     ImGui::EndTabBar();
     ImGui::End();
   }
+  
+  Region *currentRegionCache = nullptr;
 
   void drawInfo() {
     sf::Vector2<float> pos =
         window->mapPixelToCoords(sf::Mouse::getPosition(*window));
 
-    Region *currentRegion = mapgen->getRegion(pos);
+    Region *currentRegion = mapgen->getRegion(currentRegionCache, pos);
+    currentRegionCache = currentRegion;
     if (lock) {
       if (lockedRegion == nullptr) {
         lockedRegion = currentRegion;
@@ -377,13 +379,25 @@ public:
 
       window->draw(line, 2, sf::Lines);
 
+      sf::RectangleShape bg;
+      bg.setFillColor(sf::Color::Black);
+      bg.setOutlineColor(sf::Color(30,30,30));
+      bg.setOutlineThickness(1);
+
       char mt[40];
       sprintf(mt, "%f",
               mg::getDistance(rulerRegion->site, currentRegion->site));
       sf::Text mark(mt, painter->sffont);
       mark.setCharacterSize(15);
-      mark.setFillColor(sf::Color::Black);
+      mark.setFillColor(sf::Color::White);
+      // mark.setColor(sf::Color::White);
       mark.setPosition(line[1].position + sf::Vector2f(15.f, 15.f));
+
+      bg.setSize(sf::Vector2f(mark.getGlobalBounds().width + 8, 18));
+      bg.setPosition(
+                     sf::Vector2f(line[1].position + sf::Vector2f(11.f, 15.f)));
+
+      window->draw(bg);
       window->draw(mark);
     }
   }
@@ -428,23 +442,23 @@ public:
       ImGui::SFML::Render(*window);
       window->display();
 
-      if (getScreenshot) {
-        char s[100];
-        if (!painter->hum && !painter->temp) {
-          sprintf(s, "%d.png", seed);
-        } else if (painter->hum) {
-          sprintf(s, "%d-hum.png", seed);
-        } else {
-          sprintf(s, "%d-temp.png", seed);
-        }
-        auto texture = painter->getScreenshot();
-        sf::Image screenshot = texture.copyToImage();
-        screenshot.saveToFile(s);
-        char l[255];
-        sprintf(l, "Screenshot created: %s\n", s);
-        showUI = true;
-        getScreenshot = false;
-      }
+      // if (getScreenshot) {
+      //   char s[100];
+      //   if (!painter->hum && !painter->temp) {
+      //     sprintf(s, "%d.png", seed);
+      //   } else if (painter->hum) {
+      //     sprintf(s, "%d-hum.png", seed);
+      //   } else {
+      //     sprintf(s, "%d-temp.png", seed);
+      //   }
+      //   auto texture = painter->getScreenshot();
+      //   sf::Image screenshot = texture.copyToImage();
+      //   screenshot.saveToFile(s);
+      //   char l[255];
+      //   sprintf(l, "Screenshot created: %s\n", s);
+      //   showUI = true;
+      //   getScreenshot = false;
+      // }
     }
 
     if (generator.joinable())

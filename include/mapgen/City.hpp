@@ -12,7 +12,7 @@ public:
   City(Region* r, std::string n, LocationType t);
   Package* makeGoods(int y);
   int buyGoods(std::vector<Package*>* goods);
-  EconomyVars* economyVars;
+  EconomyVars* economyVars = nullptr;
 
   bool isCapital = false;
 

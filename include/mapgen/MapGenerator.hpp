@@ -39,7 +39,7 @@ public:
   int getRelax();
   float getFrequency();
   int getSeed();
-  Region *getRegion(sf::Vector2f pos);
+  Region *getRegion(Region* r, sf::Vector2f pos);
   std::vector<sf::ConvexShape> *getPolygons();
   void seed();
   std::vector<Region *> getRegions();
