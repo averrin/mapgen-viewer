@@ -156,7 +156,7 @@ void Simulator::simulateEconomy() {
 void Simulator::populationTick(int) {
   int p = 0.f;
   for (auto c : map->cities) {
-    c->population *= (int)(1 +
+    c->population *= (float)(1 +
                              vars->POPULATION_GROWS * c->wealth *
                                  vars->POPULATION_GROWS_WEALTH_MODIFIER);
     c->population = std::max(c->population, 0);
@@ -196,9 +196,13 @@ void Simulator::economyTick(int y) {
   mg::info("Goods for sale:", gc);
   std::shuffle(map->cities.begin(), map->cities.end(), *_gen);
   unsigned int sn = 0;
+  unsigned int ab = 0;
   for (auto c : map->cities) {
-    sn += c->buyGoods(goods);
+    auto r = c->buyGoods(goods);
+	sn += r.first;
+	ab += r.second;
   }
+  mg::info("Bought:", ab);
   mg::info("Still needs:", sn);
 
   float w = 0.f;

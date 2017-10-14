@@ -185,7 +185,7 @@ public:
   }
 
   void drawLoading() {
-    window->clear();
+    //window->clear();
 
     const float frame{clock.restart().asSeconds() * 0.3f};
     const float target{isIncreasing ? progressBar.getRatio() + frame

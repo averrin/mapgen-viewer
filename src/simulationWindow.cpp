@@ -134,6 +134,12 @@ void SimulationWindow::draw() {
                      0.01, 1.f);
     ImGui::NextColumn();
 
+    ImGui::Text("PRICE_CORRECTION");
+    ImGui::NextColumn();
+    ImGui::DragFloat("##PRICE_CORRECTION", &mapgen->simulator->vars->PRICE_CORRECTION, 0.01,
+                     0.01, 1.f);
+    ImGui::NextColumn();
+
     ImGui::Columns(1);
     ImGui::TreePop();
   }

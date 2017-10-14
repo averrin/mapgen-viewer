@@ -2,8 +2,8 @@
 #define ECONOMY_H_
 
 namespace Economy {
-  const float POPULATION_GROWS = 0.04f;
-  const float POPULATION_GROWS_WEALTH_MODIFIER = 0.1f;
+  const float POPULATION_GROWS = 0.2f;
+  const float POPULATION_GROWS_WEALTH_MODIFIER = 0.15f;
 
   const float PACKAGES_PER_NICE = 20.f;
   const float PACKAGES_AGRO_POPULATION_MODIFIER = 0.04f;
@@ -24,6 +24,7 @@ namespace Economy {
   const float AGRO_POPULATION_PRODUCE = 0.4f;
 
   const float PORT_FEE = 0.3f;
+  const float PRICE_CORRECTION = 0.1f;
 }
 
 class EconomyVars {
@@ -50,6 +51,7 @@ public:
   float AGRO_POPULATION_PRODUCE;
 
   float PORT_FEE;
+  float PRICE_CORRECTION;
 
   EconomyVars();
 };

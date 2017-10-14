@@ -26,4 +26,5 @@ EconomyVars::EconomyVars() {
     AGRO_POPULATION_PRODUCE = Economy::AGRO_POPULATION_PRODUCE;
 
     PORT_FEE = Economy::PORT_FEE;
+    PRICE_CORRECTION = Economy::PRICE_CORRECTION;
 };

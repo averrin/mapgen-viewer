@@ -27,7 +27,7 @@ Package *City::makeGoods(int y) {
   return goods;
 }
 
-int City::buyGoods(std::vector<Package *> *goods) {
+std::pair<int,int> City::buyGoods(std::vector<Package *> *goods) {
   unsigned int mineralsNeeded =
       population * (economyVars->CONSUME_MINERALS_POPULATION_MODIFIER -
                     region->minerals * economyVars->MINERALS_POPULATION_PRODUCE);
@@ -37,6 +37,7 @@ int City::buyGoods(std::vector<Package *> *goods) {
 
   std::vector<Package *> mineralsCandidates;
   std::vector<Package *> agroCandidates;
+  int b = 0;
 
   std::copy_if(
       goods->begin(), goods->end(), std::back_inserter(mineralsCandidates),
@@ -65,9 +66,14 @@ int City::buyGoods(std::vector<Package *> *goods) {
     unsigned int c = 0;
     while (agroNeeded > 0 && n < int(agroCandidates.size())) {
       p = agroCandidates[n];
+	  auto price = getPrice(p);
       c = std::min((int)agroNeeded, (int)p->count);
+	  if (price / population * c > wealth) {
+		  break;
+	  }
+	  b += c;
       agroNeeded -= c;
-      p->buy(this, getPrice(p), c);
+      p->buy(this, price, c);
       goods->erase(std::remove(goods->begin(), goods->end(), p));
       n++;
     }
@@ -79,19 +85,24 @@ int City::buyGoods(std::vector<Package *> *goods) {
     unsigned int c = 0;
     while (mineralsNeeded > 0 && n < int(mineralsCandidates.size())) {
       p = mineralsCandidates[n];
+	  auto price = getPrice(p);
       c = std::min((int)mineralsNeeded, (int)p->count);
+	  if (price / population * c > wealth) {
+		  break;
+	  }
+	  b += c;
       mineralsNeeded -= c;
-      p->buy(this, getPrice(p), c);
+      p->buy(this, price, c);
       goods->erase(std::remove(goods->begin(), goods->end(), p));
       n++;
     }
   }
 
-  this->wealth -= economyVars->CANT_BUY_AGRO * agroNeeded / (float)this->population;
-  this->wealth -=
-      economyVars->CANT_BUY_MINERALS * mineralsNeeded / (float)this->population;
-  wealth = std::max(wealth, 0.f);
-  return agroNeeded + mineralsNeeded;
+  //this->wealth -= (float)(economyVars->CANT_BUY_AGRO * agroNeeded / this->population);
+  //this->wealth -= (float)(
+  //    economyVars->CANT_BUY_MINERALS * mineralsNeeded / this->population);
+  //wealth = std::max(wealth, 0.f);
+  return std::make_pair(agroNeeded + mineralsNeeded, b);
 }
 
 float City::getPrice(Package *p) {
@@ -116,7 +127,7 @@ float City::getPrice(Package *p) {
     }
     cache.insert(std::make_pair(p->owner, price));
   }
-  return price;
+  return price * economyVars->PRICE_CORRECTION;
 }
 
 std::ostream& operator<<(std::ostream &strm, const City &c) {
