@@ -10,6 +10,12 @@ void Layer::draw(sf::RenderTarget& target, sf::RenderStates states) const {
   if (!enabled) {
     return;
   }
+	if (direct) {
+	  for (auto shape : shapes) {
+		target.draw(*shape);
+	  }
+	  return;
+  }
     sf::Sprite sprite;
     sprite.setTexture(cache->getTexture());
     target.draw(sprite, states);
@@ -24,6 +30,7 @@ void Layer::update(sf::RenderWindow* window) {
   }
   if (shader != nullptr) {
     sf::RenderTexture temp;
+	temp.setSmooth(true);
     temp.create(window->getSize().x, window->getSize().y);
     temp.clear(sf::Color::Transparent);
     sf::Sprite sprite;
@@ -40,6 +47,7 @@ void Layer::update(sf::RenderWindow* window) {
     // shader_mask->setUniform("texture", cache->getTexture());
     shader_mask->setUniform("mask", mask->cache->getTexture());
     sf::RenderTexture temp;
+	temp.setSmooth(true);
     temp.create(window->getSize().x, window->getSize().y);
     temp.clear(sf::Color::Transparent);
     sf::Sprite sprite;

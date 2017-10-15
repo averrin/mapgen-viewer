@@ -437,7 +437,9 @@ public:
 
       layers->setShader("water", &shader_blur);
       layers->setMask("rivers", layers->getLayer("land"));
-      // layers->setShader("lakes", &shader_lesser_blur);
+
+	  // Its a horrible hack. But renderTexture have no antialiasing=(
+	  layers->getLayer("roads")->direct = true;
 
       for (auto name : order) {
         layers->invalidateLayer(name);

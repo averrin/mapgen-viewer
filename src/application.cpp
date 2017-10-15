@@ -106,6 +106,7 @@ public:
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
     // mapgen->setSeed(38007851);
+	mapgen->setSeed(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();

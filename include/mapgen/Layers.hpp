@@ -17,6 +17,7 @@ public:
   Layer* mask = nullptr;
   sf::Shader* shader_mask;
   sf::RenderTexture* cache = nullptr;
+  bool direct = false;
 
 private:
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
