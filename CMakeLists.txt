@@ -34,6 +34,8 @@ add_library(imgui ${IMLIB_SOURCE})
 
 file(GLOB SWLIB_SOURCE "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.cpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.hpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/*.hpp")
 add_library(sw ${SWLIB_SOURCE})
+# file(GLOB PLLIB_SOURCE "${PROJECT_BINARY_DIR}/include/Plinth/Plinth/*" "${PROJECT_BINARY_DIR}/include/Plinth/Plinth/SFML/*" "${PROJECT_BINARY_DIR}/include/Plinth/PlinthSfml.hpp")
+# add_library(pl ${PLLIB_SOURCE})
 
 add_subdirectory(backward-cpp)
 
@@ -64,6 +66,7 @@ add_executable(${EXECUTABLE_NAME}
   src/Report.cpp
   src/Simulator.cpp
   src/MapGenerator.cpp
+  src/Layers.cpp
   src/Painter.cpp
   src/objectsWindow.cpp
   src/infoWindow.cpp
@@ -80,6 +83,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 IF(NOT WIN32)
+	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
