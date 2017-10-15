@@ -23,6 +23,9 @@ float Map::getRegionDistance(Region *r, Region *r2) {
     if (r2->state != r->state) {
       d *= 1.2f;
     }
+    if (r2->biom == biom::FORREST && r2->biom == biom::RAIN_FORREST) {
+      d *= 1.1f;
+    }
     if (r2->hasRoad) {
       d *= 0.2f;
     }

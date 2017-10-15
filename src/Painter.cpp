@@ -17,6 +17,7 @@
 #include "mapgen/Painter.hpp"
 #include "mapgen/Walker.hpp"
 #include "mapgen/utils.hpp"
+#include "mapgen/hslColor.hpp"
 #include "rang.hpp"
 
 #include <experimental/filesystem>
@@ -70,9 +71,13 @@ public:
 
     shader_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
     shader_blur.setUniform("blur_radius", 0.004f);
+    shader_lesser_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
+    shader_lesser_blur.setUniform("blur_radius", 0.002f);
     // shader_blur.setParameter("blur_radius", 0.004f);
+    sprintf(spath, "%s/mask.frag", dir.c_str());
+    shader_mask.loadFromFile(spath, sf::Shader::Type::Fragment);
 
-    layers = new LayersManager(window);
+    layers = new LayersManager(window, &shader_mask);
   };
 
   sf::Font sffont;
@@ -91,6 +96,8 @@ private:
   sf::Clock clock;
   std::vector<Walker *> walkers;
   sf::Shader shader_blur;
+  sf::Shader shader_lesser_blur;
+  sf::Shader shader_mask;
   float iconSize = 24.f;
 
   // TODO: rewrite this horror
@@ -162,7 +169,11 @@ public:
   bool showWalkers = true;
   bool labels = true;
   bool blur = true;
-  bool useTextures = false;
+  bool useTextures = true;
+  int hueDelta = 7;
+  float lumDelta = 18.f;
+  int landBorderHeight = 4;
+  int forrestBorderHeight = 5;
 
   bool isIncreasing{true};
 
@@ -319,7 +330,7 @@ public:
                          {static_cast<float>(p->x), static_cast<float>(p->y)});
         float t = float(i) / c * 2.f;
         river->setThickness(i, t);
-        river->setColor(sf::Color(46, 46, 76, float(i) / c * 255.f));
+        river->setColor(sf::Color(66, 66, 96, float(i) / c * 255.f));
       }
       river->setBezierInterpolation();
       river->setInterpolationSteps(10);
@@ -404,9 +415,12 @@ public:
         "water", "waterClear",
         "landBorder", "land",
         "roads", "rivers",
+        "forrest",
         "lakes",
-        "labels", "borders",
-        "locations"
+        "borders",
+        "labels",
+        "locations",
+        "watermark"
       };
       for (auto name : order) {
         layers->getLayer(name)->clear();
@@ -422,17 +436,12 @@ public:
       drawMark();
 
       layers->setShader("water", &shader_blur);
-      layers->invalidateLayer("water");
-      layers->invalidateLayer("waterClear");
-      layers->invalidateLayer("landBorder");
-      layers->invalidateLayer("land");
-      layers->invalidateLayer("lakes");
-      layers->invalidateLayer("roads");
-      layers->invalidateLayer("rivers");
-      layers->invalidateLayer("borders");
-      layers->invalidateLayer("watermark");
-      layers->invalidateLayer("labels");
-      layers->invalidateLayer("locations");
+      layers->setMask("rivers", layers->getLayer("land"));
+      // layers->setShader("lakes", &shader_lesser_blur);
+
+      for (auto name : order) {
+        layers->invalidateLayer(name);
+      }
 
       layers->getLayer("borders")->enabled = states;
       layers->getLayer("water")->enabled = blur;
@@ -440,11 +449,6 @@ public:
       layers->getLayer("labels")->enabled = labels;
       layers->getLayer("locations")->enabled = locations;
 
-      // if (roads) {
-      // }
-
-      // cachedMap.create(windowSize.x, windowSize.y);
-      // cachedMap.update(*window);
       needUpdate = false;
       drawMap();
     } else {
@@ -596,6 +600,10 @@ public:
         continue;
       }
       auto polygon = getPolygon(region);
+
+      if (region->isCoast()) {
+        layers->getLayer("lakes")->add(polygon);
+      }
       layers->getLayer("lakes")->add(polygon);
     }
   }
@@ -619,6 +627,9 @@ public:
       int b = col.b;
       int s = 1;
       for (auto n : region->neighbors) {
+        if (n->megaCluster->isLand) {
+          continue;
+        }
         r += n->biom.color.r;
         g += n->biom.color.g;
         b += n->biom.color.b;
@@ -628,51 +639,52 @@ public:
       col.g = g / s;
       col.b = b / s;
     }
-    int a =
-        255 * (region->getHeight(region->site) + 1.6) / 3 + (rand() % 8 - 4);
-    if (a > 255) {
-      a = 255;
+    auto hsl = TurnToHSL(col);
+    if (region->megaCluster->isLand) {
+      float h = region->getHeight(region->site);
+      hsl.Luminance -= 20;
+      hsl.Luminance += lumDelta * h;
+      hsl.Luminance = std::max(hsl.Luminance, double(0));
+      hsl.Luminance = std::min(hsl.Luminance, double(100));
     }
-    // col.a = a;
+    hsl.Hue += (rand() % (hueDelta*2)) - hueDelta;
+    col = hsl.TurnToRGB();
+
+    if (useTextures) {
+      if (region->biom == biom::FORREST ||
+          region->biom == biom::RAIN_FORREST) {
+        // auto sp = sf::ConvexShape(*polygon);
+        // sp.setFillColor(sf::Color(10, 10, 10));
+        polygon->move(0, -forrestBorderHeight);
+        layers->getLayer("forrest")->add(polygon);
+        // polygons.push_back(DrawableRegion{sp, region, 2});
+        polygon->setTexture(images["tt"]);
+        // polygons.push_back(DrawableRegion{polygon, region, 2});
+      } else if (region->biom == biom::SAND || region->biom == biom::DESERT)
+      {
+        if (region->biom == biom::SAND) {
+          polygon->setFillColor(sf::Color(240,240,240));
+        }
+        polygon->setTexture(images["st"]);
+      } else if (region->biom == biom::GRASS ||
+                 region->biom == biom::MEADOW) {
+        polygon->setTexture(images["snow"]);
+      } else if (region->biom == biom::PRAIRIE) {
+        polygon->setTexture(images["pt"]);
+      } else if (region->biom == biom::ICE || region->biom == biom::SNOW) {
+        if (region->biom == biom::ICE) {
+          auto sp = sf::ConvexShape(*polygon);
+          sp.setFillColor(sf::Color(200, 200, 240));
+          sp.move(0, 5);
+          // polygons.push_back(DrawableRegion{sp, region, 2});
+          // polygon->setTexture(images["snow"]); //
+          // polygons.push_back(DrawableRegion{polygon, region, 2});
+        }
+        polygon->setTexture(images["snow"]);
+      }
+    }
 
     polygon->setFillColor(col);
-    // if (useTextures) {
-    //   if (region->biom == biom::FORREST ||
-    //       region->biom == biom::RAIN_FORREST) {
-    //     auto sp = sf::ConvexShape(polygon);
-    //     sp.setFillColor(sf::Color(10, 10, 10));
-    //     sp.move(0, 5);
-    //     polygons.push_back(DrawableRegion{sp, region, 2});
-    //     polygon->setTexture(images["tt"]);
-    //     polygons.push_back(DrawableRegion{polygon, region, 2});
-    //     z = -1;
-    //   } else if (region->biom == biom::SAND || region->biom == biom::DESERT)
-    //   {
-    //     if (region->biom == biom::SAND) {
-    //       polygon->setFillColor(sf::Color(200,200,200));
-    //     }
-    //     polygon->setTexture(images["st"]);
-    //   } else if (region->biom == biom::GRASS ||
-    //              region->biom == biom::MEADOW) {
-    //     polygon->setTexture(images["snow"]);
-    //   } else if (region->biom == biom::PRAIRIE) {
-    //     polygon->setTexture(images["pt"]);
-    //   } else if (region->biom == biom::ICE || region->biom == biom::SNOW) {
-    //     if (region->biom == biom::ICE) {
-    //       auto sp = sf::ConvexShape(polygon);
-    //       sp.setFillColor(sf::Color(200, 200, 240));
-    //       sp.move(0, 5);
-    //       polygons.push_back(DrawableRegion{sp, region, 2});
-    //       polygon->setTexture(images["snow"]); //
-    //       polygons.push_back(DrawableRegion{polygon, region, 2});
-    //       z = -1;
-    //     }
-    //     polygon->setTexture(images["snow"]);
-    //   } else if (region->biom == biom::LAKE) {
-    //     z = 3;
-    //   }
-    // }
-
     if (edges && (region->megaCluster->isLand || !blur)) {
       polygon->setOutlineColor(sf::Color(100, 100, 100));
       polygon->setOutlineThickness(1);
@@ -733,8 +745,13 @@ public:
       if (region->megaCluster->isLand) {
         layers->getLayer("land")->add(polygon);
         auto p2 = new sf::ConvexShape(*polygon);
-        p2->setOutlineColor(sf::Color::Black);
-        p2->setOutlineThickness(3);
+        auto nc = polygon->getFillColor();
+        auto hsl = TurnToHSL(region->biom.color);
+        hsl.Luminance -= 20;
+        nc = hsl.TurnToRGB();
+        nc.a = 180;
+        p2->setFillColor(nc);
+        p2->move(0, landBorderHeight);
         layers->getLayer("landBorder")->add(p2);
         if (region->isCoast()) {
           layers->getLayer("water")->add(polygon);
@@ -747,63 +764,6 @@ public:
 
     needUpdate = true;
   }
-
-  // sf::Color adjustLightness(sf::Color color, float d) {
-  //   // R, G and B input range = 0 ÷ 255
-  //   // H, S and L output range = 0 ÷ 1.0
-
-  //   float var_R = (color.r / 255);
-  //   float var_G = (color.g / 255);
-  //   float var_B = (color.b / 255);
-
-  //   float del_R;
-  //   float del_G;
-  //   float del_B;
-
-  //   float var_Min =
-  //       std::min(std::min(var_R, var_G), var_B); // Min. value of RGB
-  //   float var_Max =
-  //       std::min(std::max(var_R, var_G), var_B); // Max. value of RGB
-  //   float del_Max = var_Max - var_Min;           // Delta RGB value
-
-  //   float H = 0;
-  //   float S;
-  //   float L = (var_Max + var_Min) / 2;
-
-  //   if (del_Max == 0) // This is a gray, no chroma...
-  //   {
-  //     H = 0;
-  //     S = 0;
-  //   } else // Chromatic data...
-  //   {
-  //     if (L < 0.5) {
-  //       S = del_Max / (var_Max + var_Min);
-  //     } else {
-  //       S = del_Max / (2 - var_Max - var_Min);
-  //     }
-
-  //     del_R = (((var_Max - var_R) / 6) + (del_Max / 2)) / del_Max;
-  //     del_G = (((var_Max - var_G) / 6) + (del_Max / 2)) / del_Max;
-  //     del_B = (((var_Max - var_B) / 6) + (del_Max / 2)) / del_Max;
-
-  //     if (var_R == var_Max) {
-  //       H = del_B - del_G;
-  //     } else if (var_G == var_Max) {
-  //       H = (1 / 3) + del_R - del_B;
-  //     } else if (var_B == var_Max) {
-  //       H = (2 / 3) + del_G - del_R;
-  //     }
-
-  //     if (H < 0) {
-  //       H += 1;
-  //     }
-  //     if (H > 1) {
-  //       H -= 1;
-  //     }
-  //   }
-  //   L += d;
-  //   return color;
-  // }
 
   sf::Texture getScreenshot() {
     sf::Vector2u windowSize = window->getSize();

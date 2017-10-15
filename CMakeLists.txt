@@ -15,6 +15,7 @@ file(COPY "font.ttf" DESTINATION "bin")
 file(COPY "images" DESTINATION "bin")
 file(COPY "images" DESTINATION "bin")
 file(COPY "src/blur.frag" DESTINATION "bin")
+file(COPY "src/mask.frag" DESTINATION "bin")
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/MapgenConfig.h.in"
@@ -62,6 +63,8 @@ add_executable(${EXECUTABLE_NAME}
   src/Package.cpp
   src/Map.cpp
   src/Walker.cpp
+
+  src/hslColor.cpp
 
   src/Report.cpp
   src/Simulator.cpp

@@ -43,6 +43,8 @@ public:
   bool stateBorder = false;
   bool seaBorder = false;
   bool isCoast();
+  bool isLakeCoast();
+
 private:
 	PointList _verticies;
   HeightMap _heights;

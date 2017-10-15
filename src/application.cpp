@@ -105,7 +105,7 @@ public:
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    mapgen->setSeed(38007851);
+    // mapgen->setSeed(38007851);
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -282,19 +282,10 @@ public:
       }
       ImGui::Text("\n");
 
-      if (ImGui::TreeNode("Visual layers [DEBUG]")) {
-        for (auto l : painter->layers->layers) {
-          if (ImGui::Checkbox(l->name.c_str(), &l->enabled)) {
-            painter->invalidate();
-          }
-        }
-        ImGui::TreePop();
-      }
-      ImGui::Text("\n");
-
       if (ImGui::Checkbox("Show verbose info", &painter->info)) {
         painter->invalidate();
       }
+      ImGui::Text("\n");
 
       ImGui::Text(
           "\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
@@ -325,6 +316,29 @@ public:
     }
     ImGui::EndTabBar();
     ImGui::End();
+
+    ImGui::Begin("Visual layers [DEBUG]");
+      if (ImGui::SliderInt("Hue delta", &painter->hueDelta, 2, 26)) {
+        painter->invalidate();
+      }
+      if (ImGui::SliderInt("Land border", &painter->landBorderHeight, 0, 12)) {
+        painter->invalidate();
+      }
+      if (ImGui::SliderInt("Forrest border", &painter->forrestBorderHeight, 0, 12)) {
+        painter->invalidate();
+      }
+      if (ImGui::DragFloat("Lum delta", &painter->lumDelta, 2.f, 0.5f, 50.f)) {
+        painter->invalidate();
+      }
+      for (auto l : painter->layers->layers) {
+        char ln[200];
+        sprintf(ln, "%s [%s%s]", l->name.c_str(), l->shader == nullptr ? "_" : "#", l->mask == nullptr ? "_" : "#");
+        if (ImGui::Checkbox(ln, &l->enabled)) {
+          painter->invalidate();
+        }
+      }
+    ImGui::End();
+
   }
   
   Region *currentRegionCache = nullptr;

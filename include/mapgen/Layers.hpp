@@ -14,10 +14,12 @@ public:
   void clear();
   void add(sf::Drawable* shape);
   void update(sf::RenderWindow* w);
+  Layer* mask = nullptr;
+  sf::Shader* shader_mask;
+  sf::RenderTexture* cache = nullptr;
 
 private:
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
-  sf::RenderTexture* cache = nullptr;
 };
 
 class LayersManager : public sf::Drawable {
@@ -25,14 +27,17 @@ private:
   sf::RenderWindow* window;
   Layer* addLayer(std::string name);
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
+  sf::Shader* shader_mask;
 
 public:
-  LayersManager(sf::RenderWindow* w);
+  LayersManager(sf::RenderWindow* w, sf::Shader* shader_mask);
   std::vector<Layer*> layers;
 
   Layer* getLayer(std::string name);
   void setLayerEnabled(std::string name, bool enabled);
   void setShader(std::string name, sf::Shader* shader);
+  void setMask(std::string name, Layer* mask);
+
   void invalidateLayer(std::string name);
 
 

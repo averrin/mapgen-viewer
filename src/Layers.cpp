@@ -25,12 +25,30 @@ void Layer::update(sf::RenderWindow* window) {
   if (shader != nullptr) {
     sf::RenderTexture temp;
     temp.create(window->getSize().x, window->getSize().y);
+    temp.clear(sf::Color::Transparent);
     sf::Sprite sprite;
     cache->display();
     sprite.setTexture(cache->getTexture());
     temp.draw(sprite, shader);
     temp.display();
     sprite.setTexture(temp.getTexture());
+    cache->draw(sprite);
+  }
+
+  if (mask != nullptr) {
+    mg::info("Draw masked:", mask->name);
+    // shader_mask->setUniform("texture", cache->getTexture());
+    shader_mask->setUniform("mask", mask->cache->getTexture());
+    sf::RenderTexture temp;
+    temp.create(window->getSize().x, window->getSize().y);
+    temp.clear(sf::Color::Transparent);
+    sf::Sprite sprite;
+    cache->display();
+    sprite.setTexture(cache->getTexture());
+    temp.draw(sprite, shader_mask);
+    temp.display();
+    sprite.setTexture(temp.getTexture());
+    cache->clear(sf::Color::Transparent);
     cache->draw(sprite);
   }
   cache->display();
@@ -44,7 +62,7 @@ void Layer::add(sf::Drawable* shape) {
   shapes.push_back(shape);
 }
 
-LayersManager::LayersManager(sf::RenderWindow* w) : window(w){};
+LayersManager::LayersManager(sf::RenderWindow* w, sf::Shader* m) : window(w), shader_mask(m){};
 
 void LayersManager::draw(sf::RenderTarget& target, sf::RenderStates states) const {
   for (auto l: layers) {
@@ -82,4 +100,10 @@ void LayersManager::invalidateLayer(std::string name) {
 void LayersManager::setShader(std::string name, sf::Shader* shader) {
   auto l = getLayer(name);
   l->shader = shader;
+}
+
+void LayersManager::setMask(std::string name, Layer* mask) {
+  auto l = getLayer(name);
+  l->mask = mask;
+  l->shader_mask = shader_mask;
 }

@@ -20,3 +20,9 @@ bool Region::isCoast() {
       return !n->megaCluster->isLand;
     }) != 0;
 }
+
+bool Region::isLakeCoast() {
+  return std::count_if(neighbors.begin(), neighbors.end(), [&](Region* n) {
+      return n->biom == biom::LAKE;
+    }) != 0;
+}
