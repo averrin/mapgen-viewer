@@ -1,3 +1,4 @@
+#include <cmath>
 #include "mapgen/utils.hpp"
 #include "rang.hpp"
 

@@ -39,13 +39,13 @@
 #include "SelbaWard/Line.hpp"
 #include "SelbaWard/NinePatch.hpp"
 #include "SelbaWard/PaletteEnums.hpp"
-#include "SelbaWard/PieChart.hpp"
+// #include "SelbaWard/PieChart.hpp"
 #include "SelbaWard/ProgressBar.hpp"
 #include "SelbaWard/Ring.hpp"
-#include "SelbaWard/SpinningCard.hpp"
+// #include "SelbaWard/SpinningCard.hpp"
 #include "SelbaWard/Spline.hpp"
-#include "SelbaWard/Sprite3d.hpp"
+// #include "SelbaWard/Sprite3d.hpp"
 #include "SelbaWard/Starfield.hpp"
-#include "SelbaWard/TileMap.hpp"
+// #include "SelbaWard/TileMap.hpp"
 
 #endif // SELBAWARD_HPP

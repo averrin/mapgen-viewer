@@ -4,7 +4,7 @@
 #include "mapgen/SimulationWindow.hpp"
 #include <imgui-SFML.h>
 #include <imgui.h>
-#include <imgui_tabs.h>
+// #include <imgui_tabs.h>
 
 class Application {
   std::string VERSION;
@@ -33,6 +33,7 @@ public:
   Application(std::string v) : VERSION(v) {
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
+    ImGui::CreateContext();
 
     ImGuiIO &io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("./font.ttf", 15.0f);
@@ -190,12 +191,12 @@ public:
 
   void drawMainWindow() {
     ImGui::Begin("MapGen");
-    ImGui::BeginTabBar("##MainTabBar");
+    // ImGui::BeginTabBar("##MainTabBar");
 
-    ImGui::DrawTabsBackground();
+    // ImGui::DrawTabsBackground();
 
     // TODO: move to separate file
-    if (ImGui::AddTab("Generation")) {
+    // if (ImGui::AddTab("Generation")) {
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -302,9 +303,11 @@ public:
           "[B] toggle water blur\n"
           "[N] toggle labels\n"
           "[A] show state clusters\n");
-    }
+    // }
+    ImGui::End();
 
-    if (ImGui::AddTab("Simulation")) {
+    ImGui::Begin("Simulation");
+    // if (ImGui::AddTab("Simulation")) {
       simulationWindow->draw();
 
       if (mapgen->simulator->report != nullptr) {
@@ -316,11 +319,13 @@ public:
       if (ImGui::Button("Start simulation")) {
         simulate();
       }
-    }
-    if (ImGui::AddTab("Objects")) {
+    ImGui::End();
+    // }
+    ImGui::Begin("Objects");
+    // if (ImGui::AddTab("Objects")) {
       drawObjects();
-    }
-    ImGui::EndTabBar();
+    // }
+    // ImGui::EndTabBar();
     ImGui::End();
   }
   

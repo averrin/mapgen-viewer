@@ -1,3 +1,4 @@
+#include <cmath>
 #include "mapgen/Map.hpp"
 
 Map::~Map(){};

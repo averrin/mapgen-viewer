@@ -35,7 +35,7 @@ add_library(imgui ${IMLIB_SOURCE})
 file(GLOB SWLIB_SOURCE "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.cpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.hpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/*.hpp")
 add_library(sw ${SWLIB_SOURCE})
 
-add_subdirectory(backward-cpp)
+# add_subdirectory(backward-cpp)
 
 set(EXECUTABLE_NAME "mapgen")
 file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
@@ -43,8 +43,8 @@ add_executable(${EXECUTABLE_NAME}
   include/imgui/imgui.cpp
   include/imgui/imgui_draw.cpp
   include/imgui/imgui-SFML.cpp
-  include/imgui/imgui_tabs.cpp
-  ${BACKWARD_ENABLE}
+  # include/imgui/imgui_tabs.cpp
+  # ${BACKWARD_ENABLE}
   include/micropather.cpp
   include/noiseutils.cpp
 
@@ -74,7 +74,7 @@ add_executable(${EXECUTABLE_NAME}
   src/main.cpp
 )
 
-add_backward(mapgen)
+# add_backward(mapgen)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -88,6 +88,7 @@ IF(NOT WIN32)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")
 	set(CMAKE_CXX_STANDARD 14)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_EXTENSIONS OFF)
