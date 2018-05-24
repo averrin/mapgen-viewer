@@ -159,7 +159,14 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     }
   }
 
-  void Painter::invalidate() { needUpdate = true; }
+  void Painter::invalidate(bool force) {
+    needUpdate = true;
+    if (force) {
+      for (auto l : layers->layers) {
+        l->damaged = true;
+      }
+    }
+  }
 
   void Painter::fade() {
     sf::RectangleShape rectangle;
@@ -421,28 +428,62 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 
 	  // Its a horrible hack. But renderTexture have no antialiasing=(
 	  // layers->getLayer("roads")->direct = true;
-
-      for (auto name : order) {
-        layers->invalidateLayer(name);
+      Layer* l;
+      l = layers->getLayer("borders"); 
+      if (l->enabled != states) {
+        l->enabled = states;
+        l->damaged = true;
       }
 
-      layers->getLayer("borders")->enabled = states;
-      layers->getLayer("water")->enabled = blur;
-      layers->getLayer("waterClear")->enabled = !blur;
-      layers->getLayer("labels")->enabled = labels;
-      layers->getLayer("locations")->enabled = locations;
+      l = layers->getLayer("water"); 
+      if (l->enabled != blur) {
+        l->enabled = blur;
+        l->damaged = true;
+      }
+
+l = layers->getLayer("waterClear");
+      if (l->enabled != !blur) {
+        l->enabled = !blur;
+        l->damaged = true;
+      }
+
+l = layers->getLayer("labels");
+      if (l->enabled != labels) {
+        l->enabled = labels;
+        l->damaged = true;
+      }
+
+l = layers->getLayer("locations");
+      if (l->enabled != locations) {
+        l->enabled = locations;
+        l->damaged = true;
+      }
+
+
+      for (auto name : order) {
+        if (layers->getLayer(name)->damaged) {
+          layers->invalidateLayer(name);
+        }
+      }
 
       needUpdate = false;
+      if (useCacheMap) {
+        cachedMap.draw(*layers);
+      }
       drawMap();
     } else {
-      // sf::RectangleShape rectangle;
-      // rectangle.setSize(sf::Vector2f(window->getSize().x,
-      // window->getSize().y));
-      // rectangle.setPosition(0, 0);
-      // rectangle.setTexture(&cachedMap);
+      if (useCacheMap) {
+        sf::RectangleShape rectangle;
+        rectangle.setSize(sf::Vector2f(window->getSize().x,
+        window->getSize().y));
+        rectangle.setPosition(0, 0);
+        cachedMap.display();
+        rectangle.setTexture(&(cachedMap.getTexture()));
 
-      // window->draw(rectangle);
+        window->draw(rectangle);
+      } else {
       window->draw(*layers);
+      }
     }
   }
 

@@ -59,6 +59,7 @@ void Layer::update(sf::RenderWindow* window) {
     cache->clear(sf::Color::Transparent);
     cache->draw(sprite);
   }
+  damaged = false;
   cache->display();
 }
 

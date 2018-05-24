@@ -136,11 +136,9 @@ public:
         break;
       case sf::Keyboard::P:
         painter->roads = !painter->roads;
-        painter->invalidate();
         break;
       case sf::Keyboard::I:
         painter->info = !painter->info;
-        painter->invalidate();
         break;
       case sf::Keyboard::V:
         painter->verbose = !painter->verbose;
@@ -157,11 +155,9 @@ public:
         break;
       case sf::Keyboard::N:
         painter->labels = !painter->labels;
-        painter->invalidate();
         break;
       case sf::Keyboard::B:
         painter->blur = !painter->blur;
-        painter->invalidate();
         break;
       case sf::Keyboard::T:
         painter->useTextures = !painter->useTextures;
@@ -240,23 +236,23 @@ public:
       }
       if (ImGui::TreeNode("Special layers")) {
         if (ImGui::Checkbox("Edges", &painter->edges)) {
-          painter->invalidate();
+          painter->invalidate(true);
         }
         ImGui::SameLine(120);
         if (ImGui::Checkbox("Heights", &painter->heights)) {
-          painter->invalidate();
+          painter->invalidate(true);
         }
 
         ImGui::SameLine(220);
         if (ImGui::Checkbox("Humidity", &painter->hum)) {
-          painter->invalidate();
+          painter->invalidate(true);
         }
         if (ImGui::Checkbox("Temp", &painter->temp)) {
-          painter->invalidate();
+          painter->invalidate(true);
         }
         ImGui::SameLine(120);
         if (ImGui::Checkbox("Minerals", &painter->minerals)) {
-          painter->invalidate();
+          painter->invalidate(true);
         }
         ImGui::TreePop();
       }
@@ -276,6 +272,9 @@ public:
           painter->invalidate();
         }
         if (ImGui::Checkbox("Experimental textures", &painter->useTextures)) {
+          painter->invalidate(true);
+        }
+        if (ImGui::Checkbox("Use cache map", &painter->useCacheMap)) {
           painter->invalidate();
         }
 
@@ -284,7 +283,7 @@ public:
       ImGui::Text("\n");
 
       if (ImGui::Checkbox("Show verbose info", &painter->info)) {
-        painter->invalidate();
+        // painter->invalidate();
       }
       ImGui::Text("\n");
 

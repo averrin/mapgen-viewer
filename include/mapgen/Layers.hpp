@@ -8,6 +8,7 @@ public:
   Layer(std::string name);
   bool needUpdate = true;
   bool enabled = true;
+  bool damaged = true;
   std::string name = "";
   std::vector<sf::Drawable*> shapes;
   sf::Shader* shader = nullptr;
@@ -40,8 +41,6 @@ public:
   void setMask(std::string name, Layer* mask);
 
   void invalidateLayer(std::string name);
-
-
 };
 
 #endif

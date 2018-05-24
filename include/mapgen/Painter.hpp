@@ -46,7 +46,8 @@ public:
   bool labels = true;
   bool blur = true;
 
-  bool useTextures = true;
+  bool useTextures = false;
+  bool useCacheMap = true;
   int hueDelta = 7;
   float lumDelta = 18.f;
   int landBorderHeight = 4;
@@ -60,7 +61,7 @@ public:
 
         void initProgressBar();
         void loadImages();
-        void invalidate();
+        void invalidate(bool force = false);
         void fade();
         void drawLoading();
         void drawInfo(Region *currentRegion);
@@ -88,7 +89,7 @@ private:
   std::map<std::string, sf::Texture *> images;
   sf::RenderWindow *window;
   sw::ProgressBar progressBar;
-  sf::Texture cachedMap;
+  sf::RenderTexture cachedMap;
   sf::Color bgColor;
   float color[3] = {0.12f, 0.12f, 0.12f};
   Map *map;
