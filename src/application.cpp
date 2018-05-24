@@ -73,7 +73,7 @@ public:
       mapgen->update();
       seed = mapgen->getSeed();
       relax = mapgen->getRelax();
-      painter->update();
+      painter->invalidate();
       ready = mapgen->ready;
     });
   }
@@ -85,7 +85,7 @@ public:
     generator = std::thread([&]() {
       ready = false;
       mapgen->simulator->resetAll();
-      painter->update();
+      painter->invalidate();
       ready = mapgen->ready;
     });
   }
@@ -97,7 +97,7 @@ public:
     generator = std::thread([&]() {
       ready = false;
       mapgen->startSimulation();
-      painter->update();
+      painter->invalidate();
       ready = mapgen->ready;
     });
   }
@@ -105,7 +105,8 @@ public:
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
     mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
-    mapgen->setSeed(50127);
+    // mapgen->setSeed(38007851);
+	mapgen->setSeed(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     octaves = mapgen->getOctaveCount();
     freq = mapgen->getFrequency();
     nPoints = mapgen->getPointCount();
@@ -137,10 +138,6 @@ public:
         painter->roads = !painter->roads;
         painter->invalidate();
         break;
-      case sf::Keyboard::A:
-        painter->areas = !painter->areas;
-        painter->invalidate();
-        break;
       case sf::Keyboard::I:
         painter->info = !painter->info;
         painter->invalidate();
@@ -168,7 +165,7 @@ public:
         break;
       case sf::Keyboard::T:
         painter->useTextures = !painter->useTextures;
-        painter->update();
+        painter->invalidate();
         break;
       }
       break;
@@ -178,7 +175,7 @@ public:
     case sf::Event::Resized:
       mapgen->setSize(window->getSize().x, window->getSize().y);
       // mapgen->update();
-      painter->update();
+      painter->invalidate();
       break;
     case sf::Event::MouseButtonPressed:
       if (event.mouseButton.button == sf::Mouse::Right && painter->info) {
@@ -243,46 +240,43 @@ public:
       }
       if (ImGui::TreeNode("Special layers")) {
         if (ImGui::Checkbox("Edges", &painter->edges)) {
-          painter->update();
+          painter->invalidate();
         }
         ImGui::SameLine(120);
         if (ImGui::Checkbox("Heights", &painter->heights)) {
-          painter->update();
+          painter->invalidate();
         }
 
         ImGui::SameLine(220);
         if (ImGui::Checkbox("Humidity", &painter->hum)) {
-          painter->update();
+          painter->invalidate();
         }
         if (ImGui::Checkbox("Temp", &painter->temp)) {
-          painter->update();
+          painter->invalidate();
         }
         ImGui::SameLine(120);
         if (ImGui::Checkbox("Minerals", &painter->minerals)) {
-          painter->update();
+          painter->invalidate();
         }
         ImGui::TreePop();
       }
 
       if (ImGui::TreeNode("Info toggles")) {
-        if (ImGui::Checkbox("Cities", &painter->cities)) {
-          painter->update();
-        }
-        if (ImGui::Checkbox("Locations*", &painter->locations)) {
-          painter->update();
+        if (ImGui::Checkbox("Cities & Locations*", &painter->locations)) {
+          painter->invalidate();
         }
         if (ImGui::Checkbox("States", &painter->states)) {
-          painter->update();
+          painter->invalidate();
         }
         if (ImGui::Checkbox("Roads and sea pathes*", &painter->roads)) {
-          painter->update();
+          painter->invalidate();
         }
         ImGui::Checkbox("Walkers*", &painter->showWalkers);
         if (ImGui::Checkbox("Labels", &painter->labels)) {
           painter->invalidate();
         }
         if (ImGui::Checkbox("Experimental textures", &painter->useTextures)) {
-          painter->update();
+          painter->invalidate();
         }
 
         ImGui::TreePop();
@@ -290,8 +284,9 @@ public:
       ImGui::Text("\n");
 
       if (ImGui::Checkbox("Show verbose info", &painter->info)) {
-        painter->update();
+        painter->invalidate();
       }
+      ImGui::Text("\n");
 
       ImGui::Text(
           "\n[ESC] for exit\n[S] for save screenshot\n[R] for random "
@@ -326,6 +321,29 @@ public:
     // }
     // ImGui::EndTabBar();
     ImGui::End();
+
+    ImGui::Begin("Visual layers [DEBUG]");
+      if (ImGui::SliderInt("Hue delta", &painter->hueDelta, 2, 26)) {
+        painter->invalidate();
+      }
+      if (ImGui::SliderInt("Land border", &painter->landBorderHeight, 0, 12)) {
+        painter->invalidate();
+      }
+      if (ImGui::SliderInt("Forrest border", &painter->forrestBorderHeight, 0, 12)) {
+        painter->invalidate();
+      }
+      if (ImGui::DragFloat("Lum delta", &painter->lumDelta, 2.f, 0.5f, 50.f)) {
+        painter->invalidate();
+      }
+      for (auto l : painter->layers->layers) {
+        char ln[200];
+        sprintf(ln, "%s [%s%s]", l->name.c_str(), l->shader == nullptr ? "_" : "#", l->mask == nullptr ? "_" : "#");
+        if (ImGui::Checkbox(ln, &l->enabled)) {
+          painter->invalidate();
+        }
+      }
+    ImGui::End();
+
   }
   
   Region *currentRegionCache = nullptr;

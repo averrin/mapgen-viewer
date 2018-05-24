@@ -18,6 +18,7 @@ file(GLOB SOURCE "src/*.cpp" "include/mapgen/*.h")
 file(COPY "font.ttf" DESTINATION "${PROJECT_PATH}/bin")
 file(COPY "images" DESTINATION "${PROJECT_PATH}/bin")
 file(COPY "src/blur.frag" DESTINATION "${PROJECT_PATH}/bin")
+file(COPY "src/mask.frag" DESTINATION "${PROJECT_PATH}/bin")
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/MapgenConfig.h.in"
@@ -49,6 +50,8 @@ add_library(imgui-sfml ${IMLIB_SFML_SOURCE})
 
 file(GLOB SWLIB_SOURCE "${PROJECT_PATH}/include/SelbaWard/SelbaWard/*.cpp" "${PROJECT_PATH}/include/SelbaWard/SelbaWard/*.hpp" "${PROJECT_PATH}/include/SelbaWard/*.hpp")
 add_library(sw ${SWLIB_SOURCE})
+# file(GLOB PLLIB_SOURCE "${PROJECT_BINARY_DIR}/include/Plinth/Plinth/*" "${PROJECT_BINARY_DIR}/include/Plinth/Plinth/SFML/*" "${PROJECT_BINARY_DIR}/include/Plinth/PlinthSfml.hpp")
+# add_library(pl ${PLLIB_SOURCE})
 
 file(GLOB FMT_SOURCE "${PROJECT_PATH}/include/fmt/src/*.cc" "${PROJECT_PATH}/include/fmt/include/fmt/*.h")
 add_library(fmt ${FMT_SOURCE})
@@ -66,6 +69,9 @@ add_executable(${EXECUTABLE_NAME}
   ${LIBMAPGEN_PATH}/micropather.cpp
 
   src/Walker.cpp
+  src/hslColor.cpp
+
+  src/Layers.cpp
   src/Painter.cpp
   src/objectsWindow.cpp
   src/infoWindow.cpp
@@ -82,6 +88,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 IF(NOT WIN32)
+	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")

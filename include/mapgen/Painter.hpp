@@ -4,6 +4,7 @@
 
 #include "mapgen/Region.hpp"
 #include "mapgen/Walker.hpp"
+#include "mapgen/Layers.hpp"
 #include "mapgen/utils.hpp"
 
 #include "SelbaWard/SelbaWard.hpp"
@@ -44,7 +45,16 @@ public:
   bool showWalkers = true;
   bool labels = true;
   bool blur = true;
-  bool useTextures = false;
+
+  bool useTextures = true;
+  int hueDelta = 7;
+  float lumDelta = 18.f;
+  int landBorderHeight = 4;
+  int forrestBorderHeight = 5;
+
+  LayersManager *layers;
+  sf::Shader shader_lesser_blur;
+  sf::Shader shader_mask;
 
   bool isIncreasing{true};
 
@@ -68,6 +78,10 @@ public:
 sf::Texture getScreenshot();
         void draw();
         void drawWalkers();
+    void drawPolygons();
+    void drawLakes();
+    void drawLocations();
+sf::ConvexShape *getPolygon(Region *region);
 
 private:
   std::map<LocationType, sf::Texture *> locationIcons;
