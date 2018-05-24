@@ -33,8 +33,13 @@ include_directories(
   
   "${LIBMAPGEN_PATH}/Voronoi/include")
 
+file(GLOB LIBMAPGEN_SOURCE "${LIBMAPGEN_PATH}/../src/*.cpp" "${LIBMAPGEN_PATH}/mapgen/include/*.hpp")
+list(REMOVE_ITEM LIBMAPGEN_SOURCE "${LIBMAPGEN_PATH}/../src/GeneratorFacade.cpp")
+add_library(libmapgen ${LIBMAPGEN_SOURCE})
+
 file(GLOB VLIB_SOURCE "${LIBMAPGEN_PATH}/Voronoi/src/*.cpp" "${LIBMAPGEN_PATH}/Voronoi/include/*.h")
 add_library(voronoi ${VLIB_SOURCE})
+
 file(GLOB IMLIB_SOURCE "${PROJECT_PATH}/include/imgui/*.cpp" "${PROJECT_PATH}/include/imgui/*.h")
 add_library(imgui ${IMLIB_SOURCE})
 file(GLOB IMLIB_SFML_SOURCE "${PROJECT_PATH}/include/imgui-sfml/*.cpp" "${PROJECT_PATH}/include/imgui-sfml/*.h")
@@ -52,6 +57,10 @@ add_executable(${EXECUTABLE_NAME}
   ${IMLIB_SFML_SOURCE}
   ${BACKWARD_ENABLE}
 
+  ${LIBMAPGEN_PATH}/noiseutils.cpp
+  ${LIBMAPGEN_PATH}/micropather.cpp
+
+  src/Walker.cpp
   src/Painter.cpp
   src/objectsWindow.cpp
   src/infoWindow.cpp
@@ -110,9 +119,9 @@ if (OPENGL_FOUND)
 endif()
 
 IF(NOT WIN32)
-	target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui imgui-sfml sw Threads::Threads stdc++fs)
+	target_link_libraries(${EXECUTABLE_NAME} libmapgen voronoi noise imgui imgui-sfml sw Threads::Threads stdc++fs)
 else()
-	target_link_libraries(${EXECUTABLE_NAME} voronoi "${PROJECT_PATH}/include/libnoise.lib" imgui sw Threads::Threads)
+	target_link_libraries(${EXECUTABLE_NAME} libmapgen voronoi "${PROJECT_PATH}/include/libnoise.lib" imgui sw Threads::Threads)
 endif()
 
 target_compile_features(mapgen PRIVATE cxx_delegating_constructors)

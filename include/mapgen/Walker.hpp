@@ -1,6 +1,7 @@
 #include "mapgen/City.hpp"
 #include "mapgen/Road.hpp"
 #include "mapgen/MapGenerator.hpp"
+#include <SFML/Graphics/CircleShape.hpp>
 
 class Walker {
 public:

@@ -1,5 +1,6 @@
 #include "mapgen/MapGenerator.hpp"
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/ConvexShape.hpp>
 #include <functional>
 
 template <typename T> using selectedFunc = std::function<void(T *)>;

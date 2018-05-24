@@ -1,4 +1,4 @@
-#include "Painter.cpp"
+#include "mapgen/Painter.hpp"
 #include "mapgen/InfoWindow.hpp"
 #include "mapgen/ObjectsWindow.hpp"
 #include "mapgen/SimulationWindow.hpp"

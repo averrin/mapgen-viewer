@@ -2,6 +2,7 @@
 #include <memory>
 #include <thread>
 #include <vector>
+#include <cmath>
 
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
@@ -14,14 +15,60 @@
 #include "mapgen/Biom.hpp"
 #include "mapgen/MapGenerator.hpp"
 #include "mapgen/Painter.hpp"
-#include "mapgen/Walker.hpp"
 #include "mapgen/utils.hpp"
 #include "rang.hpp"
 
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 
-#include <cmath>
+  // TODO: rewrite this horror
+  std::string get_selfpath() {
+    int bl;
+#ifdef _WIN32
+    char buff[MAX_PATH];
+    GetModuleFileName(NULL, buff, sizeof(buff));
+#else
+    char buff[PATH_MAX];
+    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff) - 1);
+    if (len != -1) {
+      buff[len] = '\0';
+    }
+#endif
+    auto path = fs::path(buff);
+    std::cout << path << std::endl;
+    return path.parent_path().string();
+  }
+
+
+std::map<Biom, sf::Color> biomColors = {
+    {biom::ABYSS, sf::Color(23, 23, 40)},
+    {biom::DEEP, sf::Color(39, 39, 70)},
+    {biom::SHALLOW, sf::Color(51, 51, 91)},
+    {biom::SHORE, sf::Color(68, 99, 130)},
+
+    {biom::SAND, sf::Color(210, 185, 139)},
+    {biom::GRASS, sf::Color(136, 170, 85)},
+    {biom::FORREST, sf::Color(51, 119, 85)},
+    {biom::ROCK, sf::Color(148, 148, 148)},
+    {biom::SNOW, sf::Color(240, 240, 240)},
+    {biom::ICE, sf::Color(220, 220, 255)},
+    {biom::PRAIRIE, sf::Color(239, 220, 124)},
+    {biom::MEADOW, sf::Color(126, 190, 75)},
+    {biom::DESERT, sf::Color(244, 164, 96)},
+    {biom::CITY, sf::Color(220, 220, 220)},
+    {biom::RAIN_FORREST, sf::Color(51, 90, 75)},
+    {biom::LAKE, sf::Color(51, 51, 91)},
+    {biom::MARK, sf::Color::Red},
+    {biom::MARK2, sf::Color::Black},
+};
+
+std::map<std::string, sf::Color> stateColors = {
+    {"Blue empire", sf::Color(39, 39, 70)},
+    {"Red lands", sf::Color(76, 39, 30)},
+};
+
+std::map<Road*, sw::Spline*> splines = {};
+
 
 inline bool ends_with(std::string const &value, std::string const &ending) {
   if (ending.size() > value.size())
@@ -44,10 +91,8 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
   return places;
 }
 
-class Painter {
-public:
   // TODO: use map instead mapgen
-  Painter(sf::RenderWindow *w, MapGenerator *m, std::string v)
+  Painter::Painter(sf::RenderWindow *w, MapGenerator *m, std::string v)
       : window(w), mapgen(m), VERSION(v) {
 
     auto dir = get_selfpath();
@@ -72,51 +117,14 @@ public:
     // shader_blur.setParameter("blur_radius", 0.004f);
   };
 
-  sf::Font sffont;
-
-private:
-  std::map<LocationType, sf::Texture *> locationIcons;
-  std::map<std::string, sf::Texture *> images;
-  sf::RenderWindow *window;
-  sw::ProgressBar progressBar;
-  sf::Texture cachedMap;
-  sf::Color bgColor;
-  float color[3] = {0.12f, 0.12f, 0.12f};
-  Map *map;
-  MapGenerator *mapgen;
-  std::string VERSION;
-  bool needUpdate = true;
-  sf::Clock clock;
-  std::vector<Walker *> walkers;
-  sf::Shader shader_blur;
-  float iconSize = 24.f;
-
-  // TODO: rewrite this horror
-  std::string get_selfpath() {
-    int bl;
-#ifdef _WIN32
-    char buff[MAX_PATH];
-    GetModuleFileName(NULL, buff, sizeof(buff));
-#else
-    char buff[PATH_MAX];
-    ssize_t len = ::readlink("/proc/self/exe", buff, sizeof(buff) - 1);
-    if (len != -1) {
-      buff[len] = '\0';
-    }
-#endif
-    auto path = fs::path(buff);
-    std::cout << path << std::endl;
-    return path.parent_path().string();
-  }
-
-  void initProgressBar() {
+  void Painter::initProgressBar() {
     progressBar.setShowBackgroundAndFrame(true);
     progressBar.setSize(sf::Vector2f(400, 10));
     progressBar.setPosition(
         (sf::Vector2f(window->getSize()) - progressBar.getSize()) / 2.f);
   }
 
-  void loadImages() {
+  void Painter::loadImages() {
     std::map<LocationType, std::string> iconMap = {
         {CAPITAL, "castle"}, {PORT, "docks"},  {MINE, "mine"},
         {AGRO, "farm"},      {TRADE, "trade"}, {LIGHTHOUSE, "lighthouse"},
@@ -143,37 +151,9 @@ private:
     }
   }
 
-public:
-  std::vector<DrawableRegion> polygons;
-  std::vector<DrawableRegion> secondLayer;
-  std::vector<DrawableRegion> waterPolygons;
-  std::vector<sf::ConvexShape> infoPolygons;
-  std::vector<sf::CircleShape> poi;
-  std::vector<sf::Sprite> sprites;
+  void Painter::invalidate() { needUpdate = true; }
 
-  bool borders = false;
-  bool edges = false;
-  bool info = false;
-  bool verbose = true;
-  bool heights = false;
-  bool hum = false;
-  bool temp = false;
-  bool minerals = false;
-  bool roads = true;
-  bool cities = true;
-  bool locations = true;
-  bool states = true;
-  bool areas = false;
-  bool showWalkers = true;
-  bool labels = true;
-  bool blur = true;
-  bool useTextures = false;
-
-  bool isIncreasing{true};
-
-  void invalidate() { needUpdate = true; }
-
-  void fade() {
+  void Painter::fade() {
     sf::RectangleShape rectangle;
     rectangle.setSize(sf::Vector2f(window->getSize().x, window->getSize().y));
     auto color = sf::Color::Black;
@@ -184,7 +164,7 @@ public:
     window->draw(rectangle);
   }
 
-  void drawLoading() {
+  void Painter::drawLoading() {
     //window->clear();
 
     const float frame{clock.restart().asSeconds() * 0.3f};
@@ -220,9 +200,8 @@ public:
     window->display();
   }
 
-  Region *currentRegionCache = nullptr;
 
-  void drawInfo(Region *currentRegion) {
+  void Painter::drawInfo(Region *currentRegion) {
     sf::ConvexShape selectedPolygon;
 
     if (currentRegion != currentRegionCache) {
@@ -308,7 +287,7 @@ public:
     window->draw(site);
   }
 
-  void drawRivers() {
+  void Painter::drawRivers() {
     int rn = 0;
     for (auto r : mapgen->map->rivers) {
       PointList *rvr = r->points;
@@ -333,10 +312,10 @@ public:
     }
   }
 
-  sw::Spline *drawRoad(Road *r) {
+  sw::Spline* Painter::drawRoad(Road *r) {
     sw::Spline *road = nullptr;
-    if (r->spline != nullptr) {
-      road = r->spline;
+    if (splines.find(r) != splines.end()) {
+      road = splines[r];
     } else {
       int i = 0;
       road = new sw::Spline();
@@ -360,26 +339,26 @@ public:
       road->setInterpolationSteps(10);
       road->smoothHandles();
       road->update();
-      r->spline = road;
+      splines[r] = road;
     }
     window->draw(*road);
     return road;
   }
 
-  void drawRoads() {
+  void Painter::drawRoads() {
     for (auto r : mapgen->map->roads) {
       drawRoad(r);
     }
   }
 
-  void drawLabels() {
+  void Painter::drawLabels() {
     for (auto c : mapgen->map->cities) {
 
       sf::RectangleShape bg;
       bg.setFillColor(sf::Color(50, 30, 22, 200));
       // if (c->isCapital) {
       if (states) {
-        bg.setOutlineColor(c->region->state->color);
+        bg.setOutlineColor(stateColors[c->region->state->name]);
       } else {
         bg.setOutlineColor(sf::Color(200, 200, 180, 180));
       }
@@ -401,7 +380,7 @@ public:
     }
   }
 
-  void drawMap() {
+  void Painter::drawMap() {
     if (needUpdate) {
       sf::Vector2u windowSize = window->getSize();
       for (auto p : waterPolygons) {
@@ -478,7 +457,7 @@ public:
               n++;
             }
 
-            sf::Color col(region->stateCluster->states[0]->color);
+            sf::Color col(stateColors[region->stateCluster->states[0]->name]);
             polygon.setFillColor(col);
             window->draw(polygon);
           }
@@ -499,7 +478,7 @@ public:
     }
   }
 
-  void drawBorders() {
+  void Painter::drawBorders() {
     auto ends = filterObjects(
         mapgen->map->regions,
         (filterFunc<Region>)[&](Region * r) {
@@ -533,7 +512,7 @@ public:
 
       if (std::count(used.begin(), used.end(), r) == 0) {
         sw::Spline line;
-        sf::Color col = r->state->color;
+        sf::Color col = stateColors[r->state->name];
         col.a = 150;
         line.setColor(col);
         line.setThickness(4);
@@ -548,7 +527,7 @@ public:
     }
   }
 
-  void nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
+  void Painter::nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
                   std::vector<Region *> *ends, std::vector<Region *> *exclude) {
 
     if (std::count(used->begin(), used->end(), r) == 0) {
@@ -581,7 +560,7 @@ public:
     }
   }
 
-  void drawMark() {
+  void Painter::drawMark() {
     sf::Vector2u windowSize = window->getSize();
     char mt[40];
     sprintf(mt, "Mapgen [%s] by Averrin", VERSION.c_str());
@@ -593,13 +572,13 @@ public:
     window->draw(mark);
   }
 
-  void drawObjects(std::vector<sf::ConvexShape> op) {
+  void Painter::drawObjects(std::vector<sf::ConvexShape> op) {
     for (auto obj : op) {
       window->draw(obj);
     }
   }
 
-  void update() {
+  void Painter::update() {
     infoPolygons.clear();
     polygons.clear();
     waterPolygons.clear();
@@ -641,7 +620,7 @@ public:
         polygon.setPoint(n, sf::Vector2f(p->x, p->y));
       }
 
-      sf::Color col(region->biom.color);
+      sf::Color col(biomColors[region->biom]);
 
       if (region->border && !region->megaCluster->isLand) {
         int r = col.r;
@@ -649,9 +628,9 @@ public:
         int b = col.b;
         int s = 1;
         for (auto n : region->neighbors) {
-          r += n->biom.color.r;
-          g += n->biom.color.g;
-          b += n->biom.color.b;
+          r += biomColors[n->biom].r;
+          g += biomColors[n->biom].g;
+          b += biomColors[n->biom].b;
           s++;
         }
         col.r = r / s;
@@ -691,7 +670,7 @@ public:
           // col = region->state->color;
           int rad = 2;
           sf::CircleShape poiShape(rad);
-          poiShape.setFillColor(region->state->color);
+          poiShape.setFillColor(stateColors[region->state->name]);
           poiShape.setOutlineColor(sf::Color(23, 23, 23));
           poiShape.setOutlineThickness(1);
           poiShape.setPosition(
@@ -740,7 +719,7 @@ public:
         polygon.setOutlineThickness(1);
       }
       if (heights) {
-        sf::Color col(region->biom.color);
+        sf::Color col(biomColors[region->biom]);
         col.r = 255 * (region->getHeight(region->site) + 1.6) / 3.2;
         col.a = 20 + 255 * (region->getHeight(region->site) + 1.6) / 3.2;
         col.b = col.b / 3;
@@ -750,7 +729,7 @@ public:
       }
 
       if (minerals && (region->megaCluster->isLand || !blur)) {
-        sf::Color col(region->biom.color);
+        sf::Color col(biomColors[region->biom]);
         col.g = 255 * (region->minerals) / 1.2;
         col.b = col.b / 3;
         col.r = col.g / 3;
@@ -759,7 +738,7 @@ public:
       }
 
       if (hum && region->humidity != 1) {
-        sf::Color col(region->biom.color);
+        sf::Color col(biomColors[region->biom]);
         col.b = 255 * region->humidity;
         col.a = 255 * region->humidity;
         col.r = col.b / 3;
@@ -846,7 +825,7 @@ public:
   //   return color;
   // }
 
-  sf::Texture getScreenshot() {
+  sf::Texture Painter::getScreenshot() {
     sf::Vector2u windowSize = window->getSize();
     sf::Texture texture;
     texture.create(windowSize.x, windowSize.y);
@@ -854,7 +833,7 @@ public:
     return texture;
   }
 
-  void draw() {
+  void Painter::draw() {
     window->clear(bgColor);
     drawMap();
 
@@ -865,7 +844,7 @@ public:
     }
   }
 
-  void drawWalkers() {
+  void Painter::drawWalkers() {
     if (walkers.size() == 0) {
       int n = 0;
       while (n < mapgen->map->cities.size()) {
@@ -887,4 +866,3 @@ public:
       }
     }
   }
-};
