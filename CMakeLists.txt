@@ -15,9 +15,9 @@ set(PROJECT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 set(LIBMAPGEN_PATH "${PROJECT_PATH}/include/libmapgen/include")
 
 file(GLOB SOURCE "src/*.cpp" "include/mapgen/*.h")
-file(COPY "font.ttf" DESTINATION "bin")
-file(COPY "images" DESTINATION "bin")
-file(COPY "src/blur.frag" DESTINATION "bin")
+file(COPY "font.ttf" DESTINATION "${PROJECT_PATH}/bin")
+file(COPY "images" DESTINATION "${PROJECT_PATH}/bin")
+file(COPY "src/blur.frag" DESTINATION "${PROJECT_PATH}/bin")
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/MapgenConfig.h.in"

@@ -62,6 +62,7 @@ endif()
 
 # define the list of search paths for headers and libraries
 set(FIND_SFML_PATHS
+    ~/Downloads/SFML-2.5.0/SFML-2.5.0/include
     ${SFML_ROOT}
     $ENV{SFML_ROOT}
     E:\\SFML-2.4.2
