@@ -7,3 +7,6 @@
 [submodule "backward-cpp"]
 	path = backward-cpp
 	url = git@github.com:bombela/backward-cpp.git
+[submodule "include/libmapgen"]
+	path = include/libmapgen
+	url = git@github.com:averrin/libmapgen.git

@@ -12,9 +12,10 @@ set (mapgen_VERSION_PATCH 1)
 
 set(PROJECT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
+set(LIBMAPGEN_PATH "${PROJECT_PATH}/include/libmapgen/include")
+
 file(GLOB SOURCE "src/*.cpp" "include/mapgen/*.h")
 file(COPY "font.ttf" DESTINATION "bin")
-file(COPY "images" DESTINATION "bin")
 file(COPY "images" DESTINATION "bin")
 file(COPY "src/blur.frag" DESTINATION "bin")
 
@@ -25,12 +26,14 @@ configure_file (
 
 include_directories(
   ${PROJECT_PATH}
+  ${LIBMAPGEN_PATH}
   "${PROJECT_PATH}/include"
   "${PROJECT_PATH}/include/imgui"
   "${PROJECT_PATH}/include/imgui-sfml"
-  "${PROJECT_PATH}/include/Voronoi/include")
+  
+  "${LIBMAPGEN_PATH}/Voronoi/include")
 
-file(GLOB VLIB_SOURCE "${PROJECT_PATH}/include/Voronoi/src/*.cpp" "${PROJECT_PATH}/include/Voronoi/include/*.h")
+file(GLOB VLIB_SOURCE "${LIBMAPGEN_PATH}/Voronoi/src/*.cpp" "${LIBMAPGEN_PATH}/Voronoi/include/*.h")
 add_library(voronoi ${VLIB_SOURCE})
 file(GLOB IMLIB_SOURCE "${PROJECT_PATH}/include/imgui/*.cpp" "${PROJECT_PATH}/include/imgui/*.h")
 add_library(imgui ${IMLIB_SOURCE})
@@ -48,25 +51,7 @@ add_executable(${EXECUTABLE_NAME}
   ${IMLIB_SOURCE}
   ${IMLIB_SFML_SOURCE}
   ${BACKWARD_ENABLE}
-  include/micropather.cpp
-  include/noiseutils.cpp
 
-  src/names.cpp
-  src/utils.cpp
-  src/Biom.cpp
-  src/Region.cpp
-  src/Location.cpp
-  src/Economy.cpp
-  src/City.cpp
-  src/Road.cpp
-  src/State.cpp
-  src/Package.cpp
-  src/Map.cpp
-  src/Walker.cpp
-
-  src/Report.cpp
-  src/Simulator.cpp
-  src/MapGenerator.cpp
   src/Painter.cpp
   src/objectsWindow.cpp
   src/infoWindow.cpp

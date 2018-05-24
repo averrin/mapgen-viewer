@@ -4,7 +4,6 @@
 #include "mapgen/SimulationWindow.hpp"
 #include <imgui-SFML.h>
 #include <imgui.h>
-// #include <imgui_tabs.h>
 
 class Application {
   std::string VERSION;
