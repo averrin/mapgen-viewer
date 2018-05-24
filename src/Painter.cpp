@@ -439,7 +439,7 @@ public:
       layers->setMask("rivers", layers->getLayer("land"));
 
 	  // Its a horrible hack. But renderTexture have no antialiasing=(
-	  layers->getLayer("roads")->direct = true;
+	  // layers->getLayer("roads")->direct = true;
 
       for (auto name : order) {
         layers->invalidateLayer(name);

@@ -23,7 +23,7 @@ void Layer::draw(sf::RenderTarget& target, sf::RenderStates states) const {
 
 void Layer::update(sf::RenderWindow* window) {
   mg::info("Draw to cache:", name);
-  cache->create(window->getSize().x, window->getSize().y);
+  cache->create(window->getSize().x, window->getSize().y, sf::ContextSettings(0, 0, 8));
   cache->clear(sf::Color::Transparent);
   for (auto shape : shapes) {
     cache->draw(*shape);
@@ -31,7 +31,7 @@ void Layer::update(sf::RenderWindow* window) {
   if (shader != nullptr) {
     sf::RenderTexture temp;
 	temp.setSmooth(true);
-    temp.create(window->getSize().x, window->getSize().y);
+    temp.create(window->getSize().x, window->getSize().y, sf::ContextSettings(0, 0, 8));
     temp.clear(sf::Color::Transparent);
     sf::Sprite sprite;
     cache->display();
@@ -48,7 +48,7 @@ void Layer::update(sf::RenderWindow* window) {
     shader_mask->setUniform("mask", mask->cache->getTexture());
     sf::RenderTexture temp;
 	temp.setSmooth(true);
-    temp.create(window->getSize().x, window->getSize().y);
+    temp.create(window->getSize().x, window->getSize().y, sf::ContextSettings(0, 0, 8));
     temp.clear(sf::Color::Transparent);
     sf::Sprite sprite;
     cache->display();

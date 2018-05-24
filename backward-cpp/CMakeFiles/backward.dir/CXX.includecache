@@ -1,4 +1,4 @@
-#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
 
 #IncludeRegexScan: ^.*$
 
@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/alexeynabrodov/projects/mapgen/backward-cpp/backward.cpp
+/home/alexey.nabrodov@team.wrike.com/projects/mapgen-viewer/backward-cpp/backward.cpp
 backward.hpp
-/home/alexeynabrodov/projects/mapgen/backward-cpp/backward.hpp
+/home/alexey.nabrodov@team.wrike.com/projects/mapgen-viewer/backward-cpp/backward.hpp
 
-/home/alexeynabrodov/projects/mapgen/backward-cpp/backward.hpp
+/home/alexey.nabrodov@team.wrike.com/projects/mapgen-viewer/backward-cpp/backward.hpp
 algorithm
 -
 cctype
