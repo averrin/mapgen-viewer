@@ -25,12 +25,15 @@ include_directories(
   ${PROJECT_BINARY_DIR}
   "${PROJECT_BINARY_DIR}/include"
   "${PROJECT_BINARY_DIR}/include/imgui"
+  "${PROJECT_BINARY_DIR}/include/imgui-sfml"
   "${PROJECT_BINARY_DIR}/include/Voronoi/include")
 
 file(GLOB VLIB_SOURCE "${PROJECT_BINARY_DIR}/include/Voronoi/src/*.cpp" "${PROJECT_BINARY_DIR}/include/Voronoi/include/*.h")
 add_library(voronoi ${VLIB_SOURCE})
 file(GLOB IMLIB_SOURCE "${PROJECT_BINARY_DIR}/include/imgui/*.cpp" "${PROJECT_BINARY_DIR}/include/imgui/*.h")
 add_library(imgui ${IMLIB_SOURCE})
+file(GLOB IMLIB_SFML_SOURCE "${PROJECT_BINARY_DIR}/include/imgui-sfml/*.cpp" "${PROJECT_BINARY_DIR}/include/imgui-sfml/*.h")
+add_library(imgui-sfml ${IMLIB_SFML_SOURCE})
 
 file(GLOB SWLIB_SOURCE "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.cpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/SelbaWard/*.hpp" "${PROJECT_BINARY_DIR}/include/SelbaWard/*.hpp")
 add_library(sw ${SWLIB_SOURCE})
@@ -40,10 +43,12 @@ add_library(sw ${SWLIB_SOURCE})
 set(EXECUTABLE_NAME "mapgen")
 file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 add_executable(${EXECUTABLE_NAME}
-  include/imgui/imgui.cpp
-  include/imgui/imgui_draw.cpp
-  include/imgui/imgui-SFML.cpp
-  # include/imgui/imgui_tabs.cpp
+    ${IMLIB_SOURCE}
+    ${IMLIB_SFML_SOURCE}
+  # include/imgui/imgui.cpp
+  # include/imgui/imgui_draw.cpp
+  # include/imgui-sfml/imgui-SFML.cpp
+  # # include/imgui/imgui_tabs.cpp
   # ${BACKWARD_ENABLE}
   include/micropather.cpp
   include/noiseutils.cpp
@@ -122,7 +127,7 @@ if (OPENGL_FOUND)
 endif()
 
 IF(NOT WIN32)
-	target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui sw Threads::Threads stdc++fs)
+	target_link_libraries(${EXECUTABLE_NAME} voronoi noise imgui imgui-sfml sw Threads::Threads stdc++fs)
 else()
 	target_link_libraries(${EXECUTABLE_NAME} voronoi "${PROJECT_BINARY_DIR}/include/libnoise.lib" imgui sw Threads::Threads)
 endif()

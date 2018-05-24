@@ -1,0 +1,6 @@
+[submodule "include/imgui-sfml"]
+	path = include/imgui-sfml
+	url = git@github.com:eliasdaler/imgui-sfml.git
+[submodule "include/imgui"]
+	path = include/imgui
+	url = git@github.com:ocornut/imgui.git
