@@ -4,3 +4,6 @@
 [submodule "include/imgui"]
 	path = include/imgui
 	url = git@github.com:ocornut/imgui.git
+[submodule "backward-cpp"]
+	path = backward-cpp
+	url = git@github.com:bombela/backward-cpp.git
