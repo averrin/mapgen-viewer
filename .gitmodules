@@ -10,3 +10,6 @@
 [submodule "include/libmapgen"]
 	path = include/libmapgen
 	url = git@github.com:averrin/libmapgen.git
+[submodule "include/fmt"]
+	path = include/fmt
+	url = git@github.com:fmtlib/fmt.git
