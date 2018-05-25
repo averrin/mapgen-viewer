@@ -164,8 +164,9 @@ public:
         break;
       case sf::Keyboard::W:
         // painter->showWalkers = !painter->showWalkers;
-        painter->layers->getLayer("water")->damaged = true;
-        painter->invalidate();
+        // painter->layers->getLayer("water")->damaged = true;
+        painter->wind = !painter->wind;
+        painter->invalidate(true);
         break;
       case sf::Keyboard::N:
         painter->labels = !painter->labels;
@@ -268,6 +269,10 @@ public:
         }
         ImGui::SameLine(120);
         if (ImGui::Checkbox("Minerals", &painter->minerals)) {
+          painter->invalidate(true);
+        }
+        ImGui::SameLine(220);
+        if (ImGui::Checkbox("Wind", &painter->wind)) {
           painter->invalidate(true);
         }
         ImGui::TreePop();

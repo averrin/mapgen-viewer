@@ -46,8 +46,8 @@ public:
   bool labels = true;
   bool blur = false;
   bool showSeaPathes = false;
+  bool wind = false;
 
-    float windAngle = 50.0f;
 
   bool useTextures = false;
   bool useCacheMap = true;

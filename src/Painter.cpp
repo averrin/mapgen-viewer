@@ -508,7 +508,10 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       if (useCacheMap) {
         cachedMap.draw(*layers);
       }
-      drawWind();
+
+      if (wind) {
+        drawWind();
+      }
       drawMap();
 
       auto t1 = std::chrono::system_clock::now();
