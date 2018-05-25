@@ -73,8 +73,8 @@ public:
       mapgen->update();
       seed = mapgen->getSeed();
       relax = mapgen->getRelax();
-      painter->invalidate();
       ready = mapgen->ready;
+      painter->invalidate(true);
     });
   }
 
@@ -85,8 +85,8 @@ public:
     generator = std::thread([&]() {
       ready = false;
       mapgen->simulator->resetAll();
-      painter->invalidate();
       ready = mapgen->ready;
+      painter->invalidate(true);
     });
   }
 
@@ -99,6 +99,7 @@ public:
       mapgen->startSimulation();
       painter->invalidate();
       ready = mapgen->ready;
+      painter->invalidate(true);
     });
   }
 
@@ -136,12 +137,14 @@ public:
         break;
       case sf::Keyboard::P:
         painter->roads = !painter->roads;
+        painter->invalidate();
         break;
       case sf::Keyboard::I:
         painter->info = !painter->info;
         break;
       case sf::Keyboard::V:
         painter->verbose = !painter->verbose;
+        painter->invalidate(true);
         break;
       case sf::Keyboard::U:
         showUI = !showUI;
@@ -151,13 +154,17 @@ public:
         getScreenshot = true;
         break;
       case sf::Keyboard::W:
-        painter->showWalkers = !painter->showWalkers;
+        // painter->showWalkers = !painter->showWalkers;
+        painter->layers->getLayer("water")->damaged = true;
+        painter->invalidate();
         break;
       case sf::Keyboard::N:
         painter->labels = !painter->labels;
+        painter->invalidate();
         break;
       case sf::Keyboard::B:
         painter->blur = !painter->blur;
+        painter->invalidate();
         break;
       case sf::Keyboard::T:
         painter->useTextures = !painter->useTextures;
@@ -277,6 +284,13 @@ public:
         if (ImGui::Checkbox("Use cache map", &painter->useCacheMap)) {
           painter->invalidate();
         }
+        if (ImGui::Checkbox("Show sea pathes", &painter->showSeaPathes)) {
+          painter->layers->getLayer("roads")->damaged = true;
+          painter->invalidate();
+        }
+        if (ImGui::Checkbox("Water blur", &painter->blur)) {
+          painter->invalidate();
+        }
 
         ImGui::TreePop();
       }
@@ -322,18 +336,12 @@ public:
     ImGui::End();
 
     ImGui::Begin("Visual layers [DEBUG]");
-      if (ImGui::SliderInt("Hue delta", &painter->hueDelta, 2, 26)) {
-        painter->invalidate();
-      }
-      if (ImGui::SliderInt("Land border", &painter->landBorderHeight, 0, 12)) {
-        painter->invalidate();
-      }
-      if (ImGui::SliderInt("Forrest border", &painter->forrestBorderHeight, 0, 12)) {
-        painter->invalidate();
-      }
-      if (ImGui::DragFloat("Lum delta", &painter->lumDelta, 2.f, 0.5f, 50.f)) {
-        painter->invalidate();
-      }
+      ImGui::SliderInt("Hue delta", &painter->hueDelta, 2, 26);
+      ImGui::SliderInt("Land border", &painter->landBorderHeight, 0, 12);
+      ImGui::SliderInt("Forrest border", &painter->forrestBorderHeight, 0, 12);
+      ImGui::DragFloat("Lum delta", &painter->lumDelta, 2.f, 0.5f, 50.f);
+      if (ImGui::Button("Apply")) painter->invalidate(true);
+
       for (auto l : painter->layers->layers) {
         char ln[200];
         sprintf(ln, "%s [%s%s]", l->name.c_str(), l->shader == nullptr ? "_" : "#", l->mask == nullptr ? "_" : "#");
@@ -368,6 +376,7 @@ public:
 
     infoWindow->draw(currentRegion);
     painter->drawInfo(currentRegion);
+    // painter->layers->getLayer("roads")->damaged = true;
 
     if (rulerRegion != nullptr) {
       sf::ConvexShape rPolygon;

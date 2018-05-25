@@ -29,6 +29,7 @@ void Layer::update(sf::RenderWindow* window) {
     cache->draw(*shape);
   }
   if (shader != nullptr) {
+    mg::info("Draw shadered", std::string(""));
     sf::RenderTexture temp;
 	temp.setSmooth(true);
     temp.create(window->getSize().x, window->getSize().y, sf::ContextSettings(0, 0, 8));
@@ -44,12 +45,20 @@ void Layer::update(sf::RenderWindow* window) {
 
   if (mask != nullptr) {
     mg::info("Draw masked:", mask->name);
-    // shader_mask->setUniform("texture", cache->getTexture());
     shader_mask->setUniform("mask", mask->cache->getTexture());
     sf::RenderTexture temp;
 	temp.setSmooth(true);
     temp.create(window->getSize().x, window->getSize().y, sf::ContextSettings(0, 0, 8));
     temp.clear(sf::Color::Transparent);
+    temp.display();
+
+    //WHY this code fixes missing temp content?! SFML 2.5.0
+    sf::RenderTexture temp2;
+    temp2.create(window->getSize().x, window->getSize().y, sf::ContextSettings(0, 0, 8));
+    temp2.clear(sf::Color::Green);
+    temp2.display();
+    //
+
     sf::Sprite sprite;
     cache->display();
     sprite.setTexture(cache->getTexture());

@@ -3,6 +3,8 @@
 #include <thread>
 #include <vector>
 #include <cmath>
+#include <chrono>
+#include <fmt/format.h>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
@@ -59,14 +61,14 @@ std::map<Biom, sf::Color> biomColors = {
     {biom::DESERT, sf::Color(244, 164, 96)},
     {biom::CITY, sf::Color(220, 220, 220)},
     {biom::RAIN_FORREST, sf::Color(51, 90, 75)},
-    {biom::LAKE, sf::Color(51, 51, 91)},
+    {biom::LAKE, sf::Color(66, 66, 96)},
     {biom::MARK, sf::Color::Red},
     {biom::MARK2, sf::Color::Black},
 };
 
 std::map<std::string, sf::Color> stateColors = {
-    {"Blue empire", sf::Color(39, 39, 70)},
-    {"Red lands", sf::Color(76, 39, 30)},
+    {"Blue empire", sf::Color(70, 70, 170)},
+    {"Red lands", sf::Color(170, 70, 70)},
 };
 
 std::map<Road*, sw::Spline*> splines = {};
@@ -114,13 +116,17 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     char spath[100];
     sprintf(spath, "%s/blur.frag", dir.c_str());
 
-    shader_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
+    if(shader_blur.loadFromFile(spath, sf::Shader::Type::Fragment)) {
+      fmt::print("Blur shader loaded\n");
+    }
     shader_blur.setUniform("blur_radius", 0.004f);
     shader_lesser_blur.loadFromFile(spath, sf::Shader::Type::Fragment);
     shader_lesser_blur.setUniform("blur_radius", 0.002f);
     // shader_blur.setParameter("blur_radius", 0.004f);
     sprintf(spath, "%s/mask.frag", dir.c_str());
-    shader_mask.loadFromFile(spath, sf::Shader::Type::Fragment);
+    if(shader_mask.loadFromFile(spath, sf::Shader::Type::Fragment)) {
+      fmt::print("Mask shader loaded\n ");
+    }
 
     layers = new LayersManager(window, &shader_mask);
   };
@@ -226,11 +232,11 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       currentRegionCache = currentRegion;
 
       infoPolygons.clear();
-      if (currentRegion->city != nullptr && !roads) {
-        for (auto r : currentRegion->city->roads) {
-          drawRoad(r);
-        }
-      }
+      // if (currentRegion->city != nullptr && !roads) {
+      //   for (auto r : currentRegion->city->roads) {
+      //     drawRoad(r);
+      //   }
+      // }
       PointList points = currentRegion->getPoints();
       Cluster *cluster = currentRegion->cluster;
 
@@ -336,18 +342,22 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     } else {
       int i = 0;
       road = new sw::Spline();
-      road->setColor(sf::Color(200, 160, 100, 70));
+      if (r->seaPath) {
+        road->setColor(sf::Color(120, 120, 200, 180));
+      } else {
+        road->setColor(sf::Color(70, 20, 0, 180));
+      }
       road->setThickness(1);
       for (auto reg : r->regions) {
         Point p = reg->site;
         road->addVertex(i,
                         {static_cast<float>(p->x), static_cast<float>(p->y)});
         if (reg->megaCluster->isLand) {
-          road->setColor(i, sf::Color(70, 50, 0));
+          // road->setColor(i, sf::Color(70, 50, 0));
           float w = std::min(3.f, 1.f + reg->traffic / 200.f);
           road->setThickness(i, w);
         } else {
-          road->setColor(i, sf::Color(80, 80, 255, 180));
+          // road->setColor(i, sf::Color(80, 80, 255, 180));
           road->setThickness(i, 2);
         }
         i++;
@@ -363,8 +373,10 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
   }
 
   void Painter::drawRoads() {
-    for (auto r : mapgen->map->roads) {
-      drawRoad(r);
+    for (auto p : mapgen->map->roadMap) {
+
+      if (!showSeaPathes && p.second->seaPath) continue;
+      drawRoad(p.second);
     }
   }
 
@@ -399,6 +411,10 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 
   void Painter::drawMap() {
     if (needUpdate) {
+      auto t0 = std::chrono::system_clock::now();
+
+      cachedMap.clear(sf::Color::Transparent);
+
       std::vector<std::string> order = {
         "water", "waterClear",
         "landBorder", "land",
@@ -411,54 +427,74 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
         "watermark"
       };
       for (auto name : order) {
-        layers->getLayer(name)->clear();
+        auto l = layers->getLayer(name);
+        // if (l->damaged && l->enabled) l->clear();
+        l->clear();
       }
-
-      drawPolygons();
-      drawRoads();
-      drawRivers();
-      drawLakes();
-      drawBorders();
-      drawLocations();
-      drawLabels();
-      drawMark();
-
-      layers->setShader("water", &shader_blur);
-      layers->setMask("rivers", layers->getLayer("land"));
 
 	  // Its a horrible hack. But renderTexture have no antialiasing=(
 	  // layers->getLayer("roads")->direct = true;
       Layer* l;
       l = layers->getLayer("borders"); 
-      if (l->enabled != states) {
+      if (l->enabled != states || l->damaged) {
         l->enabled = states;
         l->damaged = true;
+        if (l->enabled) {
+          l->clear();
+          drawBorders();
+        }
       }
 
       l = layers->getLayer("water"); 
-      if (l->enabled != blur) {
+      if (l->enabled != blur || l->damaged) {
         l->enabled = blur;
+        l->clear();
         l->damaged = true;
       }
 
-l = layers->getLayer("waterClear");
-      if (l->enabled != !blur) {
+      l = layers->getLayer("waterClear");
+      if (l->enabled != !blur || l->damaged) {
         l->enabled = !blur;
+        l->clear();
         l->damaged = true;
       }
 
-l = layers->getLayer("labels");
-      if (l->enabled != labels) {
+      l = layers->getLayer("labels");
+      if (l->enabled != labels || l->damaged) {
         l->enabled = labels;
         l->damaged = true;
+        if (l->enabled) {
+          l->clear();
+          drawLabels();
+        }
       }
 
-l = layers->getLayer("locations");
-      if (l->enabled != locations) {
+      l = layers->getLayer("locations");
+      if (l->enabled != locations || l->damaged) {
         l->enabled = locations;
         l->damaged = true;
+        if (l->enabled) {
+          l->clear();
+          drawLocations();
+        }
       }
 
+      l = layers->getLayer("roads");
+      if (l->enabled != roads || l->damaged) {
+        l->enabled = roads;
+        l->damaged = true;
+        l->clear();
+        drawRoads();
+      }
+
+      drawPolygons();
+      drawRivers();
+      drawLakes();
+      drawMark();
+
+
+      layers->setShader("water", &shader_blur);
+      layers->setMask("rivers", layers->getLayer("land"));
 
       for (auto name : order) {
         if (layers->getLayer(name)->damaged) {
@@ -471,6 +507,11 @@ l = layers->getLayer("locations");
         cachedMap.draw(*layers);
       }
       drawMap();
+
+      auto t1 = std::chrono::system_clock::now();
+        using milliseconds = std::chrono::duration<double, std::milli>;
+        milliseconds ms = t1 - t0;
+        std::cout << "time taken by drawMap[needUpdate]: " << rang::fg::green << ms.count() << rang::style::reset << '\n';
     } else {
       if (useCacheMap) {
         sf::RectangleShape rectangle;
@@ -523,7 +564,7 @@ l = layers->getLayer("locations");
       if (std::count(used.begin(), used.end(), r) == 0) {
         auto line = new sw::Spline();
         sf::Color col = stateColors[r->state->name];
-        col.a = 150;
+        // col.a = 150;
         line->setColor(col);
         line->setThickness(4);
         nextBorder(r, &used, line, &ends, &exclude);

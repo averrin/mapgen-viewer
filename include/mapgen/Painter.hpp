@@ -45,6 +45,7 @@ public:
   bool showWalkers = true;
   bool labels = true;
   bool blur = true;
+  bool showSeaPathes = false;
 
   bool useTextures = false;
   bool useCacheMap = true;
