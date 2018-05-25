@@ -63,7 +63,7 @@ std::map<Biom, sf::Color> biomColors = {
     {biom::RAIN_FORREST, sf::Color(51, 90, 75)},
     {biom::LAKE, sf::Color(66, 66, 96)},
     {biom::MARK, sf::Color::Red},
-    {biom::MARK2, sf::Color::Black},
+    {biom::MARK2, sf::Color::White},
 };
 
 std::map<std::string, sf::Color> stateColors = {
@@ -424,6 +424,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
         "borders",
         "labels",
         "locations",
+        "wind",
         "watermark"
       };
       for (auto name : order) {
@@ -488,6 +489,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       }
 
       drawPolygons();
+      // drawWind();
       drawRivers();
       drawLakes();
       drawMark();
@@ -506,6 +508,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       if (useCacheMap) {
         cachedMap.draw(*layers);
       }
+      drawWind();
       drawMap();
 
       auto t1 = std::chrono::system_clock::now();
@@ -771,29 +774,52 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       polygon->setFillColor(col);
     }
 
-    if (hum && region->humidity != 1) {
-        sf::Color col(biomColors[region->biom]);
-      col.b = 255 * region->humidity;
-      col.a = 255 * region->humidity;
-      col.r = col.b / 3;
-      col.g = col.g / 3;
+    if (hum && region->cluster->isLand) {
+      auto col = sf::Color::Black;
+      col.b = 255 * (region->humidity / 2.f);
+      // col.a = 255 * region->humidity / 2;
+      col.r = 50;
+      col.g = 50;
       polygon->setFillColor(col);
     }
 
     if (temp) {
-      if (region->temperature < biom::DEFAULT_TEMPERATURE) {
-        sf::Color col(255, 0, 255);
-        col.r = std::min(
-            255.f, 255 * (biom::DEFAULT_TEMPERATURE / region->temperature));
-        col.b =
-            std::min(255.f, 255 * std::abs(1.f - (biom::DEFAULT_TEMPERATURE /
-                                                  region->temperature)));
-
-        polygon->setFillColor(col);
+      if (!region->cluster->isLand) return polygon;
+      auto col = sf::Color::Black;
+      if (region->temperature > 0) {
+        col.r = 50 + 205 * (region->temperature / 45.f);
+        col.b = 50;
+        col.g = 50;
+      } else {
+        col.b = 50 - 205 * (region->temperature / 15.f);
+        col.r = 50;
+        col.g = 50;
       }
+      polygon->setFillColor(col);
     }
     return polygon;
   }
+
+  void Painter::drawWind() {
+
+    std::vector<Region *> regions = mapgen->map->regions;
+    for (Region *region : regions) {
+      if (!region->cluster->isLand) continue;
+        sf::Vertex line[2];
+
+      line[0].position = sf::Vector2f(static_cast<float>(region->site->x),
+                                      static_cast<float>(region->site->y));
+      line[0].color = sf::Color::Green;
+      auto r2 = mapgen->getRegionWithDirection(region, mapgen->windAngle);
+      if (r2 == nullptr) continue;
+      line[1].position =
+          sf::Vector2f(static_cast<float>(r2->site->x),
+                       static_cast<float>(r2->site->y));
+      line[1].color = sf::Color::Red;
+
+        cachedMap.draw(line, 2, sf::Lines);
+      }
+    }
 
   void Painter::drawPolygons() {
     infoPolygons.clear();

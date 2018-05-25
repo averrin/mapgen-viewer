@@ -44,8 +44,10 @@ public:
   bool areas = false;
   bool showWalkers = true;
   bool labels = true;
-  bool blur = true;
+  bool blur = false;
   bool showSeaPathes = false;
+
+    float windAngle = 50.0f;
 
   bool useTextures = false;
   bool useCacheMap = true;
@@ -81,6 +83,7 @@ sf::Texture getScreenshot();
         void draw();
         void drawWalkers();
     void drawPolygons();
+    void drawWind();
     void drawLakes();
     void drawLocations();
 sf::ConvexShape *getPolygon(Region *region);

@@ -149,6 +149,15 @@ public:
       case sf::Keyboard::U:
         showUI = !showUI;
         break;
+      case sf::Keyboard::H:
+        // painter->heights = true;
+        // painter->hum = true;
+        painter->temp = true;
+        painter->labels = false;
+        painter->locations = false;
+        showUI = false;
+        painter->invalidate(true);
+        break;
       case sf::Keyboard::S:
         showUI = false;
         getScreenshot = true;
@@ -339,6 +348,8 @@ public:
       ImGui::SliderInt("Hue delta", &painter->hueDelta, 2, 26);
       ImGui::SliderInt("Land border", &painter->landBorderHeight, 0, 12);
       ImGui::SliderInt("Forrest border", &painter->forrestBorderHeight, 0, 12);
+
+
       ImGui::DragFloat("Lum delta", &painter->lumDelta, 2.f, 0.5f, 50.f);
       if (ImGui::Button("Apply")) painter->invalidate(true);
 
