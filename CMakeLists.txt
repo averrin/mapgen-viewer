@@ -76,6 +76,7 @@ add_executable(${EXECUTABLE_NAME}
   src/objectsWindow.cpp
   src/infoWindow.cpp
   src/simulationWindow.cpp
+  src/weatherWindow.cpp
   # src/logger.cpp
   src/application.cpp
 

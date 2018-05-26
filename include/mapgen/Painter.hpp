@@ -1,3 +1,4 @@
+#pragma once
 #include <thread>
 
 #include <SFML/Graphics.hpp>
@@ -62,31 +63,35 @@ public:
 
   bool isIncreasing{true};
 
-        void initProgressBar();
-        void loadImages();
-        void invalidate(bool force = false);
-        void fade();
-        void drawLoading();
-        void drawInfo(Region *currentRegion);
-        void drawRivers();
-        sw::Spline* drawRoad(Road *r);
-        void drawRoads();
-        void drawLabels();
-        void drawMap();
-        void drawBorders();
-        void nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
-                  std::vector<Region *> *ends, std::vector<Region *> *exclude);
-        void drawMark();
-        void drawObjects(std::vector<sf::ConvexShape> op);
-        void update();
-sf::Texture getScreenshot();
-        void draw();
-        void drawWalkers();
-    void drawPolygons();
-    void drawWind();
-    void drawLakes();
-    void drawLocations();
-sf::ConvexShape *getPolygon(Region *region);
+  void initProgressBar();
+  void loadImages();
+  void invalidate(bool force = false);
+  void fade();
+  void drawLoading();
+  void drawInfo(Region *currentRegion);
+  void drawRivers();
+  sw::Spline* drawRoad(Road *r);
+  void drawRoads();
+  void drawLabels();
+  void drawMap();
+  void drawBorders();
+  void nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
+  std::vector<Region *> *ends, std::vector<Region *> *exclude);
+  void drawMark();
+  void drawObjects(std::vector<sf::ConvexShape> op);
+  void update();
+  sf::Texture getScreenshot();
+  void draw();
+  void drawWalkers();
+  void drawPolygons();
+  void drawWind();
+  void drawLakes();
+  void drawLocations();
+  void drawHeights();
+  void drawHum();
+  void drawTemp();
+  void drawMinerals();
+  sf::ConvexShape *getPolygon(Region *region);
 
 private:
   std::map<LocationType, sf::Texture *> locationIcons;

@@ -2,6 +2,7 @@
 #include "mapgen/InfoWindow.hpp"
 #include "mapgen/ObjectsWindow.hpp"
 #include "mapgen/SimulationWindow.hpp"
+#include "mapgen/WeatherWindow.hpp"
 #include <imgui-SFML.h>
 #include <imgui.h>
 
@@ -14,6 +15,7 @@ class Application {
   InfoWindow *infoWindow;
   ObjectsWindow *objectsWindow;
   SimulationWindow *simulationWindow;
+  WeatherWindow *weatherWindow;
 
   int relax = 0;
   int octaves;
@@ -60,6 +62,7 @@ public:
     infoWindow = new InfoWindow(window);
     objectsWindow = new ObjectsWindow(window, mapgen);
     simulationWindow = new SimulationWindow(window, mapgen);
+    weatherWindow = new WeatherWindow(window, mapgen);
   }
 
   void regen() {
@@ -260,19 +263,7 @@ public:
           painter->invalidate(true);
         }
 
-        ImGui::SameLine(220);
-        if (ImGui::Checkbox("Humidity", &painter->hum)) {
-          painter->invalidate(true);
-        }
-        if (ImGui::Checkbox("Temp", &painter->temp)) {
-          painter->invalidate(true);
-        }
-        ImGui::SameLine(120);
         if (ImGui::Checkbox("Minerals", &painter->minerals)) {
-          painter->invalidate(true);
-        }
-        ImGui::SameLine(220);
-        if (ImGui::Checkbox("Wind", &painter->wind)) {
           painter->invalidate(true);
         }
         ImGui::TreePop();
@@ -327,6 +318,11 @@ public:
     // }
     ImGui::End();
 
+    ImGui::Begin("Weather");
+    weatherWindow->draw(mapgen->weather.get(), painter);
+    ImGui::End();
+
+
     ImGui::Begin("Simulation");
     // if (ImGui::AddTab("Simulation")) {
       simulationWindow->draw();
@@ -349,23 +345,23 @@ public:
     // ImGui::EndTabBar();
     ImGui::End();
 
-    ImGui::Begin("Visual layers [DEBUG]");
-      ImGui::SliderInt("Hue delta", &painter->hueDelta, 2, 26);
-      ImGui::SliderInt("Land border", &painter->landBorderHeight, 0, 12);
-      ImGui::SliderInt("Forrest border", &painter->forrestBorderHeight, 0, 12);
+    // ImGui::Begin("Visual layers [DEBUG]");
+    //   ImGui::SliderInt("Hue delta", &painter->hueDelta, 2, 26);
+    //   ImGui::SliderInt("Land border", &painter->landBorderHeight, 0, 12);
+    //   ImGui::SliderInt("Forrest border", &painter->forrestBorderHeight, 0, 12);
 
 
-      ImGui::DragFloat("Lum delta", &painter->lumDelta, 2.f, 0.5f, 50.f);
-      if (ImGui::Button("Apply")) painter->invalidate(true);
+    //   ImGui::DragFloat("Lum delta", &painter->lumDelta, 2.f, 0.5f, 50.f);
+    //   if (ImGui::Button("Apply")) painter->invalidate(true);
 
-      for (auto l : painter->layers->layers) {
-        char ln[200];
-        sprintf(ln, "%s [%s%s]", l->name.c_str(), l->shader == nullptr ? "_" : "#", l->mask == nullptr ? "_" : "#");
-        if (ImGui::Checkbox(ln, &l->enabled)) {
-          painter->invalidate();
-        }
-      }
-    ImGui::End();
+    //   for (auto l : painter->layers->layers) {
+    //     char ln[200];
+    //     sprintf(ln, "%s [%s%s]", l->name.c_str(), l->shader == nullptr ? "_" : "#", l->mask == nullptr ? "_" : "#");
+    //     if (ImGui::Checkbox(ln, &l->enabled)) {
+    //       painter->invalidate();
+    //     }
+    //   }
+    // ImGui::End();
 
   }
   

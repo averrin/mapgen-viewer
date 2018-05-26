@@ -421,6 +421,11 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
         "roads", "rivers",
         "forrest",
         "lakes",
+
+        "heights",
+        "temp",
+        "hum",
+
         "borders",
         "labels",
         "locations",
@@ -486,6 +491,30 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
         l->damaged = true;
         l->clear();
         drawRoads();
+      }
+
+      l = layers->getLayer("heights");
+      if (l->enabled != heights || l->damaged) {
+        l->enabled = heights;
+        l->damaged = true;
+        l->clear();
+        drawHeights();
+      }
+
+      l = layers->getLayer("temp");
+      if (l->enabled != temp || l->damaged) {
+        l->enabled = temp;
+        l->damaged = true;
+        l->clear();
+        drawTemp();
+      }
+
+      l = layers->getLayer("hum");
+      if (l->enabled != hum || l->damaged) {
+        l->enabled = hum;
+        l->damaged = true;
+        l->clear();
+        drawHum();
       }
 
       drawPolygons();
@@ -679,6 +708,85 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     }
   }
 
+  void Painter::drawHeights() {
+    for (auto region : mapgen->map->regions) {
+      if (!region->cluster->isLand) continue;
+      
+      auto polygon = new sf::ConvexShape();
+      PointList points = region->getPoints();
+      polygon->setPointCount(points.size());
+      int n = 0;
+      for (PointList::iterator it2 = points.begin(); it2 < points.end();
+          it2++, n++) {
+        sf::Vector2<double> *p = points[n];
+        polygon->setPoint(n, sf::Vector2f(p->x, p->y));
+      }
+
+      auto col = sf::Color::Black;
+      col.r = 255 * (region->getHeight(region->site)) / 1.6;
+      col.b = 20;
+      col.g = 20;
+      polygon->setFillColor(col);
+
+      layers->getLayer("heights")->add(polygon);
+    }
+  }
+
+  void Painter::drawTemp() {
+    for (auto region : mapgen->map->regions) {
+      if (!region->cluster->isLand) continue;
+      
+      auto polygon = new sf::ConvexShape();
+      PointList points = region->getPoints();
+      polygon->setPointCount(points.size());
+      int n = 0;
+      for (PointList::iterator it2 = points.begin(); it2 < points.end();
+          it2++, n++) {
+        sf::Vector2<double> *p = points[n];
+        polygon->setPoint(n, sf::Vector2f(p->x, p->y));
+      }
+
+      auto col = sf::Color::Black;
+      if (region->temperature > 0) {
+        col.r = 50 + 205 * (region->temperature / 45.f);
+        col.b = 50;
+        col.g = 50;
+      } else {
+        col.b = 50 - 205 * (region->temperature / 15.f);
+        col.r = 50;
+        col.g = 50;
+      }
+      polygon->setFillColor(col);
+
+      layers->getLayer("temp")->add(polygon);
+    }
+  }
+
+  void Painter::drawHum() {
+    for (auto region : mapgen->map->regions) {
+      if (!region->cluster->isLand) continue;
+      
+      auto polygon = new sf::ConvexShape();
+      PointList points = region->getPoints();
+      polygon->setPointCount(points.size());
+      int n = 0;
+      for (PointList::iterator it2 = points.begin(); it2 < points.end();
+          it2++, n++) {
+        sf::Vector2<double> *p = points[n];
+        polygon->setPoint(n, sf::Vector2f(p->x, p->y));
+      }
+
+      auto col = sf::Color::Black;
+      col.b = 255 * (region->humidity / 2.f);
+      // col.a = 255 * region->humidity / 2;
+      col.r = 50;
+      col.g = 50;
+      polygon->setFillColor(col);
+
+      layers->getLayer("hum")->add(polygon);
+    }
+  }
+
   sf::ConvexShape* Painter::getPolygon(Region *region) {
     auto polygon = new sf::ConvexShape();
     PointList points = region->getPoints();
@@ -760,14 +868,6 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       polygon->setOutlineColor(sf::Color(100, 100, 100));
       polygon->setOutlineThickness(1);
     }
-    if (heights) {
-        sf::Color col(biomColors[region->biom]);
-      col.r = 255 * (region->getHeight(region->site) + 1.6) / 3.2;
-      col.a = 20 + 255 * (region->getHeight(region->site) + 1.6) / 3.2;
-      col.b = col.b / 3;
-      col.g = col.g / 3;
-      polygon->setFillColor(col);
-    }
 
     if (minerals && (region->megaCluster->isLand || !blur)) {
         sf::Color col(biomColors[region->biom]);
@@ -777,29 +877,6 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       polygon->setFillColor(col);
     }
 
-    if (hum && region->cluster->isLand) {
-      auto col = sf::Color::Black;
-      col.b = 255 * (region->humidity / 2.f);
-      // col.a = 255 * region->humidity / 2;
-      col.r = 50;
-      col.g = 50;
-      polygon->setFillColor(col);
-    }
-
-    if (temp) {
-      if (!region->cluster->isLand) return polygon;
-      auto col = sf::Color::Black;
-      if (region->temperature > 0) {
-        col.r = 50 + 205 * (region->temperature / 45.f);
-        col.b = 50;
-        col.g = 50;
-      } else {
-        col.b = 50 - 205 * (region->temperature / 15.f);
-        col.r = 50;
-        col.g = 50;
-      }
-      polygon->setFillColor(col);
-    }
     return polygon;
   }
 
@@ -813,7 +890,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       line[0].position = sf::Vector2f(static_cast<float>(region->site->x),
                                       static_cast<float>(region->site->y));
       line[0].color = sf::Color::Green;
-      auto r2 = mapgen->getRegionWithDirection(region, mapgen->windAngle);
+      auto r2 = region->getRegionWithDirection(mapgen->weather->windAngle, mapgen->weather->windForce);
       if (r2 == nullptr) continue;
       line[1].position =
           sf::Vector2f(static_cast<float>(r2->site->x),
