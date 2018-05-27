@@ -96,7 +96,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 }
 
   // TODO: use map instead mapgen
-  Painter::Painter(sf::RenderWindow *w, MapGenerator *m, std::string v)
+  Painter::Painter(sf::RenderWindow *w, std::shared_ptr<MapGenerator> m, std::string v)
       : window(w), mapgen(m), VERSION(v) {
 
     auto dir = get_selfpath();
@@ -904,7 +904,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
   void Painter::drawPolygons() {
     infoPolygons.clear();
     poi.clear();
-    walkers.clear();
+    // walkers.clear();
     currentRegionCache = nullptr;
 
     std::vector<Region *> regions = mapgen->map->regions;
@@ -956,24 +956,24 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
   }
 
   void Painter::drawWalkers() {
-    if (walkers.size() == 0) {
-      int n = 0;
-      while (n < mapgen->map->cities.size()) {
-        auto c = mapgen->map->cities[n];
-        if (c->roads.size() == 0) {
-          n++;
-          continue;
-        }
-        auto w = new Walker(c, mapgen);
-        walkers.push_back(w);
-        n++;
-      }
-    } else {
-      for (auto w : walkers) {
-        w->tick();
-        if (w->shape != nullptr) {
-          window->draw(*w->shape);
-        }
-      }
-    }
+    // if (walkers.size() == 0) {
+    //   int n = 0;
+    //   while (n < mapgen->map->cities.size()) {
+    //     auto c = mapgen->map->cities[n];
+    //     if (c->roads.size() == 0) {
+    //       n++;
+    //       continue;
+    //     }
+    //     auto w = new Walker(c, mapgen);
+    //     walkers.push_back(w);
+    //     n++;
+    //   }
+    // } else {
+    //   for (auto w : walkers) {
+    //     w->tick();
+    //     if (w->shape != nullptr) {
+    //       window->draw(*w->shape);
+    //     }
+    //   }
+    // }
   }

@@ -7,7 +7,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <imgui.h>
 
-ObjectsWindow::ObjectsWindow(sf::RenderWindow * w, MapGenerator* m) : window(w), mapgen(m){}
+ObjectsWindow::ObjectsWindow(std::shared_ptr<MapGenerator> m) : mapgen(m){}
 
 template <typename T>
 void ObjectsWindow::listObjects(std::vector<T *> objects, std::vector<bool> *mask,

@@ -3,7 +3,6 @@
 
 class InfoWindow {
 public:
-  InfoWindow(sf::RenderWindow *w);
-  void draw(Region* currentRegion);
-  sf::RenderWindow *window;
+  InfoWindow();
+  void draw(Region currentRegion);
 };

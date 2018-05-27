@@ -1,17 +1,19 @@
+#include <imgui-SFML.h>
+#include <imgui.h>
+
 #include "mapgen/Painter.hpp"
 #include "mapgen/InfoWindow.hpp"
 #include "mapgen/ObjectsWindow.hpp"
 #include "mapgen/SimulationWindow.hpp"
 #include "mapgen/WeatherWindow.hpp"
-#include <imgui-SFML.h>
-#include <imgui.h>
+#include <memory>
 
 class Application {
   std::string VERSION;
-  MapGenerator *mapgen;
+  std::shared_ptr<MapGenerator> mapgen;
+  std::unique_ptr<Painter> painter;
   std::thread generator;
   sf::RenderWindow *window;
-  Painter *painter;
   InfoWindow *infoWindow;
   ObjectsWindow *objectsWindow;
   SimulationWindow *simulationWindow;
@@ -55,14 +57,14 @@ public:
     window->resetGLStates();
 
     initMapGen();
-    painter = new Painter(window, mapgen, VERSION);
+    painter = std::make_unique<Painter>(window, mapgen, VERSION);
     generator = std::thread([&]() {});
     regen();
 
-    infoWindow = new InfoWindow(window);
-    objectsWindow = new ObjectsWindow(window, mapgen);
-    simulationWindow = new SimulationWindow(window, mapgen);
-    weatherWindow = new WeatherWindow(window, mapgen);
+    infoWindow = new InfoWindow();
+    objectsWindow = new ObjectsWindow(mapgen);
+    simulationWindow = new SimulationWindow(mapgen);
+    weatherWindow = new WeatherWindow(mapgen);
   }
 
   void regen() {
@@ -108,7 +110,7 @@ public:
 
   void initMapGen() {
     seed = std::chrono::system_clock::now().time_since_epoch().count();
-    mapgen = new MapGenerator(window->getSize().x, window->getSize().y);
+    mapgen = std::make_shared<MapGenerator>(window->getSize().x, window->getSize().y);
     // mapgen->setSeed(38007851);
 	mapgen->setSeed(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     octaves = mapgen->getOctaveCount();
@@ -319,7 +321,7 @@ public:
     ImGui::End();
 
     ImGui::Begin("Weather");
-    weatherWindow->draw(mapgen->weather.get(), painter);
+    weatherWindow->draw(std::move(mapgen->weather), std::move(painter));
     ImGui::End();
 
 
@@ -386,7 +388,7 @@ public:
       return;
     }
 
-    infoWindow->draw(currentRegion);
+    infoWindow->draw(*currentRegion);
     painter->drawInfo(currentRegion);
     // painter->layers->getLayer("roads")->damaged = true;
 

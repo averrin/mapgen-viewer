@@ -3,9 +3,8 @@
 
 class SimulationWindow {
 private:
-  sf::RenderWindow *window;
-  MapGenerator *mapgen;
+  std::shared_ptr<MapGenerator> mapgen;
 public:
-  SimulationWindow(sf::RenderWindow *w, MapGenerator *m);
+  SimulationWindow(std::shared_ptr<MapGenerator> m);
   void draw();
 };

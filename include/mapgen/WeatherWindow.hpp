@@ -5,8 +5,7 @@
 
 class WeatherWindow {
 public:
-  WeatherWindow(sf::RenderWindow *w, MapGenerator* m);
-  void draw(WeatherManager* weather, Painter* painter);
-  sf::RenderWindow *window;
-  MapGenerator *mapgen;
+  WeatherWindow(std::shared_ptr<MapGenerator> m);
+  void draw(std::shared_ptr<WeatherManager> weather, std::shared_ptr<Painter> painter);
+  std::shared_ptr<MapGenerator> mapgen;
 };
