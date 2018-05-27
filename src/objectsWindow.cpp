@@ -10,7 +10,7 @@
 ObjectsWindow::ObjectsWindow(std::shared_ptr<MapGenerator> m) : mapgen(m){}
 
 template <typename T>
-void ObjectsWindow::listObjects(std::vector<T *> objects, std::vector<bool> *mask,
+void ObjectsWindow::listObjects(std::vector<std::shared_ptr<T>> objects, std::vector<bool> *mask,
                  std::string title, selectedFunc<T> selected,
                  openedFunc<T> opened, titleFunc<T> getTitle) {
   int n = int(objects.size());
@@ -59,7 +59,7 @@ void ObjectsWindow::listObjects(std::vector<T *> objects, std::vector<bool> *mas
   }
 }
 
-void ObjectsWindow::higlightCluster(Cluster *cluster) {
+void ObjectsWindow::higlightCluster(std::shared_ptr<Cluster>cluster) {
   for (auto region : cluster->regions) {
     sf::ConvexShape polygon;
     PointList points = region->getPoints();
@@ -79,7 +79,7 @@ void ObjectsWindow::higlightCluster(Cluster *cluster) {
   }
 }
 
-void ObjectsWindow::higlightLocation(Location *location) {
+void ObjectsWindow::higlightLocation(std::shared_ptr<Location>location) {
   auto regions = location->region->neighbors;
   for (auto region : regions) {
     sf::ConvexShape polygon;
@@ -105,42 +105,42 @@ void ObjectsWindow::draw() {
 
   listObjects<MegaCluster>(
       mapgen->map->megaClusters, &mega_selection_mask, "MegaClusters",
-      (selectedFunc<MegaCluster>)[&](MegaCluster * cluster) {
+      (selectedFunc<MegaCluster>)[&](std::shared_ptr<MegaCluster> cluster) {
         higlightCluster(cluster);
       },
-      (openedFunc<MegaCluster>)[&](MegaCluster * cluster) {
+      (openedFunc<MegaCluster>)[&](std::shared_ptr<MegaCluster> cluster) {
         ImGui::Text("Regions: %zu", cluster->regions.size());
         ImGui::Text("States: %zu", cluster->states.size());
         // ImGui::Text("Clusters: %zu", cluster->clusters.size());
         ImGui::Text("Is land: %s", cluster->isLand ? "true" : "false");
       },
-      (titleFunc<MegaCluster>)[&](MegaCluster * cluster) {
+      (titleFunc<MegaCluster>)[&](std::shared_ptr<MegaCluster> cluster) {
         return cluster->name.c_str();
       });
 
   listObjects<StateCluster>(
                            mapgen->map->stateClusters, &mega_selection_mask, "StateClusters",
-                           (selectedFunc<StateCluster>)[&](StateCluster * cluster) {
+                           (selectedFunc<StateCluster>)[&](std::shared_ptr<StateCluster> cluster) {
                              higlightCluster(cluster);
                            },
-                           (openedFunc<StateCluster>)[&](StateCluster * cluster) {
+                           (openedFunc<StateCluster>)[&](std::shared_ptr<StateCluster> cluster) {
                              ImGui::Text("Regions: %zu", cluster->regions.size());
                              ImGui::Text("States: %zu", cluster->states.size());
                            },
-                           (titleFunc<StateCluster>)[&](StateCluster * cluster) {
+                           (titleFunc<StateCluster>)[&](std::shared_ptr<StateCluster> cluster) {
                              auto n = int(cluster->regions.size());
                              char t[100];
                              sprintf(t, "%s [%p]: %d", cluster->states[0]->name.c_str(),
-                                     cluster, n);
+                                     cluster.get(), n);
                              return std::string(t);
                            });
 
   listObjects<Cluster>(
       mapgen->map->clusters, &selection_mask, "Clusters",
-      (selectedFunc<Cluster>)[&](Cluster * cluster) {
+      (selectedFunc<Cluster>)[&](std::shared_ptr<Cluster> cluster) {
         higlightCluster(cluster);
       },
-      (openedFunc<Cluster>)[&](Cluster * cluster) {
+      (openedFunc<Cluster>)[&](std::shared_ptr<Cluster> cluster) {
         if (cluster->megaCluster != nullptr) {
           ImGui::Text("MegaCluster: %s", cluster->megaCluster->name.c_str());
         }
@@ -154,7 +154,7 @@ void ObjectsWindow::draw() {
         }
 
       },
-      (titleFunc<Cluster>)[&](Cluster * cluster) {
+      (titleFunc<Cluster>)[&](std::shared_ptr<Cluster> cluster) {
         char t[100];
         sprintf(t, "%s [%s] (%%d)", cluster->biom.name.c_str(),
                 cluster->name.c_str());
@@ -164,7 +164,7 @@ void ObjectsWindow::draw() {
 
   // TODO: fix river edition
   listObjects<River>(mapgen->map->rivers, &rivers_selection_mask, "Rivers",
-                     (selectedFunc<River>)[&](River * river) {
+                     (selectedFunc<River>)[&](std::shared_ptr<River> river) {
                        for (auto region : river->regions) {
                          sf::ConvexShape polygon;
                          PointList points = region->getPoints();
@@ -183,7 +183,7 @@ void ObjectsWindow::draw() {
                          objectPolygons.push_back(polygon);
                        }
                      },
-                     (openedFunc<River>)[&](River * river) {
+                     (openedFunc<River>)[&](std::shared_ptr<River> river) {
                        ImGui::Text("Name: %s", river->name.c_str());
                        ImGui::Columns(3, "cells");
                        ImGui::Separator();
@@ -211,19 +211,19 @@ void ObjectsWindow::draw() {
                        }
                        ImGui::Columns(1);
                      },
-                     (titleFunc<River>)[&](River * river) {
+                     (titleFunc<River>)[&](std::shared_ptr<River> river) {
                        auto n = int(river->points->size());
                        char t[100];
                        sprintf(t, "%s [%p]: %d points", river->name.c_str(),
-                               river, n);
+                               river.get(), n);
                        return std::string(t);
                      });
 
   listObjects<City>(mapgen->map->cities, &cities_selection_mask, "Cities",
-                    (selectedFunc<City>)[&](City * city) {
+                    (selectedFunc<City>)[&](std::shared_ptr<City> city) {
                       higlightLocation(city);
                     },
-                    (openedFunc<City>)[&](City * city) {
+                    (openedFunc<City>)[&](std::shared_ptr<City> city) {
                       ImGui::Text("Name: %s", city->name.c_str());
                       ImGui::Text("Type: %s", city->typeName.c_str());
                       ImGui::Text("Trade: %d", city->region->traffic);
@@ -231,7 +231,7 @@ void ObjectsWindow::draw() {
                       ImGui::Text("Population: %d", city->population);
                       ImGui::Text("Wealth: %f", city->wealth);
                     },
-                    (titleFunc<City>)[&](City * city) {
+                    (titleFunc<City>)[&](std::shared_ptr<City> city) {
                       char t[60];
                       sprintf(t, "%s [%s]", city->name.c_str(),
                               city->typeName.c_str());
@@ -240,15 +240,15 @@ void ObjectsWindow::draw() {
 
   listObjects<Location>(
       mapgen->map->locations, &location_selection_mask, "Locations",
-      (selectedFunc<Location>)[&](Location * city) {
+      (selectedFunc<Location>)[&](std::shared_ptr<Location> city) {
         higlightLocation(city);
       },
-      (openedFunc<Location>)[&](Location * city) {
+      (openedFunc<Location>)[&](std::shared_ptr<Location> city) {
         ImGui::Text("Name: %s", city->name.c_str());
         ImGui::Text("Type: %s", city->typeName.c_str());
         ImGui::Text("Trade: %d", city->region->traffic);
       },
-      (titleFunc<Location>)[&](Location * city) {
+      (titleFunc<Location>)[&](std::shared_ptr<Location> city) {
         char t[60];
         sprintf(t, "%s [%s]", city->name.c_str(), city->typeName.c_str());
         return std::string(t);

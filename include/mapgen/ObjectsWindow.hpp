@@ -3,22 +3,22 @@
 #include <SFML/Graphics/ConvexShape.hpp>
 #include <functional>
 
-template <typename T> using selectedFunc = std::function<void(T *)>;
-template <typename T> using openedFunc = std::function<void(T *)>;
-template <typename T> using titleFunc = std::function<std::string(T *)>;
+template <typename T> using selectedFunc = std::function<void(std::shared_ptr<T>)>;
+template <typename T> using openedFunc = std::function<void(std::shared_ptr<T>)>;
+template <typename T> using titleFunc = std::function<std::string(std::shared_ptr<T>)>;
 
 class ObjectsWindow {
 private:
   std::shared_ptr<MapGenerator> mapgen;
 
   template <typename T>
-  void listObjects(std::vector<T *> objects, std::vector<bool> *mask,
+  void listObjects(std::vector<std::shared_ptr<T>> objects, std::vector<bool> *mask,
                    std::string title, selectedFunc<T> selected,
                    openedFunc<T> opened, titleFunc<T> getTitle);
 
-  void higlightCluster(Cluster *cluster);
+  void higlightCluster(std::shared_ptr<Cluster>cluster);
 
-  void higlightLocation(Location *location);
+  void higlightLocation(std::shared_ptr<Location>location);
 
 public:
   ObjectsWindow(std::shared_ptr<MapGenerator> m);

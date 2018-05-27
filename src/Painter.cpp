@@ -81,13 +81,13 @@ inline bool ends_with(std::string const &value, std::string const &ending) {
 }
 
 // TODO: move ints to utils.cpp
-template <typename T> using filterFunc = std::function<bool(T *)>;
-template <typename T> using sortFunc = std::function<bool(T *, T *)>;
+template <typename T> using filterFunc = std::function<bool(std::shared_ptr<T>)>;
+template <typename T> using sortFunc = std::function<bool(std::shared_ptr<T>, std::shared_ptr<T>)>;
 
 template <typename T>
-std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
+std::vector<std::shared_ptr<T>> filterObjects(std::vector<std::shared_ptr<T>> regions, filterFunc<T> filter,
                                sortFunc<T> sort) {
-  std::vector<T *> places;
+  std::vector<std::shared_ptr<T>> places;
 
   std::copy_if(regions.begin(), regions.end(), std::back_inserter(places),
                filter);
@@ -96,7 +96,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 }
 
   // TODO: use map instead mapgen
-  Painter::Painter(sf::RenderWindow *w, std::shared_ptr<MapGenerator> m, std::string v)
+  Painter::Painter(std::shared_ptr<sf::RenderWindow> w, std::shared_ptr<MapGenerator> m, std::string v)
       : window(w), mapgen(m), VERSION(v) {
 
     auto dir = get_selfpath();
@@ -225,7 +225,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
   }
 
 
-  void Painter::drawInfo(Region *currentRegion) {
+  void Painter::drawInfo(std::shared_ptr<Region> currentRegion) {
     sf::ConvexShape selectedPolygon;
 
     if (currentRegion != currentRegionCache) {
@@ -238,14 +238,14 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
       //   }
       // }
       PointList points = currentRegion->getPoints();
-      Cluster *cluster = currentRegion->cluster;
+      auto cluster = currentRegion->cluster;
 
       int i = 0;
-      for (std::vector<Region *>::iterator
+      for (RegionList::iterator
                it = cluster->megaCluster->regions.begin();
            it < cluster->megaCluster->regions.end(); it++, i++) {
 
-        Region *region = cluster->megaCluster->regions[i];
+        std::shared_ptr<Region>region = cluster->megaCluster->regions[i];
         sf::ConvexShape polygon;
         PointList points = region->getPoints();
         polygon.setPointCount(points.size());
@@ -263,10 +263,10 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
         infoPolygons.push_back(polygon);
       }
       i = 0;
-      for (std::vector<Region *>::iterator it = cluster->regions.begin();
+      for (RegionList::iterator it = cluster->regions.begin();
            it < cluster->regions.end(); it++, i++) {
 
-        Region *region = cluster->regions[i];
+        std::shared_ptr<Region>region = cluster->regions[i];
         sf::ConvexShape polygon;
         PointList points = region->getPoints();
         polygon.setPointCount(points.size());
@@ -567,10 +567,10 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     auto layer = layers->getLayer("borders");
     auto ends = filterObjects(
         mapgen->map->regions,
-        (filterFunc<Region>)[&](Region * r) {
+        (filterFunc<Region>)[&](std::shared_ptr<Region> r) {
           if (r->stateBorder && !r->seaBorder &&
               std::count_if(r->neighbors.begin(), r->neighbors.end(),
-                            [&](Region *n) {
+                            [&](std::shared_ptr<Region>n) {
                               return n->stateBorder && !n->seaBorder &&
                                      n->state == r->state;
                             }) == 1) {
@@ -578,10 +578,10 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
           }
           return false;
         },
-        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+        (sortFunc<Region>)[&](std::shared_ptr<Region> r, std::shared_ptr<Region> r2) { return false; });
 
-    std::vector<Region *> used;
-    std::vector<Region *> exclude;
+    RegionList used;
+    RegionList exclude;
     for (auto r : ends) {
       sf::ConvexShape polygon;
       PointList points = r->getPoints();
@@ -613,8 +613,8 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     }
   }
 
-  void Painter::nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
-                  std::vector<Region *> *ends, std::vector<Region *> *exclude) {
+  void Painter::nextBorder(std::shared_ptr<Region>r, RegionList *used, sw::Spline *line,
+                  RegionList *ends, RegionList *exclude) {
 
     if (std::count(used->begin(), used->end(), r) == 0) {
       int i = line->getVertexCount();
@@ -625,7 +625,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 
     auto ns = filterObjects(
         r->neighbors,
-        (filterFunc<Region>)[&](Region * n) {
+        (filterFunc<Region>)[&](std::shared_ptr<Region> n) {
           if (n->stateBorder && !n->seaBorder &&
               std::count(used->begin(), used->end(), n) == 0 &&
               std::count(exclude->begin(), exclude->end(), n) == 0 &&
@@ -634,7 +634,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
           }
           return false;
         },
-        (sortFunc<Region>)[&](Region * r, Region * r2) { return false; });
+        (sortFunc<Region>)[&](std::shared_ptr<Region> r, std::shared_ptr<Region> r2) { return false; });
 
     if (ns.size() > 0) {
       nextBorder(ns[0], used, line, ends, exclude);
@@ -667,7 +667,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
   }
 
   void Painter::drawLocations() {
-    for (Region *region : mapgen->map->regions) {
+    for (std::shared_ptr<Region>region : mapgen->map->regions) {
       if (region->location != nullptr) {
         auto sprite = new sf::Sprite();
 
@@ -694,7 +694,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
   }
 
   void Painter::drawLakes() {
-    std::vector<Region *> regions = mapgen->map->regions;
+    RegionList regions = mapgen->map->regions;
     for (auto region : regions) {
       if (region->biom != biom::LAKE) {
         continue;
@@ -787,7 +787,7 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     }
   }
 
-  sf::ConvexShape* Painter::getPolygon(Region *region) {
+  sf::ConvexShape* Painter::getPolygon(std::shared_ptr<Region>region) {
     auto polygon = new sf::ConvexShape();
     PointList points = region->getPoints();
     polygon->setPointCount(points.size());
@@ -882,8 +882,8 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
 
   void Painter::drawWind() {
 
-    std::vector<Region *> regions = mapgen->map->regions;
-    for (Region *region : regions) {
+    RegionList regions = mapgen->map->regions;
+    for (std::shared_ptr<Region>region : regions) {
       if (!region->cluster->isLand) continue;
         sf::Vertex line[2];
 
@@ -907,8 +907,8 @@ std::vector<T *> filterObjects(std::vector<T *> regions, filterFunc<T> filter,
     // walkers.clear();
     currentRegionCache = nullptr;
 
-    std::vector<Region *> regions = mapgen->map->regions;
-    for (Region *region : regions) {
+    RegionList regions = mapgen->map->regions;
+    for (std::shared_ptr<Region>region : regions) {
       if (region->biom == biom::LAKE) {
         continue;
       }

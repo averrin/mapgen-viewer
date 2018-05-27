@@ -13,7 +13,7 @@ void InfoWindow::draw(Region currentRegion) {
   ImGui::Begin("Region info");
 
   PointList points = currentRegion.getPoints();
-  Cluster *cluster = currentRegion.cluster;
+  auto cluster = currentRegion.cluster;
   if (cluster == nullptr) {
     return;
   }
@@ -26,7 +26,7 @@ void InfoWindow::draw(Region currentRegion) {
     ImGui::Text("\n");
     ImGui::Text("Cluster size: %zu", cluster->regions.size());
     ImGui::Text("Mega Cluster: %s", currentRegion.megaCluster->name.c_str());
-    ImGui::Text("State Cluster: %p", currentRegion.stateCluster);
+    ImGui::Text("State Cluster: %p", currentRegion.stateCluster.get());
     if (currentRegion.stateCluster != nullptr) {
       auto sc = currentRegion.stateCluster;
       ImGui::Text("State Cluster regions: %zu", sc->regions.size());

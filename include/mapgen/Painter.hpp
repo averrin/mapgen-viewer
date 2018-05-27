@@ -14,14 +14,14 @@
 struct DrawableRegion {
 public:
   sf::ConvexShape shape ;
-  Region* region;
+  std::shared_ptr<Region> region;
   int zIndex;
 };
 
 class Painter {
 
 public:
-  Painter(sf::RenderWindow *w, std::shared_ptr<MapGenerator> m, std::string v);
+  Painter(std::shared_ptr<sf::RenderWindow> w, std::shared_ptr<MapGenerator> m, std::string v);
   sf::Font sffont;
 
   std::vector<DrawableRegion> polygons;
@@ -69,15 +69,15 @@ public:
   void invalidate(bool force = false);
   void fade();
   void drawLoading();
-  void drawInfo(Region *currentRegion);
+  void drawInfo(std::shared_ptr<Region> currentRegion);
   void drawRivers();
   sw::Spline* drawRoad(Road *r);
   void drawRoads();
   void drawLabels();
   void drawMap();
   void drawBorders();
-  void nextBorder(Region *r, std::vector<Region *> *used, sw::Spline *line,
-  std::vector<Region *> *ends, std::vector<Region *> *exclude);
+  void nextBorder(std::shared_ptr<Region> r, RegionList *used, sw::Spline *line,
+  RegionList *ends, RegionList *exclude);
   void drawMark();
   void drawObjects(std::vector<sf::ConvexShape> op);
   void update();
@@ -92,12 +92,12 @@ public:
   void drawHum();
   void drawTemp();
   void drawMinerals();
-  sf::ConvexShape *getPolygon(Region *region);
+  sf::ConvexShape *getPolygon(std::shared_ptr<Region>region);
 
 private:
   std::map<LocationType, sf::Texture *> locationIcons;
   std::map<std::string, sf::Texture *> images;
-  sf::RenderWindow *window;
+  std::shared_ptr<sf::RenderWindow> window;
   sw::ProgressBar progressBar;
   sf::RenderTexture cachedMap;
   sf::Color bgColor;
@@ -111,5 +111,5 @@ private:
   sf::Shader shader_blur;
   float iconSize = 24.f;
 
-  Region *currentRegionCache = nullptr;
+  std::shared_ptr<Region> currentRegionCache;
 };

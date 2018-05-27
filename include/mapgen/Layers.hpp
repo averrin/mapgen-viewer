@@ -1,6 +1,7 @@
 #ifndef LAYERS_H_
 #define LAYERS_H_
 
+#include <memory>
 #include <SFML/Graphics.hpp>
 
 class Layer : public sf::Drawable {
@@ -14,7 +15,7 @@ public:
   sf::Shader* shader = nullptr;
   void clear();
   void add(sf::Drawable* shape);
-  void update(sf::RenderWindow* w);
+  void update(std::shared_ptr<sf::RenderWindow> w);
   Layer* mask = nullptr;
   sf::Shader* shader_mask;
   sf::RenderTexture* cache = nullptr;
@@ -26,13 +27,13 @@ private:
 
 class LayersManager : public sf::Drawable {
 private:
-  sf::RenderWindow* window;
+  std::shared_ptr<sf::RenderWindow> window;
   Layer* addLayer(std::string name);
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
   sf::Shader* shader_mask;
 
 public:
-  LayersManager(sf::RenderWindow* w, sf::Shader* shader_mask);
+  LayersManager(std::shared_ptr<sf::RenderWindow> w, sf::Shader* shader_mask);
   std::vector<Layer*> layers;
 
   Layer* getLayer(std::string name);
