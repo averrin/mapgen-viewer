@@ -55,9 +55,9 @@ add_library(sw ${SWLIB_SOURCE})
 
 file(GLOB FMT_SOURCE "${PROJECT_PATH}/include/fmt/src/*.cc" "${PROJECT_PATH}/include/fmt/include/fmt/*.h")
 add_library(fmt ${FMT_SOURCE})
-
-add_subdirectory(backward-cpp)
-
+if(NOT WIN32)
+  add_subdirectory(backward-cpp)
+endif()
 set(EXECUTABLE_NAME "mapgen")
 file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 add_executable(${EXECUTABLE_NAME}
@@ -82,9 +82,9 @@ add_executable(${EXECUTABLE_NAME}
 
   src/main.cpp
 )
-
-add_backward(mapgen)
-
+if(NOT WIN32)
+  add_backward(mapgen)
+endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
