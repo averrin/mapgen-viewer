@@ -135,7 +135,7 @@ endif()
 IF(NOT WIN32)
 	target_link_libraries(${EXECUTABLE_NAME} libmapgen voronoi noise imgui imgui-sfml sw Threads::Threads stdc++fs fmt)
 else()
-	target_link_libraries(${EXECUTABLE_NAME} libmapgen voronoi "${PROJECT_PATH}/include/libnoise.lib" imgui sw Threads::Threads)
+	target_link_libraries(${EXECUTABLE_NAME} libmapgen voronoi "${PROJECT_PATH}/include/libnoise.lib" imgui sw fmt Threads::Threads)
 endif()
 
 target_compile_features(mapgen PRIVATE cxx_delegating_constructors)
