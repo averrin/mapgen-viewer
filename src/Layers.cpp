@@ -21,7 +21,7 @@ void Layer::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     target.draw(sprite, states);
 };
 
-void Layer::update(std::shared_ptr<sf::RenderWindow> window) {
+void Layer::update(sf::RenderWindow* window) {
   mg::info("Draw to cache:", name);
   cache->create(window->getSize().x, window->getSize().y, sf::ContextSettings(0, 0, 8));
   cache->clear(sf::Color::Transparent);
@@ -80,7 +80,7 @@ void Layer::add(sf::Drawable* shape) {
   shapes.push_back(shape);
 }
 
-LayersManager::LayersManager(std::shared_ptr<sf::RenderWindow> w, sf::Shader* m) : window(w), shader_mask(m){};
+LayersManager::LayersManager(sf::RenderWindow* w, sf::Shader* m) : window(w), shader_mask(m){};
 
 void LayersManager::draw(sf::RenderTarget& target, sf::RenderStates states) const {
   for (auto l: layers) {

@@ -16,37 +16,37 @@ Iter Walker::select_randomly(Iter start, Iter end) {
 Walker::Walker(City *c, MapGenerator *m) : mapgen(m) {
 
   // road = *mapgen->select_randomly(s->roads.begin(), s->roads.end());
-  // reverse = rand() % 2 == 0;
-  // shape = new sf::CircleShape(3);
-  // shape->setFillColor(sf::Color(225,225,190));
-  // shape->setOutlineColor(sf::Color::Black);
-  // shape->setOutlineThickness(1);
-  // road = *select_randomly(c->roads.begin(), c->roads.end());
-  // reverse = road->regions.back()->city == c;
+  reverse = rand() % 2 == 0;
+  shape = new sf::CircleShape(3);
+  shape->setFillColor(sf::Color(225,225,190));
+  shape->setOutlineColor(sf::Color::Black);
+  shape->setOutlineThickness(1);
+  road = *select_randomly(c->roads.begin(), c->roads.end());
+  reverse = road->regions.back()->city == c;
   if (reverse) {
     // step = road->spline->getInterpolatedPositionCount() - 1;
   }
 }
 
 Road* Walker::getNextRoad() {
-  // City* c;
-  // if (!reverse) {
-  //   c = road->regions.back()->city;
-  // } else {
-  //   c = road->regions.front()->city;
-  // }
-  // if (c == nullptr) {
-  //   mg::warn("city", "nullptr");
-  // } else if (c->roads.size() == 0) {
-  //   mg::warn(c->typeName, "without roads");
-  // }
-  // road = *select_randomly(c->roads.begin(), c->roads.end());
-  // reverse = road->regions.back()->city == c;
-  // if (reverse) {
-  //   // step = road->spline->getInterpolatedPositionCount() - 1;
-  // } else {
-  //   step = 0;
-  // }
+  City* c;
+  if (!reverse) {
+    c = road->regions.back()->city;
+  } else {
+    c = road->regions.front()->city;
+  }
+  if (c == nullptr) {
+    mg::warn("city", "nullptr");
+  } else if (c->roads.size() == 0) {
+    mg::warn(c->typeName, "without roads");
+  }
+  road = *select_randomly(c->roads.begin(), c->roads.end());
+  reverse = road->regions.back()->city == c;
+  if (reverse) {
+    // step = road->spline->getInterpolatedPositionCount() - 1;
+  } else {
+    step = 0;
+  }
   return road;
 }
 

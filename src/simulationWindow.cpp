@@ -10,19 +10,19 @@ void SimulationWindow::draw() {
   ImGui::Text("Ports count: %zu",
               std::count_if(mapgen->map->cities.begin(),
                             mapgen->map->cities.end(),
-                            [](std::shared_ptr<City>c) { return c->type == PORT; }));
+                            [](City *c) { return c->type == PORT; }));
   ImGui::Text("Mines count: %zu",
               std::count_if(mapgen->map->cities.begin(),
                             mapgen->map->cities.end(),
-                            [](std::shared_ptr<City>c) { return c->type == MINE; }));
+                            [](City *c) { return c->type == MINE; }));
   ImGui::Text("Agro count: %zu",
               std::count_if(mapgen->map->cities.begin(),
                             mapgen->map->cities.end(),
-                            [](std::shared_ptr<City>c) { return c->type == AGRO; }));
+                            [](City *c) { return c->type == AGRO; }));
   ImGui::Text("Forts count: %zu",
               std::count_if(mapgen->map->cities.begin(),
                             mapgen->map->cities.end(),
-                            [](std::shared_ptr<City>c) { return c->type == FORT; }));
+                            [](City *c) { return c->type == FORT; }));
   ImGui::Text("\n");
 
   if (ImGui::TreeNode("Economy variables")) {

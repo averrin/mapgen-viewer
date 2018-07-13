@@ -1,4 +1,3 @@
-#include <memory>
 #include <imgui-SFML.h>
 #include <imgui.h>
 
@@ -7,19 +6,18 @@
 #include "mapgen/ObjectsWindow.hpp"
 #include "mapgen/SimulationWindow.hpp"
 #include "mapgen/WeatherWindow.hpp"
+#include <memory>
 
 class Application {
   std::string VERSION;
-
   std::shared_ptr<MapGenerator> mapgen;
-  std::shared_ptr<Painter> painter;
-  std::shared_ptr<InfoWindow> infoWindow;
-  std::shared_ptr<ObjectsWindow> objectsWindow;
-  std::shared_ptr<SimulationWindow> simulationWindow;
-  std::shared_ptr<WeatherWindow> weatherWindow;
-  std::shared_ptr<sf::RenderWindow> window;
-
+  std::unique_ptr<Painter> painter;
   std::thread generator;
+  sf::RenderWindow *window;
+  InfoWindow *infoWindow;
+  ObjectsWindow *objectsWindow;
+  SimulationWindow *simulationWindow;
+  WeatherWindow *weatherWindow;
 
   int relax = 0;
   int octaves;
@@ -30,8 +28,8 @@ class Application {
   bool showUI = true;
   bool getScreenshot = false;
   bool ready = false;
-  std::shared_ptr<Region> lockedRegion = nullptr;
-  std::shared_ptr<Region> rulerRegion = nullptr;
+  Region *lockedRegion = nullptr;
+  Region *rulerRegion = nullptr;
   bool lock = false;
 
 public:
@@ -44,10 +42,10 @@ public:
     io.Fonts->AddFontFromFileTTF("./font.ttf", 15.0f);
 
 #ifdef _WIN32
-    window = std::make_shared<sf::RenderWindow>(sf::VideoMode(1600, 900), "",
+    window = new sf::RenderWindow(sf::VideoMode(1600, 900), "",
                                   sf::Style::Default, settings);
 #else
-    window = std::make_shared<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), "",
+    window = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), "",
                                   sf::Style::Default, settings);
 #endif
 
@@ -59,14 +57,14 @@ public:
     window->resetGLStates();
 
     initMapGen();
-    painter = std::make_shared<Painter>(window, mapgen, VERSION);
+    painter = std::make_unique<Painter>(window, mapgen, VERSION);
     generator = std::thread([&]() {});
     regen();
 
-    infoWindow = std::make_shared<InfoWindow>();
-    objectsWindow = std::make_shared<ObjectsWindow>(mapgen);
-    simulationWindow = std::make_shared<SimulationWindow>(mapgen);
-    weatherWindow = std::make_shared<WeatherWindow>(mapgen);
+    infoWindow = new InfoWindow();
+    objectsWindow = new ObjectsWindow(mapgen);
+    simulationWindow = new SimulationWindow(mapgen);
+    weatherWindow = new WeatherWindow(mapgen);
   }
 
   void regen() {
@@ -323,7 +321,7 @@ public:
     ImGui::End();
 
     ImGui::Begin("Weather");
-    weatherWindow->draw(mapgen->weather, painter);
+    weatherWindow->draw(std::move(mapgen->weather), std::move(painter));
     ImGui::End();
 
 
@@ -369,13 +367,13 @@ public:
 
   }
   
-  std::shared_ptr<Region> currentRegionCache;
+  Region *currentRegionCache = nullptr;
 
   void drawInfo() {
     sf::Vector2<float> pos =
         window->mapPixelToCoords(sf::Mouse::getPosition(*window));
 
-    auto currentRegion = mapgen->getRegion(currentRegionCache, pos);
+    Region *currentRegion = mapgen->getRegion(currentRegionCache, pos);
     currentRegionCache = currentRegion;
     if (lock) {
       if (lockedRegion == nullptr) {
