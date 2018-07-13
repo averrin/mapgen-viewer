@@ -3,9 +3,8 @@
 
 #include <SFML/Graphics.hpp>
 
-#include "mapgen/MapGenerator.hpp"
 #include "mapgen/Region.hpp"
-// #include "mapgen/Walker.hpp"
+#include "mapgen/Walker.hpp"
 #include "mapgen/Layers.hpp"
 #include "mapgen/utils.hpp"
 
@@ -21,7 +20,7 @@ public:
 class Painter {
 
 public:
-  Painter(sf::RenderWindow *w, std::shared_ptr<MapGenerator> m, std::string v);
+  Painter(sf::RenderWindow *w, MapGenerator *m, std::string v);
   sf::Font sffont;
 
   std::vector<DrawableRegion> polygons;
@@ -103,11 +102,11 @@ private:
   sf::Color bgColor;
   float color[3] = {0.12f, 0.12f, 0.12f};
   Map *map;
-  std::shared_ptr<MapGenerator> mapgen;
+  MapGenerator *mapgen;
   std::string VERSION;
   bool needUpdate = true;
   sf::Clock clock;
-  // std::vector<Walker *> walkers;
+  std::vector<Walker *> walkers;
   sf::Shader shader_blur;
   float iconSize = 24.f;
 

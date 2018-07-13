@@ -1,8 +1,8 @@
 #include "mapgen/SimulationWindow.hpp"
 #include <imgui.h>
 
-SimulationWindow::SimulationWindow(std::shared_ptr<MapGenerator> m)
-    : mapgen(m) {}
+SimulationWindow::SimulationWindow(sf::RenderWindow *w, MapGenerator *m)
+    : window(w), mapgen(m) {}
 
 void SimulationWindow::draw() {
 

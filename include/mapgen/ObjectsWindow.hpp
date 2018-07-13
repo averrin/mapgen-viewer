@@ -9,7 +9,8 @@ template <typename T> using titleFunc = std::function<std::string(T *)>;
 
 class ObjectsWindow {
 private:
-  std::shared_ptr<MapGenerator> mapgen;
+  sf::RenderWindow *window;
+  MapGenerator *mapgen;
 
   template <typename T>
   void listObjects(std::vector<T *> objects, std::vector<bool> *mask,
@@ -21,7 +22,7 @@ private:
   void higlightLocation(Location *location);
 
 public:
-  ObjectsWindow(std::shared_ptr<MapGenerator> m);
+  ObjectsWindow(sf::RenderWindow *w, MapGenerator *m);
 
   std::vector<sf::ConvexShape> objectPolygons;
   std::vector<bool> selection_mask;
