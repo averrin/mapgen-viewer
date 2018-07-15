@@ -24,6 +24,7 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/MapgenConfig.h.in"
   "${PROJECT_PATH}/MapgenConfig.h"
   )
+add_definitions(-DIMGUI_USER_CONFIG="include/imgui-sfml/imconfig-SFML.h")
 
 include_directories(
   ${PROJECT_PATH}
