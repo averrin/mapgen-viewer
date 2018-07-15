@@ -25,7 +25,7 @@ configure_file (
   "${PROJECT_PATH}/MapgenConfig.h"
   )
 add_definitions(-DIMGUI_USER_CONFIG="include/imgui-sfml/imconfig-SFML.h")
-
+add_definitions(-D_USE_MATH_DEFINES)
 include_directories(
   ${PROJECT_PATH}
   ${LIBMAPGEN_PATH}
