@@ -121,7 +121,7 @@ HSL TurnToHSL(const sf::Color& C)
     if (max - min <= D_EPSILON )
     {
         A.Hue = 0;
-        A.Saturation = 0;
+        s = 0;
     }
     else
     {
